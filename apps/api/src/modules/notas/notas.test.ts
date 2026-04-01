@@ -102,7 +102,7 @@ describe('Notas Module Integration', () => {
     const response = await app.inject({ method: 'POST', url: '/api/notas', headers: { Authorization: `Bearer ${token}` }, payload });
 
     expect(response.statusCode).toBe(400);
-    expect(response.json().message).toContain('Já cadastrada');
+    expect(response.json().message).toContain('Nota já cadastrada');
   });
 
   it('POST /api/notas/bulk should create multiple notas', async () => {

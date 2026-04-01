@@ -31,3 +31,7 @@ export type CreateNotaPayload = z.infer<typeof createNotaSchema>;
 export const createBulkNotasSchema = z.array(createNotaSchema).min(1);
 
 export type CreateBulkNotasPayload = z.infer<typeof createBulkNotasSchema>;
+
+export const updateNotaSchema = createNotaSchema.partial();
+
+export type UpdateNotaPayload = z.infer<typeof updateNotaSchema>;

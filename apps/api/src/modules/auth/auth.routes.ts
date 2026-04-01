@@ -1,0 +1,86 @@
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import { authService } from './auth.service.js';
+import { createUserSchema, loginSchema } from '@academiaflow/shared';
+import { env } from '../../config/env.js';
+
+export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
+
+  fastify.post(
+    '/register',
+    {
+      schema: {
+        body: createUserSchema,
+      },
+    },
+    async (request, reply) => {
+      try {
+        const payload = request.body as import('@academiaflow/shared').CreateUserPayload;
+        const user = await authService.register(payload);
+        
+        reply.code(201).send({
+          success: true,
+          data: user,
+          message: 'Usuário criado com sucesso',
+        });
+      } catch (error: Error | unknown) {
+        reply.code(400).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Erro desconhecido',
+        });
+      }
+    }
+  );
+
+  fastify.post(
+    '/login',
+    {
+      schema: {
+        body: loginSchema,
+      },
+    },
+    async (request, reply) => {
+      try {
+        const payload = request.body as import('@academiaflow/shared').LoginPayload;
+        const user = await authService.login(payload);
+        
+        const token = await reply.jwtSign(
+          { id: user._id, role: user.role },
+          { expiresIn: env.JWT_EXPIRES_IN }
+        );
+
+        reply.send({
+          success: true,
+          data: { user, token },
+          message: 'Login realizado com sucesso',
+        });
+      } catch (error: Error | unknown) {
+        reply.code(401).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Não autorizado',
+        });
+      }
+    }
+  );
+
+  fastify.get(
+    '/me',
+    {
+      onRequest: [fastify.authenticate],
+    },
+    async (request, reply) => {
+      try {
+        const decoded = request.user as { id: string };
+        const user = await authService.getById(decoded.id);
+        reply.send({
+          success: true,
+          data: user,
+        });
+      } catch (error: Error | unknown) {
+        reply.code(404).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Usuário não encontrado',
+        });
+      }
+    }
+  );
+};

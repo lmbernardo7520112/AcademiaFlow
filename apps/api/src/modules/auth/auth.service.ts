@@ -1,0 +1,48 @@
+import { UserModel } from '../../models/User.js';
+import argon2 from 'argon2';
+import type { CreateUserPayload, LoginPayload } from '@academiaflow/shared';
+
+export class AuthService {
+  async register(data: CreateUserPayload) {
+    const existing = await UserModel.findOne({ email: data.email });
+    if (existing) {
+      throw new Error('Email já em uso');
+    }
+
+    const hashedPassword = await argon2.hash(data.password);
+    
+    const user = await UserModel.create({
+      ...data,
+      password: hashedPassword,
+    });
+
+    const userObj = user.toObject();
+    delete (userObj as { password?: string }).password;
+    
+    return userObj;
+  }
+
+  async login(data: LoginPayload) {
+    const user = await UserModel.findOne({ email: data.email }).select('+password');
+    if (!user) {
+      throw new Error('Credenciais inválidas');
+    }
+
+    const isValid = await argon2.verify(user.password, data.password);
+    if (!isValid) {
+      throw new Error('Credenciais inválidas');
+    }
+
+    const userObj = user.toObject();
+    delete (userObj as { password?: string }).password;
+    return userObj;
+  }
+
+  async getById(id: string) {
+    const user = await UserModel.findById(id);
+    if (!user) throw new Error('Usuário não encontrado');
+    return user;
+  }
+}
+
+export const authService = new AuthService();

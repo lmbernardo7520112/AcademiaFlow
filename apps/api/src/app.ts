@@ -1,10 +1,11 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
+import type { ZodTypeProvider } from 'fastify-type-provider-zod';
+import dbPlugin from './plugins/db.js';
+import jwtPlugin from './plugins/jwt.js';
+import { authRoutes } from './modules/auth/auth.routes.js';
 
-/**
- * Creates and configures the Fastify application instance.
- * Separated from server.ts for testability (SDD principle).
- */
 export async function buildApp() {
   const app = Fastify({
     logger: {
@@ -14,7 +15,11 @@ export async function buildApp() {
           ? { target: 'pino-pretty', options: { colorize: true } }
           : undefined,
     },
-  });
+  }).withTypeProvider<ZodTypeProvider>();
+
+  // Add schema validators and serializers
+  app.setValidatorCompiler(validatorCompiler);
+  app.setSerializerCompiler(serializerCompiler);
 
   // CORS
   await app.register(cors, {
@@ -24,12 +29,18 @@ export async function buildApp() {
     credentials: true,
   });
 
-  // Health check route
+  // DB and Plugins
+  await app.register(dbPlugin);
+  await app.register(jwtPlugin);
+
+  // Routes registration
+  await app.register(authRoutes, { prefix: '/api/auth' });
+
+  // Basic health checks
   app.get('/api/ping', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
   });
 
-  // Root route
   app.get('/', async () => {
     return { message: 'AcademiaFlow API v1.0.0' };
   });

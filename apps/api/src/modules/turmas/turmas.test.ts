@@ -1,12 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildApp } from '../../app.js';
-import { TurmaModel } from '../../models/Turma.js';
-import { UserModel } from '../../models/User.js';
 import type { FastifyInstance } from 'fastify';
 
 describe('Turmas Module Integration', () => {
   let app: FastifyInstance;
-  let token = '';
 
   beforeAll(async () => {
     app = await buildApp();
@@ -110,7 +107,7 @@ describe('Turmas Module Integration', () => {
     expect(response.json().success).toBe(true);
 
     const listRes = await app.inject({ method: 'GET', url: '/api/turmas', headers: { Authorization: `Bearer ${tkn}` } });
-    const found = listRes.json().data.find((t: any) => t._id === tId);
+    const found = listRes.json().data.find((t: { _id: string }) => t._id === tId);
     expect(found).toBeUndefined();
   });
 

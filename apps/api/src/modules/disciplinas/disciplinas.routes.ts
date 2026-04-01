@@ -25,7 +25,7 @@ export const disciplinasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyI
     }
   );
 
-  fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/', async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const results = await disciplinasService.list();
       reply.send({ success: true, data: results });

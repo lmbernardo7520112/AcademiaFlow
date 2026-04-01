@@ -17,3 +17,7 @@ export const createDisciplinaSchema = disciplinaSchema.omit({
 });
 
 export type CreateDisciplinaPayload = z.infer<typeof createDisciplinaSchema>;
+
+export const updateDisciplinaSchema = createDisciplinaSchema.partial();
+
+export type UpdateDisciplinaPayload = z.infer<typeof updateDisciplinaSchema>;

@@ -6,6 +6,7 @@ import dbPlugin from './plugins/db.js';
 import jwtPlugin from './plugins/jwt.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { turmasRoutes } from './modules/turmas/turmas.routes.js';
+import { alunosRoutes } from './modules/alunos/alunos.routes.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -37,6 +38,7 @@ export async function buildApp() {
   // Routes registration
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(turmasRoutes, { prefix: '/api/turmas' });
+  await app.register(alunosRoutes, { prefix: '/api/alunos' });
 
   // Basic health checks
   app.get('/api/ping', async () => {

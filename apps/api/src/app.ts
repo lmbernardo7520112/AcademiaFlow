@@ -5,6 +5,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import dbPlugin from './plugins/db.js';
 import jwtPlugin from './plugins/jwt.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
+import { turmasRoutes } from './modules/turmas/turmas.routes.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -35,6 +36,7 @@ export async function buildApp() {
 
   // Routes registration
   await app.register(authRoutes, { prefix: '/api/auth' });
+  await app.register(turmasRoutes, { prefix: '/api/turmas' });
 
   // Basic health checks
   app.get('/api/ping', async () => {

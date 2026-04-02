@@ -5,7 +5,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'secretaria' | 'professor' | 'aluno';
+  role: 'admin' | 'secretaria' | 'professor' | 'administrador';
   tenantId?: string;
 }
 

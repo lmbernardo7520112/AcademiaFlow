@@ -1,30 +1,38 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { LayoutDashboard, Users, BookOpen, UserSquare2, LogOut, FileText, Cpu } from 'lucide-react';
 import '../../styles/dashboard.css';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+interface DashboardLayoutProps {
+  children?: React.ReactNode;
+}
+
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate('/welcome');
   };
 
-  const navItems = [
-    { path: '/dashboard', label: 'Visão Geral', icon: LayoutDashboard },
-    { path: '/dashboard/turmas', label: 'Gestão de Turmas', icon: Users },
-    { path: '/dashboard/disciplinas', label: 'Catálogo de Disciplinas', icon: BookOpen },
-    { path: '/dashboard/alunos', label: 'Matrículas de Alunos', icon: UserSquare2 },
-    { path: '/dashboard/notas', label: 'Diário de Classe (Notas)', icon: FileText },
-    { path: '/dashboard/ai', label: 'CoPilot Pedagógico', icon: Cpu },
+  // Dynamic Navigation Items based on SDD spec_phase1_rbac.md
+  const allNavItems = [
+    { path: '/secretaria', label: 'Visão Geral', icon: LayoutDashboard, roles: ['secretaria', 'admin', 'administrador'] },
+    { path: '/secretaria/turmas', label: 'Gestão de Turmas', icon: Users, roles: ['secretaria', 'admin', 'administrador'] },
+    { path: '/secretaria/disciplinas', label: 'Catálogo de Disciplinas', icon: BookOpen, roles: ['secretaria', 'admin', 'administrador'] },
+    { path: '/secretaria/alunos', label: 'Matrículas de Alunos', icon: UserSquare2, roles: ['secretaria', 'admin', 'administrador'] },
+    { path: '/professor/notas', label: 'Diário de Classe (Notas)', icon: FileText, roles: ['professor'] },
+    { path: '/professor/ai', label: 'CoPilot Pedagógico', icon: Cpu, roles: ['professor'] },
   ];
 
+  const userRole = user?.role || 'professor';
+  const navItems = allNavItems.filter(item => item.roles.includes(userRole));
+
   // Placeholder caso não tenha user logado ainda visualizando a pagina mock.
-  const displayUser = user || { name: 'Maga McGonagall', role: 'secretaria' };
+  const displayUser = user || { name: 'Usuário', role: 'professor' };
 
   return (
     <div className="dashboard-layout">
@@ -77,7 +85,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         <div className="content-canvas">
-          {children}
+          {children || <Outlet />}
         </div>
       </main>
     </div>

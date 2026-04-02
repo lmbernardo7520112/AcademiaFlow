@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 
 import LandingPage from './pages/marketing/LandingPage';
@@ -7,12 +7,14 @@ import Register from './pages/auth/Register';
 import SecretariaPortal from './pages/dashboard/SecretariaPortal';
 
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import RoleRedirect from './components/auth/RoleRedirect';
 
 import TurmasPage from './pages/dashboard/TurmasPage';
 import AlunosPage from './pages/dashboard/AlunosPage';
 import DisciplinasPage from './pages/dashboard/DisciplinasPage';
 import NotasPage from './pages/dashboard/NotasPage';
 import ProfessorAI from './pages/dashboard/ProfessorAI';
+import DashboardLayout from './components/layout/DashboardLayout';
 
 function App() {
   return (
@@ -20,19 +22,32 @@ function App() {
       <BrowserRouter>
         <Routes>
           {/* Rotas Públicas */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<RoleRedirect />} />
+          <Route path="/welcome" element={<LandingPage />} />
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/register" element={<Register />} />
           
-          {/* Rotas Privadas Governança */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<SecretariaPortal />} />
-            <Route path="/dashboard/turmas" element={<TurmasPage />} />
-            <Route path="/dashboard/alunos" element={<AlunosPage />} />
-            <Route path="/dashboard/disciplinas" element={<DisciplinasPage />} />
-            <Route path="/dashboard/notas" element={<NotasPage />} />
-            <Route path="/dashboard/ai" element={<ProfessorAI />} />
+          {/* Jornada do Professor */}
+          <Route element={<ProtectedRoute allowedRoles={['professor']} />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/professor" element={<Navigate to="/professor/ai" replace />} />
+              <Route path="/professor/notas" element={<NotasPage />} />
+              <Route path="/professor/ai" element={<ProfessorAI />} />
+            </Route>
           </Route>
+
+          {/* Jornada da Secretaria/Admin */}
+          <Route element={<ProtectedRoute allowedRoles={['secretaria', 'admin', 'administrador']} />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/secretaria" element={<SecretariaPortal />} />
+              <Route path="/secretaria/turmas" element={<TurmasPage />} />
+              <Route path="/secretaria/alunos" element={<AlunosPage />} />
+              <Route path="/secretaria/disciplinas" element={<DisciplinasPage />} />
+            </Route>
+          </Route>
+
+          {/* Fallback */}
+          <Route path="/dashboard/*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

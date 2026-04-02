@@ -9,6 +9,7 @@ export const turmaSchema = z.object({
   name: nonEmptyStringSchema.describe('Nome da Turma, ex: 3º Ano A'),
   year: academicYearSchema,
   periodo: z.enum(TURMA_PERIODOS).default('matutino'),
+  professorId: objectIdSchema.optional().nullable().describe('Professor responsável pela turma'),
   isActive: z.boolean().default(true),
   ...timestampFieldsSchema.shape,
 });

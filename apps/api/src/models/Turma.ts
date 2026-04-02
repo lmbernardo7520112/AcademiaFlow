@@ -22,6 +22,11 @@ const turmaSchema = new Schema(
       enum: TURMA_PERIODOS,
       default: 'matutino',
     },
+    professorId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
     isActive: {
       type: Boolean,
       default: true,

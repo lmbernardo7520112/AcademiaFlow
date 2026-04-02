@@ -10,6 +10,8 @@ export const alunoSchema = z.object({
   turmaId: objectIdSchema,
   dataNascimento: z.coerce.date().max(new Date(), 'Data de nascimento não pode estar no futuro'),
   isActive: z.boolean().default(true),
+  transferido: z.boolean().default(false).describe('Aluno transferido para outra instituição'),
+  abandono: z.boolean().default(false).describe('Aluno evadido/abandonou o curso'),
   ...timestampFieldsSchema.shape,
 });
 

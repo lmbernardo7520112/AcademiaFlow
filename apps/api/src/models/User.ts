@@ -1,9 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { ROLES } from '@academiaflow/shared';
 
-// We map the Zod inferred type `User` to Mongoose model.
-// Omit `id` since Mongoose uses `_id` internally, and timestamps are handled by mongoose plugin.
-
 const userSchema = new Schema(
   {
     tenantId: {
@@ -26,7 +23,7 @@ const userSchema = new Schema(
     password: {
       type: String,
       required: true,
-      select: false, // Do not return password by default
+      select: false,
     },
     role: {
       type: String,
@@ -36,6 +33,13 @@ const userSchema = new Schema(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    refreshToken: {
+      type: String,
+      select: false,
+    },
+    lastLoginAt: {
+      type: Date,
     },
   },
   {

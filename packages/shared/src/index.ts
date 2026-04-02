@@ -12,3 +12,5 @@ export * from './schemas/aluno.js';
 export * from './schemas/disciplina.js';
 export * from './schemas/nota.js';
 export * from './schemas/ai.js';
+export * from './schemas/validacao-pedagogica.js';
+export * from './schemas/grade-calculations.js';

@@ -38,12 +38,12 @@ export const gradeValueSchema = z
   .min(0, 'Nota mínima é 0')
   .max(10, 'Nota máxima é 10');
 
-/** Bimester: 1, 2, 3 or 4 */
+/** Bimester: 1, 2, 3, 4, or 5 (5 represents PF - Prova Final) */
 export const bimesterSchema = z
   .number()
   .int()
   .min(1, 'Bimestre mínimo é 1')
-  .max(4, 'Bimestre máximo é 4');
+  .max(5, 'O BIMESTRE 5 é reservado para a Prova Final (PF)');
 
 /** Year: reasonable academic year range */
 export const academicYearSchema = z

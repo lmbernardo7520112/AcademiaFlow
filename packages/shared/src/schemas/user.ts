@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { objectIdSchema, emailSchema, passwordSchema, nonEmptyStringSchema, timestampFieldsSchema, tenantIdSchema } from './primitives.js';
 import { ROLES } from './roles.js';
 
+const roleValues = [ROLES.PROFESSOR, ROLES.SECRETARIA, ROLES.ADMIN, ROLES.ADMINISTRADOR] as const;
+
 /**
  * Base User Schema
  */
@@ -10,8 +12,10 @@ export const userSchema = z.object({
   tenantId: tenantIdSchema,
   name: nonEmptyStringSchema,
   email: emailSchema,
-  role: z.enum([ROLES.PROFESSOR, ROLES.SECRETARIA, ROLES.ADMIN]),
+  role: z.enum(roleValues),
   isActive: z.boolean().default(true),
+  refreshToken: z.string().optional().nullable(),
+  lastLoginAt: z.coerce.date().optional().nullable(),
   ...timestampFieldsSchema.shape,
 });
 
@@ -27,7 +31,7 @@ export const createUserSchema = z.object({
   name: nonEmptyStringSchema,
   email: emailSchema,
   password: passwordSchema,
-  role: z.enum([ROLES.PROFESSOR, ROLES.SECRETARIA, ROLES.ADMIN]).default(ROLES.PROFESSOR),
+  role: z.enum(roleValues).default(ROLES.PROFESSOR),
 });
 
 export type CreateUserPayload = z.infer<typeof createUserSchema>;

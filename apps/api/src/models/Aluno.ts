@@ -36,10 +36,34 @@ const alunoSchema = new Schema(
       type: Boolean,
       default: true,
     },
+    transferido: {
+      type: Boolean,
+      default: false,
+    },
+    abandono: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+// Normalização de status: se transferido ou abandono, isActive = false
+alunoSchema.pre('save', function (next) {
+  if (this.transferido || this.abandono) {
+    this.isActive = false;
+  }
+  next();
+});
+
+alunoSchema.pre('findOneAndUpdate', function (next) {
+  const update = this.getUpdate() as Record<string, unknown>;
+  if (update.transferido === true || update.abandono === true) {
+    this.set({ isActive: false });
+  }
+  next();
+});
 
 export const AlunoModel = mongoose.model('Aluno', alunoSchema);

@@ -12,6 +12,30 @@ const disciplinaSchema = new Schema(
       required: true,
       trim: true,
     },
+    codigo: {
+      type: String,
+      required: true,
+      unique: true,
+      uppercase: true,
+      trim: true,
+      match: /^[A-Z]{2,4}-\d{3}$/,
+    },
+    professorId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    turmaId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Turma',
+      default: null,
+    },
+    cargaHoraria: {
+      type: Number,
+      min: 10,
+      max: 400,
+      default: 60,
+    },
     isActive: {
       type: Boolean,
       default: true,

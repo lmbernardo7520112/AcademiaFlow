@@ -11,8 +11,20 @@ export default function SecretariaPortal() {
     totalDisciplinas: 0,
     overallAverage: null as number | null,
   });
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const [turmas, setTurmas] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<Array<{ 
+    _id: string; 
+    value: number; 
+    createdAt: string;
+    alunoId?: { name: string }; 
+    disciplinaId?: { name: string }; 
+  }>>([]);
+  const [turmas, setTurmas] = useState<Array<{
+    _id: string;
+    name: string;
+    isActive: boolean;
+    periodo: string;
+    year: number;
+  }>>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

@@ -86,8 +86,9 @@ export default function NotasPage() {
       const { data } = await api.post('/notas/bulk', payload);
       alert(`Lançamento realizado com sucesso: ${data.data?.insertedCount || payload.length} notas processadas.`);
       setGrades({}); // limpa formulário
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Erro no envio das notas.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro no envio das notas.';
+      alert(errorMessage);
     } finally {
       setSaving(false);
     }

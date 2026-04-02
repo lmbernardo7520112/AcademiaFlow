@@ -55,7 +55,7 @@ export default function TurmasPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
-    } catch (error) {
+    } catch {
       alert('Erro ao exportar relatório. Verifique se existem notas cadastradas.');
     }
   };

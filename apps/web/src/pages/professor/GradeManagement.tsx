@@ -62,8 +62,8 @@ const GradeManagement: React.FC = () => {
       if (data.success) {
         setBoletins(data.data);
       }
-    } catch (error: any) {
-      console.error('Erro ao buscar boletim:', error.message);
+    } catch (error: unknown) {
+      console.error('Erro ao buscar boletim:', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -105,7 +105,7 @@ const GradeManagement: React.FC = () => {
       });
       await api.post('/notas/bulk', payload);
       alert('Notas salvas com sucesso!');
-    } catch (error) {
+    } catch {
       alert('Erro ao salvar notas.');
     } finally {
       setSaving(false);
@@ -125,7 +125,7 @@ const GradeManagement: React.FC = () => {
         setAiContent(data.data.content);
         setShowAiModal(true);
       }
-    } catch (error) {
+    } catch {
       alert('Erro ao processar análise da IA.');
     } finally {
       setAiLoading(false);
@@ -145,7 +145,7 @@ const GradeManagement: React.FC = () => {
         setAiContent(data.data.exercises || data.data.message);
         setShowAiModal(true);
       }
-    } catch (error) {
+    } catch {
       alert('Erro ao gerar exercícios de recuperação.');
     } finally {
       setAiLoading(false);
@@ -215,8 +215,8 @@ const GradeManagement: React.FC = () => {
                   {[1,2,3,4].map(num => (
                     <td key={num}>
                       <input type="number" step="0.1" min="0" max="10" 
-                        value={(b.notas as any)[`bimestre${num}`] ?? ''} 
-                        onChange={e => handleGradeChange(b.alunoId, `bimestre${num}` as any, e.target.value)} 
+                        value={(b.notas as Record<string, number | null | undefined>)[`bimestre${num}`] ?? ''} 
+                        onChange={e => handleGradeChange(b.alunoId, `bimestre${num}` as keyof BoletimEntry['notas'], e.target.value)} 
                       />
                     </td>
                   ))}

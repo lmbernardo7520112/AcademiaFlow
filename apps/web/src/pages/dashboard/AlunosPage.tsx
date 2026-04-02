@@ -50,8 +50,8 @@ export default function AlunosPage() {
              setTurmaId(turmasRes.data.data[0]._id);
          }
       }
-    } catch (error) {
-      console.error('Erro ao buscar dados', error);
+    } catch {
+      console.error('Erro ao buscar dados');
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ export default function AlunosPage() {
     }
   };
 
-  const handleEdit = (aluno: any) => {
+  const handleEdit = (aluno: Aluno) => {
     setEditingId(aluno._id);
     setName(aluno.name);
     setEmail(aluno.email || '');

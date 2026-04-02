@@ -73,8 +73,9 @@ export default function ProfessorAIPage() {
       if (data.success) {
         setActivity(data.data);
       }
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Erro ao comunicar com o motor Gemini.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao comunicar com o motor Gemini.';
+      alert(errorMessage);
     } finally {
       setGenerating(false);
     }
@@ -82,7 +83,7 @@ export default function ProfessorAIPage() {
 
   // Convert notas into Recharts format (aggregate average per bimester, or pick one subject for simplicity)
   // Here we'll just plot a flat timeline of grades
-  const chartData = notas.map(n => ({
+  const chartData = notas.map((n: Nota) => ({
     name: `${n.bimester}º Bim`,
     Nota: n.value,
     Disciplina: n.disciplinaId?.name || 'Geral'
@@ -179,7 +180,7 @@ export default function ProfessorAIPage() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-            {activity.questoes.map((q: any, i: number) => (
+            {activity.questoes.map((q, i) => (
               <div key={i} style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <h4 style={{ margin: '0 0 1rem 0', color: 'var(--color-primary)' }}>{q.titulo}</h4>
                 <p style={{ marginBottom: '1rem', fontSize: '0.95rem' }}>{q.enunciado}</p>

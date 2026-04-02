@@ -24,8 +24,15 @@ interface DashboardKPIs {
   totalDisciplinas: number;
 }
 
+interface RecentActivity {
+  _id: string;
+  value: number;
+  alunoId?: { name: string };
+  disciplinaId?: { name: string };
+}
+
 const SecretariaDashboard: React.FC = () => {
-  const [metrics, setMetrics] = useState<{ kpis: DashboardKPIs, recentActivity: any[] } | null>(null);
+  const [metrics, setMetrics] = useState<{ kpis: DashboardKPIs, recentActivity: RecentActivity[] } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

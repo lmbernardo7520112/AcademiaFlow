@@ -2,6 +2,11 @@ import mongoose, { Schema } from 'mongoose';
 
 const alunoSchema = new Schema(
   {
+    tenantId: {
+      type: String,
+      required: true,
+      index: true,
+    },
     name: {
       type: String,
       required: true,

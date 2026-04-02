@@ -4,13 +4,16 @@ import { DisciplinaModel } from '../../models/Disciplina.js';
 import { NotaModel } from '../../models/Nota.js';
 
 export class ReportsService {
-  async getDashboardMetrics() {
-    const totalAlunos = await AlunoModel.countDocuments({ isActive: true });
-    const totalTurmas = await TurmaModel.countDocuments({ isActive: true });
-    const totalDisciplinas = await DisciplinaModel.countDocuments({ isActive: true });
+  async getDashboardMetrics(tenantId: string) {
+    const totalAlunos = await AlunoModel.countDocuments({ tenantId, isActive: true });
+    const totalTurmas = await TurmaModel.countDocuments({ tenantId, isActive: true });
+    const totalDisciplinas = await DisciplinaModel.countDocuments({ tenantId, isActive: true });
 
     // Calculate system average grade
     const avgScoreAggregation = await NotaModel.aggregate([
+      {
+        $match: { tenantId }
+      },
       {
         $group: {
           _id: null,
@@ -21,7 +24,7 @@ export class ReportsService {
     const overallAverage = avgScoreAggregation.length > 0 ? parseFloat(avgScoreAggregation[0].avgValue.toFixed(2)) : null;
 
     // Get 5 recent grades logged
-    const recentGrades = await NotaModel.find()
+    const recentGrades = await NotaModel.find({ tenantId })
       .populate('alunoId', 'name matricula')
       .populate('disciplinaId', 'name')
       .sort({ createdAt: -1 })

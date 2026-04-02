@@ -6,6 +6,11 @@ import { ROLES } from '@academiaflow/shared';
 
 const userSchema = new Schema(
   {
+    tenantId: {
+      type: String,
+      required: true,
+      index: true,
+    },
     name: {
       type: String,
       required: true,

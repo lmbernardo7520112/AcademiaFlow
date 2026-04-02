@@ -23,8 +23,9 @@ export const notasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
+        const tenantId = request.user.tenantId;
         const payload = request.body as import('@academiaflow/shared').CreateNotaPayload;
-        const result = await notasService.create(payload);
+        const result = await notasService.create(tenantId, payload);
         reply.code(201).send({ success: true, data: result });
       } catch (error: Error | unknown) {
         reply.code(400).send({
@@ -42,8 +43,9 @@ export const notasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
+        const tenantId = request.user.tenantId;
         const payload = request.body as import('@academiaflow/shared').CreateBulkNotasPayload;
-        const result = await notasService.bulkCreate(payload);
+        const result = await notasService.bulkCreate(tenantId, payload);
         // Returns 201 if fully successful, or 207 Multi-Status if partial
         const statusCode = result.errorCount === 0 ? 201 : 207;
         reply.code(statusCode).send({ success: true, ...result });
@@ -63,8 +65,9 @@ export const notasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const tenantId = request.user.tenantId;
       const filters = request.query as z.infer<typeof notasFilterSchema>;
-      const results = await notasService.list(filters);
+      const results = await notasService.list(tenantId, filters);
       reply.send({ success: true, data: results });
     } catch {
       reply.code(500).send({ success: false, message: 'Erro ao buscar notas' });
@@ -73,8 +76,9 @@ export const notasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
 
   fastify.get('/:id', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const tenantId = request.user.tenantId;
       const { id } = request.params as { id: string };
-      const result = await notasService.getById(id);
+      const result = await notasService.getById(tenantId, id);
       reply.send({ success: true, data: result });
     } catch (error: Error | unknown) {
       reply.code(404).send({
@@ -91,9 +95,10 @@ export const notasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
+        const tenantId = request.user.tenantId;
         const { id } = request.params as { id: string };
         const payload = request.body as import('@academiaflow/shared').UpdateNotaPayload;
-        const result = await notasService.update(id, payload);
+        const result = await notasService.update(tenantId, id, payload);
         reply.send({ success: true, data: result });
       } catch (error: Error | unknown) {
         reply.code(400).send({
@@ -106,8 +111,9 @@ export const notasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
 
   fastify.delete('/:id', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const tenantId = request.user.tenantId;
       const { id } = request.params as { id: string };
-      const result = await notasService.delete(id);
+      const result = await notasService.delete(tenantId, id);
       reply.send(result);
     } catch (error: Error | unknown) {
       reply.code(400).send({

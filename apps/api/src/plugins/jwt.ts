@@ -3,9 +3,23 @@ import fastifyJwt from '@fastify/jwt';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import { env } from '../config/env.js';
 
+import '@fastify/jwt';
+
+declare module '@fastify/jwt' {
+  interface FastifyJWT {
+    payload: { id: string; role: string; tenantId: string };
+    user: {
+      id: string;
+      role: string;
+      tenantId: string;
+    };
+  }
+}
+
 declare module 'fastify' {
   interface FastifyInstance {
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    authorize: (roles: string[]) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
 
@@ -23,5 +37,16 @@ export default fp(async (fastify) => {
         message: 'Não autorizado',
       });
     }
+  });
+
+  fastify.decorate('authorize', (roles: string[]) => {
+    return async (request: FastifyRequest, reply: FastifyReply) => {
+      if (!request.user || !roles.includes(request.user.role)) {
+        reply.code(403).send({
+          success: false,
+          message: 'Acesso negado: privilégios insuficientes para realizar esta ação',
+        });
+      }
+    };
   });
 });

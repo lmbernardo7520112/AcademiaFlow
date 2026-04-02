@@ -44,7 +44,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
         const user = await authService.login(payload);
         
         const token = await reply.jwtSign(
-          { id: user._id, role: user.role },
+          { id: String(user._id), role: user.role, tenantId: String(user.tenantId) },
           { expiresIn: env.JWT_EXPIRES_IN }
         );
 

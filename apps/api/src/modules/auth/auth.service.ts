@@ -2,6 +2,8 @@ import { UserModel } from '../../models/User.js';
 import argon2 from 'argon2';
 import type { CreateUserPayload, LoginPayload } from '@academiaflow/shared';
 
+import mongoose from 'mongoose';
+
 export class AuthService {
   async register(data: CreateUserPayload) {
     const existing = await UserModel.findOne({ email: data.email });
@@ -10,10 +12,12 @@ export class AuthService {
     }
 
     const hashedPassword = await argon2.hash(data.password);
+    const tenantId = new mongoose.Types.ObjectId().toHexString();
     
     const user = await UserModel.create({
       ...data,
       password: hashedPassword,
+      tenantId,
     });
 
     const userObj = user.toObject();

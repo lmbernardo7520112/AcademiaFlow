@@ -2,6 +2,11 @@ import mongoose, { Schema } from 'mongoose';
 
 const notaSchema = new Schema(
   {
+    tenantId: {
+      type: String,
+      required: true,
+      index: true,
+    },
     alunoId: {
       type: Schema.Types.ObjectId,
       ref: 'Aluno',

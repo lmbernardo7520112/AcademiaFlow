@@ -9,12 +9,14 @@ export const disciplinasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyI
   fastify.post(
     '/',
     {
+      preHandler: [fastify.authorize(['admin', 'secretaria'])],
       schema: { body: createDisciplinaSchema },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
+        const tenantId = request.user.tenantId;
         const payload = request.body as import('@academiaflow/shared').CreateDisciplinaPayload;
-        const result = await disciplinasService.create(payload);
+        const result = await disciplinasService.create(tenantId, payload);
         reply.code(201).send({ success: true, data: result });
       } catch (error: Error | unknown) {
         reply.code(400).send({
@@ -25,9 +27,10 @@ export const disciplinasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyI
     }
   );
 
-  fastify.get('/', async (_request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const results = await disciplinasService.list();
+      const tenantId = request.user.tenantId;
+      const results = await disciplinasService.list(tenantId);
       reply.send({ success: true, data: results });
     } catch {
       reply.code(500).send({ success: false, message: 'Erro ao buscar disciplinas' });
@@ -36,8 +39,9 @@ export const disciplinasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyI
 
   fastify.get('/:id', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const tenantId = request.user.tenantId;
       const { id } = request.params as { id: string };
-      const result = await disciplinasService.getById(id);
+      const result = await disciplinasService.getById(tenantId, id);
       reply.send({ success: true, data: result });
     } catch (error: Error | unknown) {
       reply.code(404).send({
@@ -54,9 +58,10 @@ export const disciplinasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyI
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
+        const tenantId = request.user.tenantId;
         const { id } = request.params as { id: string };
         const payload = request.body as import('@academiaflow/shared').UpdateDisciplinaPayload;
-        const result = await disciplinasService.update(id, payload);
+        const result = await disciplinasService.update(tenantId, id, payload);
         reply.send({ success: true, data: result });
       } catch (error: Error | unknown) {
         reply.code(400).send({
@@ -67,10 +72,14 @@ export const disciplinasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyI
     }
   );
 
-  fastify.delete('/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.delete(
+    '/:id',
+    { preHandler: [fastify.authorize(['admin', 'secretaria'])] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      const tenantId = request.user.tenantId;
       const { id } = request.params as { id: string };
-      const result = await disciplinasService.softDelete(id);
+      const result = await disciplinasService.softDelete(tenantId, id);
       reply.send(result);
     } catch (error: Error | unknown) {
       reply.code(400).send({

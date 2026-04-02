@@ -10,6 +10,7 @@ import { alunosRoutes } from './modules/alunos/alunos.routes.js';
 import { disciplinasRoutes } from './modules/disciplinas/disciplinas.routes.js';
 import { notasRoutes } from './modules/notas/notas.routes.js';
 import { reportsRoutes } from './modules/reports/reports.routes.js';
+import { aiRoutes } from './modules/ai/ai.routes.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -45,6 +46,7 @@ export async function buildApp() {
   await app.register(disciplinasRoutes, { prefix: '/api/disciplinas' });
   await app.register(notasRoutes, { prefix: '/api/notas' });
   await app.register(reportsRoutes, { prefix: '/api/reports' });
+  await app.register(aiRoutes, { prefix: '/api/ai' });
 
   // Basic health checks
   app.get('/api/ping', async () => {

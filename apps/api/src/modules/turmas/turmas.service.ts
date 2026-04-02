@@ -2,28 +2,28 @@ import { TurmaModel } from '../../models/Turma.js';
 import type { CreateTurmaPayload, UpdateTurmaPayload } from '@academiaflow/shared';
 
 export class TurmasService {
-  async create(data: CreateTurmaPayload) {
-    const activeExists = await TurmaModel.findOne({ name: data.name, year: data.year, isActive: true });
+  async create(tenantId: string, data: CreateTurmaPayload) {
+    const activeExists = await TurmaModel.findOne({ tenantId, name: data.name, year: data.year, isActive: true });
     if (activeExists) {
       throw new Error('Já existe uma turma ativa com este nome e ano.');
     }
-    const turma = await TurmaModel.create(data);
+    const turma = await TurmaModel.create({ ...data, tenantId });
     return turma;
   }
 
-  async list() {
-    return TurmaModel.find({ isActive: true }).sort({ year: -1, name: 1 });
+  async list(tenantId: string) {
+    return TurmaModel.find({ tenantId, isActive: true }).sort({ year: -1, name: 1 });
   }
 
-  async getById(id: string) {
-    const turma = await TurmaModel.findOne({ _id: id, isActive: true });
+  async getById(tenantId: string, id: string) {
+    const turma = await TurmaModel.findOne({ _id: id, tenantId, isActive: true });
     if (!turma) throw new Error('Turma não encontrada ou inativa');
     return turma;
   }
 
-  async update(id: string, data: UpdateTurmaPayload) {
+  async update(tenantId: string, id: string, data: UpdateTurmaPayload) {
     const turma = await TurmaModel.findOneAndUpdate(
-      { _id: id, isActive: true },
+      { _id: id, tenantId, isActive: true },
       data,
       { new: true }
     );
@@ -31,9 +31,9 @@ export class TurmasService {
     return turma;
   }
 
-  async softDelete(id: string) {
+  async softDelete(tenantId: string, id: string) {
     const turma = await TurmaModel.findOneAndUpdate(
-      { _id: id, isActive: true },
+      { _id: id, tenantId, isActive: true },
       { isActive: false },
       { new: true }
     );

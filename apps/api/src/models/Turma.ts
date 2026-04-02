@@ -3,6 +3,11 @@ import { TURMA_PERIODOS } from '@academiaflow/shared';
 
 const turmaSchema = new Schema(
   {
+    tenantId: {
+      type: String,
+      required: true,
+      index: true,
+    },
     name: {
       type: String,
       required: true,

@@ -2,29 +2,30 @@ import { DisciplinaModel } from '../../models/Disciplina.js';
 import type { CreateDisciplinaPayload, UpdateDisciplinaPayload } from '@academiaflow/shared';
 
 export class DisciplinasService {
-  async create(data: CreateDisciplinaPayload) {
-    const existing = await DisciplinaModel.findOne({ name: data.name, isActive: true });
+  async create(tenantId: string, data: CreateDisciplinaPayload) {
+    const existing = await DisciplinaModel.findOne({ tenantId, name: data.name, isActive: true });
     if (existing) {
-      throw new Error('Já existe uma disciplina ativa com este nome');
+      throw new Error('Já existe uma disciplina ativa com este nome neste ambiente');
     }
 
-    const disciplina = await DisciplinaModel.create(data);
+    const disciplina = await DisciplinaModel.create({ ...data, tenantId });
     return disciplina;
   }
 
-  async list() {
-    return DisciplinaModel.find({ isActive: true }).sort({ name: 1 });
+  async list(tenantId: string) {
+    return DisciplinaModel.find({ tenantId, isActive: true }).sort({ name: 1 });
   }
 
-  async getById(id: string) {
-    const disciplina = await DisciplinaModel.findOne({ _id: id, isActive: true });
+  async getById(tenantId: string, id: string) {
+    const disciplina = await DisciplinaModel.findOne({ _id: id, tenantId, isActive: true });
     if (!disciplina) throw new Error('Disciplina não encontrada ou inativa');
     return disciplina;
   }
 
-  async update(id: string, data: UpdateDisciplinaPayload) {
+  async update(tenantId: string, id: string, data: UpdateDisciplinaPayload) {
     if (data.name) {
       const duplicate = await DisciplinaModel.findOne({ 
+        tenantId,
         name: data.name, 
         _id: { $ne: id },
         isActive: true 
@@ -33,7 +34,7 @@ export class DisciplinasService {
     }
 
     const disciplina = await DisciplinaModel.findOneAndUpdate(
-      { _id: id, isActive: true },
+      { _id: id, tenantId, isActive: true },
       data,
       { new: true }
     );
@@ -41,9 +42,9 @@ export class DisciplinasService {
     return disciplina;
   }
 
-  async softDelete(id: string) {
+  async softDelete(tenantId: string, id: string) {
     const disciplina = await DisciplinaModel.findOneAndUpdate(
-      { _id: id, isActive: true },
+      { _id: id, tenantId, isActive: true },
       { isActive: false },
       { new: true }
     );

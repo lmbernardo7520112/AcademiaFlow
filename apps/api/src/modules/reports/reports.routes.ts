@@ -7,9 +7,10 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
 
   fastify.get(
     '/dashboard',
-    async (_request: FastifyRequest, reply: FastifyReply) => {
+    async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const metrics = await reportsService.getDashboardMetrics();
+        const tenantId = request.user.tenantId;
+        const metrics = await reportsService.getDashboardMetrics(tenantId);
         reply.send({ success: true, data: metrics });
       } catch (error: Error | unknown) {
         reply.code(500).send({

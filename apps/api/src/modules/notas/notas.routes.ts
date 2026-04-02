@@ -122,4 +122,24 @@ export const notasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
       });
     }
   });
+
+  fastify.get(
+    '/boletim/:turmaId/:disciplinaId',
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const tenantId = request.user.tenantId;
+        const { turmaId, disciplinaId } = request.params as { turmaId: string, disciplinaId: string };
+        const { year } = request.query as { year?: string };
+        const currentYear = year ? Number(year) : new Date().getFullYear();
+        
+        const result = await notasService.getBoletimTurma(tenantId, turmaId, disciplinaId, currentYear);
+        reply.send({ success: true, data: result });
+      } catch (error: Error | unknown) {
+        reply.code(400).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Erro ao gerar boletim consolidado',
+        });
+      }
+    }
+  );
 };

@@ -12,8 +12,9 @@ import RoleRedirect from './components/auth/RoleRedirect';
 import TurmasPage from './pages/dashboard/TurmasPage';
 import AlunosPage from './pages/dashboard/AlunosPage';
 import DisciplinasPage from './pages/dashboard/DisciplinasPage';
-import NotasPage from './pages/dashboard/NotasPage';
-import ProfessorAI from './pages/dashboard/ProfessorAI';
+import ProfessorDashboard from './pages/professor/ProfessorDashboard';
+import GradeManagement from './pages/professor/GradeManagement';
+import ProfessorAI from './pages/professor/ProfessorAI';
 import DashboardLayout from './components/layout/DashboardLayout';
 
 function App() {
@@ -30,8 +31,8 @@ function App() {
           {/* Jornada do Professor */}
           <Route element={<ProtectedRoute allowedRoles={['professor']} />}>
             <Route element={<DashboardLayout />}>
-              <Route path="/professor" element={<Navigate to="/professor/ai" replace />} />
-              <Route path="/professor/notas" element={<NotasPage />} />
+              <Route path="/professor" element={<ProfessorDashboard />} />
+              <Route path="/professor/notas/:turmaId/:disciplinaId" element={<GradeManagement />} />
               <Route path="/professor/ai" element={<ProfessorAI />} />
             </Route>
           </Route>

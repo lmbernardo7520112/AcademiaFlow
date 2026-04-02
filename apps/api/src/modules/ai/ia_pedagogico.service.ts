@@ -18,8 +18,8 @@ export class IaPedagogicoService {
     const notas = await NotaModel.find({ tenantId, disciplinaId, bimester, year }).populate('alunoId');
     
     // 2. Prepare Context for IA
-    const studentGrades = notas.map(n => ({
-      name: (n.alunoId as any)?.name || 'Estudante',
+    const studentGrades = (notas as unknown as Array<{ alunoId?: { name: string }, value: number }>).map(n => ({
+      name: n.alunoId?.name || 'Estudante',
       value: n.value
     }));
 
@@ -92,14 +92,14 @@ export class IaPedagogicoService {
     if (rawResponse.includes('```json')) {
       const parts = rawResponse.split('```json');
       if (parts[1]) {
-        jsonStr = parts[1].split('```')[0];
+        jsonStr = parts[1].split('```')[0] || '';
       }
     }
     
     let exercises = [];
     try {
       exercises = JSON.parse(jsonStr);
-    } catch (e) {
+    } catch {
       throw new Error('A IA não retornou um formato de exercícios válido. Tente novamente.');
     }
 
@@ -107,7 +107,7 @@ export class IaPedagogicoService {
     const record = await ValidacaoPedagogicaModel.create({
       tenantId,
       professorId: disciplina.professorId,
-      turmaId: (disciplina.turmaId as any)?._id || disciplina.turmaId,
+      turmaId: (disciplina.turmaId as unknown as { _id?: string })._id || disciplina.turmaId,
       disciplinaId,
       bimester,
       year,

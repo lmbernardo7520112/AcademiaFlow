@@ -7,7 +7,7 @@ export class MockLLMProvider implements ILLMProvider {
   async generateStructuredData<T>(prompt: string, _schema: AnyZodObject): Promise<T> {
     console.log('[MockLLM] Generating structured data for:', prompt);
     // Mock response following the schema roughly
-    const mockData: any = {
+    const mockData = {
       tituloDaAtividade: 'Atividade Mock',
       resumoPedagogico: 'Resumo de teste',
       pontosDeAtencao: ['Ponto A', 'Ponto B'],

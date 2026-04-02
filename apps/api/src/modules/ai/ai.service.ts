@@ -21,7 +21,11 @@ export class AIEngineService {
       .sort({ year: -1, bimester: -1 })
       .limit(10);
 
-    const historicoNotas = notasBD.map((nota: any) => ({
+    const historicoNotas = (notasBD as unknown as Array<{ 
+      disciplinaId?: { name: string }; 
+      bimester: number; 
+      value: number; 
+    }>).map((nota) => ({
       disciplina: nota.disciplinaId?.name || 'Desconhecida',
       bimester: nota.bimester,
       value: nota.value,

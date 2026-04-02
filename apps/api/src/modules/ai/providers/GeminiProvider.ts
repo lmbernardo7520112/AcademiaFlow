@@ -69,10 +69,10 @@ export class GeminiProvider implements ILLMProvider {
     }
 
     // O JSON.parse transforma a string em objeto e o zodSchema valida imediatamente!
-    let parsed: any;
+    let parsed: unknown;
     try {
         parsed = JSON.parse(textPayload);
-    } catch (e) {
+    } catch {
         throw new Error('A API do GenAI não retornou um JSON válido que possa sofre parse.');
     }
     

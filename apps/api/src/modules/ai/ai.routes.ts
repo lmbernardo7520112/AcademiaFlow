@@ -57,8 +57,8 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
         const { bimester, year, disciplinaId } = request.body as { bimester: number; year: number; disciplinaId: string };
         const analysis = await iaPedagogicoService.generatePerformanceAnalysis(tenantId, bimester, year, disciplinaId);
         reply.send({ success: true, data: analysis });
-      } catch (error: any) {
-        reply.code(500).send({ success: false, message: error.message });
+      } catch (error: unknown) {
+        reply.code(500).send({ success: false, message: error instanceof Error ? error.message : 'Erro interno na análise IA' });
       }
     }
   );
@@ -81,8 +81,8 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
         const { bimester, year, disciplinaId } = request.body as { bimester: number; year: number; disciplinaId: string };
         const result = await iaPedagogicoService.generateRecoveryExercises(tenantId, bimester, year, disciplinaId);
         reply.send({ success: true, data: result });
-      } catch (error: any) {
-        reply.code(500).send({ success: false, message: error.message });
+      } catch (error: unknown) {
+        reply.code(500).send({ success: false, message: error instanceof Error ? error.message : 'Erro interno na geração IA' });
       }
     }
   );

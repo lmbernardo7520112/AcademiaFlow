@@ -79,4 +79,21 @@ export class GeminiProvider implements ILLMProvider {
     const validatedData = schema.parse(parsed);
     return validatedData as T;
   }
+
+  async generateText(prompt: string): Promise<string> {
+    const response = await this.ai.models.generateContent({
+      model: this.MODEL_NAME,
+      contents: prompt,
+      config: {
+        temperature: 0.7, // Higher temperature for more creative/analytical output
+      },
+    });
+
+    const textPayload = response.text;
+    if (!textPayload) {
+      throw new Error('A API remota (Google Gemini) retornou uma resposta vazia.');
+    }
+
+    return textPayload;
+  }
 }

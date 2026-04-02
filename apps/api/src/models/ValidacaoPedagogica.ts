@@ -1,15 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
 
-const feedbackEntrySchema = new Schema(
-  {
-    atividadeId: { type: Schema.Types.ObjectId, ref: 'AtividadeGerada', required: true },
-    comentario: { type: String, required: true },
-    qualidadeIA: { type: Number, min: 0, max: 10, required: true },
-    data: { type: Date, default: Date.now },
-  },
-  { _id: false }
-);
-
 const validacaoPedagogicaSchema = new Schema(
   {
     tenantId: {
@@ -22,29 +12,46 @@ const validacaoPedagogicaSchema = new Schema(
       ref: 'User',
       required: true,
     },
+    turmaId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Turma',
+      required: true,
+    },
     disciplinaId: {
       type: Schema.Types.ObjectId,
       ref: 'Disciplina',
       required: true,
     },
-    atividadesValidadas: {
+    bimester: {
       type: Number,
-      default: 0,
-      min: 0,
+      required: true,
     },
-    feedbacks: {
-      type: [feedbackEntrySchema],
-      default: [],
+    year: {
+      type: Number,
+      required: true,
     },
-    ultimaValidacao: {
-      type: Date,
+    type: {
+      type: String,
+      enum: ['ANALYSIS', 'EXERCISES'],
+      required: true,
     },
+    content: {
+      type: String, // Texto formatado da análise
+    },
+    exercises: [{
+      question: String,
+      options: [String],
+      correctAnswer: String,
+      explanation: String
+    }],
+    targetStudents: [{
+      type: Schema.Types.ObjectId,
+      ref: 'Aluno'
+    }]
   },
   {
     timestamps: true,
   }
 );
-
-validacaoPedagogicaSchema.index({ tenantId: 1, professorId: 1, disciplinaId: 1 }, { unique: true });
 
 export const ValidacaoPedagogicaModel = mongoose.model('ValidacaoPedagogica', validacaoPedagogicaSchema);

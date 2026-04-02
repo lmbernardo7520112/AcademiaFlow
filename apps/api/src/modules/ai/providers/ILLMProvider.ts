@@ -12,4 +12,10 @@ export interface ILLMProvider {
    * @param schema The Zod Schema that must be enforced as JSON
    */
   generateStructuredData<T>(prompt: string, schema: AnyZodObject): Promise<T>;
+
+  /**
+   * Generates a simple text response from the LLM for chat or analysis
+   * @param prompt The prompt to be sent
+   */
+  generateText(prompt: string): Promise<string>;
 }

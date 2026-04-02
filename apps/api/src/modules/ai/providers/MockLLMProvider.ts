@@ -4,21 +4,27 @@ import type { ILLMProvider } from './ILLMProvider.js';
 export class MockLLMProvider implements ILLMProvider {
   readonly providerName = 'mock';
 
-  async generateStructuredData<T>(_prompt: string, _schema: AnyZodObject): Promise<T> {
-    // Retorna um payload estático assinalando perfeitamente a AtividadeGeradaSchema
-    // Protegendo o sistema contra gastos de tokens no CI/CD e nos testes TDD.
-    return {
-      tituloDaAtividade: '[TESTE Mock] Recuperação Direcionada',
-      resumoPedagogico: 'Este é um teste unitário de pipeline B2B. Nenhuma API externa foi chamada.',
-      pontosDeAtencao: ['Foco 1', 'Foco 2 simulado'],
+  async generateStructuredData<T>(prompt: string, _schema: AnyZodObject): Promise<T> {
+    console.log('[MockLLM] Generating structured data for:', prompt);
+    // Mock response following the schema roughly
+    const mockData: any = {
+      tituloDaAtividade: 'Atividade Mock',
+      resumoPedagogico: 'Resumo de teste',
+      pontosDeAtencao: ['Ponto A', 'Ponto B'],
       questoes: [
         {
-          titulo: 'Questão Mock 1',
-          enunciado: 'Quanto é 2 + 2 num ambiente de testes?',
-          alternativas: ['1', '2', '3', '4'],
-          correta: 3,
+          titulo: 'Questao 1',
+          enunciado: 'Enunciado de teste',
+          alternativas: ['A', 'B', 'C', 'D'],
+          correta: 0
         }
       ]
-    } as unknown as T;
+    };
+    return mockData as T;
+  }
+
+  async generateText(prompt: string): Promise<string> {
+    console.log('[MockLLM] Generating text for:', prompt);
+    return 'Esta é uma análise pedagógica gerada pelo MockLLM para fins de teste.';
   }
 }

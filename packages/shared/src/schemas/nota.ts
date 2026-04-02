@@ -5,10 +5,12 @@ import {
   bimesterSchema,
   gradeValueSchema,
   timestampFieldsSchema,
+  tenantIdSchema,
 } from './primitives.js';
 
 export const notaSchema = z.object({
   id: objectIdSchema,
+  tenantId: tenantIdSchema,
   alunoId: objectIdSchema,
   disciplinaId: objectIdSchema,
   turmaId: objectIdSchema,
@@ -24,6 +26,7 @@ export const createNotaSchema = notaSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  tenantId: true,
 });
 
 export type CreateNotaPayload = z.infer<typeof createNotaSchema>;

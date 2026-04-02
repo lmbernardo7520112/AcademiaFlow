@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { objectIdSchema, nonEmptyStringSchema, emailSchema, timestampFieldsSchema } from './primitives.js';
+import { objectIdSchema, nonEmptyStringSchema, emailSchema, timestampFieldsSchema, tenantIdSchema } from './primitives.js';
 
 export const alunoSchema = z.object({
   id: objectIdSchema,
+  tenantId: tenantIdSchema,
   name: nonEmptyStringSchema,
   email: emailSchema.optional().nullable(),
   matricula: nonEmptyStringSchema.describe('Número de matrícula único'),
@@ -18,6 +19,7 @@ export const createAlunoSchema = alunoSchema.omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+  tenantId: true,
 });
 
 export type CreateAlunoPayload = z.infer<typeof createAlunoSchema>;

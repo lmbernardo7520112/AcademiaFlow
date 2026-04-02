@@ -5,6 +5,7 @@ describe('turmaSchema', () => {
   it('should validate a valid turma', () => {
     const validTurma = {
       id: '507f1f77bcf86cd799439011',
+      tenantId: '507f1f77bcf86cd799439012',
       name: '1º Ano B',
       year: 2025,
       periodo: 'vespertino',

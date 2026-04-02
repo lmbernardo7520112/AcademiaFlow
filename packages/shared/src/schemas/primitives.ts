@@ -10,6 +10,9 @@ export const objectIdSchema = z
   .string()
   .regex(/^[a-fA-F0-9]{24}$/, 'ID inválido: deve ser um ObjectId MongoDB válido');
 
+/** Tenant ID for B2B Isolation */
+export const tenantIdSchema = objectIdSchema.describe('Identificador do Cliente/Escola (B2B)');
+
 /** Email with normalization */
 export const emailSchema = z
   .string()

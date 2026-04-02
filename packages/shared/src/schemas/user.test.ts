@@ -6,6 +6,7 @@ describe('userSchema', () => {
   it('should validate a valid user object', () => {
     const validUser = {
       id: '507f1f77bcf86cd799439011',
+      tenantId: '507f1f77bcf86cd799439012',
       name: 'Leonardo Bernardo',
       email: 'leonardo@example.com',
       role: ROLES.ADMIN,

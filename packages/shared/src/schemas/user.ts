@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { objectIdSchema, emailSchema, passwordSchema, nonEmptyStringSchema, timestampFieldsSchema } from './primitives.js';
+import { objectIdSchema, emailSchema, passwordSchema, nonEmptyStringSchema, timestampFieldsSchema, tenantIdSchema } from './primitives.js';
 import { ROLES } from './roles.js';
 
 /**
@@ -7,6 +7,7 @@ import { ROLES } from './roles.js';
  */
 export const userSchema = z.object({
   id: objectIdSchema,
+  tenantId: tenantIdSchema,
   name: nonEmptyStringSchema,
   email: emailSchema,
   role: z.enum([ROLES.PROFESSOR, ROLES.SECRETARIA, ROLES.ADMIN]),

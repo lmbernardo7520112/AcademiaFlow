@@ -50,8 +50,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (
-              <div 
-                key={item.path} 
+              <div
+                key={item.path}
                 className={`nav-item ${isActive ? 'active' : ''}`}
                 onClick={() => navigate(item.path)}
               >

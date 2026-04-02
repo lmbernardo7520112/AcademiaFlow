@@ -47,7 +47,12 @@ const GradeManagement: React.FC = () => {
   // AI States
   const [aiLoading, setAiLoading] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
-  const [aiContent, setAiContent] = useState<any>(null);
+  const [aiContent, setAiContent] = useState<string | Array<{
+    question: string;
+    options: string[];
+    correctAnswer: string;
+    explanation: string;
+  }> | null>(null);
   const [aiType, setAiType] = useState<'ANALYSIS' | 'EXERCISES' | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -253,14 +258,14 @@ const GradeManagement: React.FC = () => {
             <div className="modal-body" style={{ maxHeight: '60vh', overflowY: 'auto', padding: '1.5rem' }}>
               {aiType === 'ANALYSIS' ? (
                 <div className="markdown-content">
-                  <ReactMarkdown>{aiContent}</ReactMarkdown>
+                  {typeof aiContent === 'string' && <ReactMarkdown>{aiContent}</ReactMarkdown>}
                 </div>
               ) : (
                 <div className="exercises-list">
                   {typeof aiContent === 'string' ? (
                     <div className="alert-success">{aiContent}</div>
                   ) : (
-                    aiContent.map((ex: any, idx: number) => (
+                    aiContent && aiContent.map((ex, idx) => (
                       <div key={idx} className="exercise-card glass-panel" style={{ marginBottom: '1rem', border: '1px solid rgba(255,255,255,0.05)' }}>
                         <h4 style={{ color: '#8b5cf6' }}>Questão {idx + 1}</h4>
                         <p style={{ fontWeight: 500 }}>{ex.question}</p>

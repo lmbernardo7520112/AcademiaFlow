@@ -22,7 +22,16 @@ export default function ProfessorAIPage() {
   const [generating, setGenerating] = useState(false);
   
   // AI Response Content
-  const [activity, setActivity] = useState<any>(null);
+  const [activity, setActivity] = useState<{
+    tituloDaAtividade: string;
+    resumoPedagogico: string;
+    questoes: Array<{
+      titulo: string;
+      enunciado: string;
+      alternativas: string[];
+      correta: number;
+    }>;
+  } | null>(null);
   
   useEffect(() => {
     api.get('/turmas').then(res => {

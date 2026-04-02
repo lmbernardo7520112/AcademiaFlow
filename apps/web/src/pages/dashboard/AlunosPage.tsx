@@ -35,8 +35,6 @@ export default function AlunosPage() {
   const [turmaId, setTurmaId] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
   const [isActive, setIsActive] = useState(true);
-  const [valorMensalidade, setValorMensalidade] = useState(0);
-  const [vencimentoDia, setVencimentoDia] = useState(10);
 
   const fetchData = async () => {
     setLoading(true);
@@ -72,9 +70,7 @@ export default function AlunosPage() {
         matricula, 
         turmaId, 
         dataNascimento, 
-        isActive,
-        valorMensalidade,
-        vencimentoDia
+        isActive
       };
       
       if (editingId) {
@@ -98,8 +94,6 @@ export default function AlunosPage() {
     setTurmaId(aluno.turmaId._id ? aluno.turmaId._id : (aluno.turmaId as unknown as string));
     setDataNascimento(new Date(aluno.dataNascimento).toISOString().split('T')[0]);
     setIsActive(aluno.isActive);
-    setValorMensalidade(aluno.valorMensalidade || 0);
-    setVencimentoDia(aluno.vencimentoDia || 10);
     setIsModalOpen(true);
   };
 
@@ -111,8 +105,6 @@ export default function AlunosPage() {
     if (turmas.length > 0) setTurmaId(turmas[0]._id);
     setDataNascimento('');
     setIsActive(true);
-    setValorMensalidade(0);
-    setVencimentoDia(10);
     setIsModalOpen(true);
   };
 
@@ -122,17 +114,12 @@ export default function AlunosPage() {
     { 
       key: 'turma', 
       title: 'Turma', 
-      render: (row: any) => row.turmaId?.name || 'Desconhecida' 
-    },
-    {
-      key: 'financeiro',
-      title: 'Mensalidade',
-      render: (row: any) => `R$ ${row.valorMensalidade || 0}`
+      render: (row: Aluno) => row.turmaId?.name || 'Desconhecida' 
     },
     { 
       key: 'isActive', 
       title: 'Status', 
-      render: (row: any) => (
+      render: (row: Aluno) => (
         <span className={`status-pill ${row.isActive ? 'active' : ''}`}>
           {row.isActive ? 'Matriculado' : 'Inativo'}
         </span>
@@ -141,7 +128,7 @@ export default function AlunosPage() {
     {
       key: 'actions',
       title: 'Ações',
-      render: (row: any) => (
+      render: (row: Aluno) => (
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className="btn-outline-small" onClick={() => handleEdit(row)} title="Editar"><Edit2 size={14} /></button>
           <button className="btn-outline-small" onClick={() => alert('Para excluir/desativar acesse a edição.')} title="Excluir"><Trash2 size={14} color="hsl(345, 80%, 55%)" /></button>
@@ -203,20 +190,6 @@ export default function AlunosPage() {
             <div className="input-group">
               <label>Data de Nascimento</label>
               <input type="date" required value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} />
-            </div>
-          </div>
-
-          <div className="section-divider" style={{ margin: '1rem 0', height: '1px', background: 'rgba(255,255,255,0.05)' }}></div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <div className="input-group">
-              <label>Mensalidade (R$)</label>
-              <input type="number" step="0.01" value={valorMensalidade} onChange={(e) => setValorMensalidade(parseFloat(e.target.value))} />
-            </div>
-
-            <div className="input-group">
-              <label>Dia Vencimento</label>
-              <input type="number" min="1" max="28" value={vencimentoDia} onChange={(e) => setVencimentoDia(parseInt(e.target.value))} />
             </div>
           </div>
 

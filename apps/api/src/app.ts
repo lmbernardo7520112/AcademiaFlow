@@ -31,7 +31,7 @@ export async function buildApp() {
   await app.register(cors, {
     origin: process.env.NODE_ENV === 'production'
       ? ['https://academiaflow.vercel.app']
-      : ['http://localhost:5173'],
+      : [/^http:\/\/localhost:\d+$/],
     credentials: true,
   });
 

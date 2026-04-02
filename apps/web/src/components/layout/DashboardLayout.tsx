@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LayoutDashboard, Users, BookOpen, UserSquare2, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, UserSquare2, LogOut, FileText, Cpu } from 'lucide-react';
 import '../../styles/dashboard.css';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -17,8 +17,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const navItems = [
     { path: '/dashboard', label: 'Visão Geral', icon: LayoutDashboard },
     { path: '/dashboard/turmas', label: 'Gestão de Turmas', icon: Users },
-    { path: '/dashboard/disciplinas', label: 'Mapeamento de Disciplinas', icon: BookOpen },
-    { path: '/dashboard/alunos', label: 'Matrículas', icon: UserSquare2 },
+    { path: '/dashboard/disciplinas', label: 'Catálogo de Disciplinas', icon: BookOpen },
+    { path: '/dashboard/alunos', label: 'Matrículas de Alunos', icon: UserSquare2 },
+    { path: '/dashboard/notas', label: 'Diário de Classe (Notas)', icon: FileText },
+    { path: '/dashboard/ai', label: 'CoPilot Pedagógico', icon: Cpu },
   ];
 
   // Placeholder caso não tenha user logado ainda visualizando a pagina mock.

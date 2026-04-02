@@ -10,6 +10,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 
 import TurmasPage from './pages/dashboard/TurmasPage';
 import AlunosPage from './pages/dashboard/AlunosPage';
+import DisciplinasPage from './pages/dashboard/DisciplinasPage';
 
 function App() {
   return (
@@ -26,8 +27,8 @@ function App() {
             <Route path="/dashboard" element={<SecretariaPortal />} />
             <Route path="/dashboard/turmas" element={<TurmasPage />} />
             <Route path="/dashboard/alunos" element={<AlunosPage />} />
+            <Route path="/dashboard/disciplinas" element={<DisciplinasPage />} />
             {/* Future Routes */}
-            {/* <Route path="/dashboard/disciplinas" element={<DisciplinasPage />} /> */}
             {/* <Route path="/dashboard/notas" element={<NotasPage />} /> */}
             {/* <Route path="/dashboard/ai" element={<ProfessorAI />} /> */}
           </Route>

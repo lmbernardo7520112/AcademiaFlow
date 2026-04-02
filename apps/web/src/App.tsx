@@ -9,6 +9,7 @@ import SecretariaPortal from './pages/dashboard/SecretariaPortal';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 import TurmasPage from './pages/dashboard/TurmasPage';
+import AlunosPage from './pages/dashboard/AlunosPage';
 
 function App() {
   return (
@@ -24,9 +25,9 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<SecretariaPortal />} />
             <Route path="/dashboard/turmas" element={<TurmasPage />} />
+            <Route path="/dashboard/alunos" element={<AlunosPage />} />
             {/* Future Routes */}
             {/* <Route path="/dashboard/disciplinas" element={<DisciplinasPage />} /> */}
-            {/* <Route path="/dashboard/alunos" element={<AlunosPage />} /> */}
             {/* <Route path="/dashboard/notas" element={<NotasPage />} /> */}
             {/* <Route path="/dashboard/ai" element={<ProfessorAI />} /> */}
           </Route>

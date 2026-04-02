@@ -12,6 +12,7 @@ import TurmasPage from './pages/dashboard/TurmasPage';
 import AlunosPage from './pages/dashboard/AlunosPage';
 import DisciplinasPage from './pages/dashboard/DisciplinasPage';
 import NotasPage from './pages/dashboard/NotasPage';
+import ProfessorAI from './pages/dashboard/ProfessorAI';
 
 function App() {
   return (
@@ -30,8 +31,7 @@ function App() {
             <Route path="/dashboard/alunos" element={<AlunosPage />} />
             <Route path="/dashboard/disciplinas" element={<DisciplinasPage />} />
             <Route path="/dashboard/notas" element={<NotasPage />} />
-            {/* Future Routes */}
-            {/* <Route path="/dashboard/ai" element={<ProfessorAI />} /> */}
+            <Route path="/dashboard/ai" element={<ProfessorAI />} />
           </Route>
         </Routes>
       </BrowserRouter>

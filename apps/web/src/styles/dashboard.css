@@ -284,3 +284,98 @@
   font-size: 0.85rem;
   color: var(--txt-secondary);
 }
+
+/* MICRO-INTERAÇÕES PREMIUM (FASE 4) */
+
+.glass-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Efeito de Shimmer (Brilho que atravessa o card) */
+.glass-panel::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(255, 255, 255, 0.03),
+    transparent
+  );
+  transform: rotate(45deg);
+  transition: 0.8s;
+  pointer-events: none;
+}
+
+.glass-panel:hover::after {
+  left: 120%;
+  top: 120%;
+}
+
+.hover-lift {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Barras de Rolagem Premium */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--clr-cyan));
+}
+
+/* Animações de Entrada Suaves */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Tabela Premium Styles */
+.data-table-wrapper {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.data-table tr {
+  transition: background 0.2s ease;
+}
+
+.data-table tr:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.text-gradient {
+  background: linear-gradient(to right, #fff, hsl(var(--clr-cyan)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

@@ -122,7 +122,9 @@ async function seed() {
            dataNascimento: new Date(2005, Math.floor(Math.random() * 11), Math.floor(Math.random() * 28) + 1),
            transferido: isTransferido,
            abandono: isAbandono,
-           isActive: !(isTransferido || isAbandono)
+           isActive: !(isTransferido || isAbandono),
+           valorMensalidade: i % 3 === 0 ? 450 : 680,
+           vencimentoDia: 5 + (i % 5)
         });
         alunosList.push(aluno);
     }
@@ -137,9 +139,9 @@ async function seed() {
 
        const baseGrades = [
          [8, 7, 6, 8], // Good student
-         [4, 5, 4, null], // Bad student (needs PF)
+         [4, 5, 4, 3], // Bad student (needs PF)
          [9, 9, 8, 10], // Excellent
-         [5, 5, 5, 5] // Average barely passing (with PF)
+         [6, 5, 6, 5] // Average barely passing (with PF)
        ];
 
        const mathPattern = baseGrades[Math.floor(Math.random() * baseGrades.length)] as (number | null)[];
@@ -154,7 +156,7 @@ async function seed() {
                turmaId: aluno.turmaId,
                bimester: b + 1,
                year: new Date().getFullYear(),
-               value: val + (Math.random() * 1.5), // add random modifier
+               value: Math.min(10, val + (Math.random() * 1.5)), // add random modifier
             });
           }
        }

@@ -39,7 +39,20 @@ export class AuthService {
 
     const userObj = user.toObject();
     delete (userObj as { password?: string }).password;
+    delete (userObj as { refreshToken?: string }).refreshToken;
     return userObj;
+  }
+
+  async updateRefreshToken(userId: string, refreshToken: string) {
+    await UserModel.findByIdAndUpdate(userId, { refreshToken });
+  }
+
+  async verifyRefreshToken(userId: string, refreshToken: string) {
+    const user = await UserModel.findById(userId).select('+refreshToken');
+    if (!user || user.refreshToken !== refreshToken) {
+      throw new Error('Refresh token inválido ou expirado');
+    }
+    return user;
   }
 
   async getById(id: string) {

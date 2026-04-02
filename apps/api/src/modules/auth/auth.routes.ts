@@ -43,20 +43,62 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
         const payload = request.body as import('@academiaflow/shared').LoginPayload;
         const user = await authService.login(payload);
         
-        const token = await reply.jwtSign(
+        const token = await (reply.jwtSign(
           { id: String(user._id), role: user.role, tenantId: String(user.tenantId) },
           { expiresIn: env.JWT_EXPIRES_IN }
-        );
+        ) as unknown as Promise<string>);
+
+        const refreshToken = await (reply.jwtSign(
+          { id: String(user._id), role: user.role, tenantId: String(user.tenantId) },
+          { expiresIn: '7d' }
+        ) as unknown as Promise<string>);
+
+        await authService.updateRefreshToken(String(user._id), refreshToken);
 
         reply.send({
           success: true,
-          data: { user, token },
+          data: { user, token, refreshToken },
           message: 'Login realizado com sucesso',
         });
       } catch (error: Error | unknown) {
         reply.code(401).send({
           success: false,
           message: error instanceof Error ? error.message : 'Não autorizado',
+        });
+      }
+    }
+  );
+
+  fastify.post(
+    '/refresh',
+    async (request, reply) => {
+      try {
+        const { refreshToken } = request.body as { refreshToken: string };
+        if (!refreshToken) throw new Error('Refresh token não fornecido');
+
+        const decoded = await fastify.jwt.verify<{ id: string }>(refreshToken);
+        const user = await authService.verifyRefreshToken(decoded.id, refreshToken);
+
+        const newToken = await (reply.jwtSign(
+          { id: String(user._id), role: user.role, tenantId: String(user.tenantId) },
+          { expiresIn: env.JWT_EXPIRES_IN }
+        ) as unknown as Promise<string>);
+
+        const newRefreshToken = await (reply.jwtSign(
+          { id: String(user._id), role: user.role, tenantId: String(user.tenantId) },
+          { expiresIn: '7d' }
+        ) as unknown as Promise<string>);
+
+        await authService.updateRefreshToken(String(user._id), newRefreshToken);
+
+        reply.send({
+          success: true,
+          data: { token: newToken, refreshToken: newRefreshToken },
+        });
+      } catch (error: Error | unknown) {
+        reply.code(401).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Refresh token inválido',
         });
       }
     }

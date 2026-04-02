@@ -35,6 +35,8 @@ export default function AlunosPage() {
   const [turmaId, setTurmaId] = useState('');
   const [dataNascimento, setDataNascimento] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [valorMensalidade, setValorMensalidade] = useState(0);
+  const [vencimentoDia, setVencimentoDia] = useState(10);
 
   const fetchData = async () => {
     setLoading(true);
@@ -70,7 +72,9 @@ export default function AlunosPage() {
         matricula, 
         turmaId, 
         dataNascimento, 
-        isActive 
+        isActive,
+        valorMensalidade,
+        vencimentoDia
       };
       
       if (editingId) {
@@ -86,7 +90,7 @@ export default function AlunosPage() {
     }
   };
 
-  const handleEdit = (aluno: Aluno) => {
+  const handleEdit = (aluno: any) => {
     setEditingId(aluno._id);
     setName(aluno.name);
     setEmail(aluno.email || '');
@@ -94,6 +98,8 @@ export default function AlunosPage() {
     setTurmaId(aluno.turmaId._id ? aluno.turmaId._id : (aluno.turmaId as unknown as string));
     setDataNascimento(new Date(aluno.dataNascimento).toISOString().split('T')[0]);
     setIsActive(aluno.isActive);
+    setValorMensalidade(aluno.valorMensalidade || 0);
+    setVencimentoDia(aluno.vencimentoDia || 10);
     setIsModalOpen(true);
   };
 
@@ -105,6 +111,8 @@ export default function AlunosPage() {
     if (turmas.length > 0) setTurmaId(turmas[0]._id);
     setDataNascimento('');
     setIsActive(true);
+    setValorMensalidade(0);
+    setVencimentoDia(10);
     setIsModalOpen(true);
   };
 
@@ -114,12 +122,17 @@ export default function AlunosPage() {
     { 
       key: 'turma', 
       title: 'Turma', 
-      render: (row: Aluno) => row.turmaId?.name || 'Desconhecida' 
+      render: (row: any) => row.turmaId?.name || 'Desconhecida' 
+    },
+    {
+      key: 'financeiro',
+      title: 'Mensalidade',
+      render: (row: any) => `R$ ${row.valorMensalidade || 0}`
     },
     { 
       key: 'isActive', 
       title: 'Status', 
-      render: (row: Aluno) => (
+      render: (row: any) => (
         <span className={`status-pill ${row.isActive ? 'active' : ''}`}>
           {row.isActive ? 'Matriculado' : 'Inativo'}
         </span>
@@ -128,7 +141,7 @@ export default function AlunosPage() {
     {
       key: 'actions',
       title: 'Ações',
-      render: (row: Aluno) => (
+      render: (row: any) => (
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className="btn-outline-small" onClick={() => handleEdit(row)} title="Editar"><Edit2 size={14} /></button>
           <button className="btn-outline-small" onClick={() => alert('Para excluir/desativar acesse a edição.')} title="Excluir"><Trash2 size={14} color="hsl(345, 80%, 55%)" /></button>
@@ -145,28 +158,31 @@ export default function AlunosPage() {
       </div>
 
       <div className="dashboard-section fade-in" style={{ animationDelay: '0.1s' }}>
-        <div className="section-header">
+        <div className="section-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
           <h2>Alunos Registrados</h2>
           <button className="btn-primary flex-center gap-2" onClick={openNewForm}>
             <Plus size={16} /> Novo Aluno
           </button>
         </div>
         
-        <DataTable data={alunos} columns={columns} loading={loading} emptyText="Nenhum aluno encontrado." />
+        <div className="glass-panel" style={{ padding: 0 }}>
+          <DataTable data={alunos} columns={columns} loading={loading} emptyText="Nenhum aluno encontrado." />
+        </div>
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? 'Editar Aluno' : 'Cadastrar Aluno'}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
-          <div className="input-group">
-            <label>Matrícula</label>
-            <input required value={matricula} onChange={(e) => setMatricula(e.target.value)} placeholder="Ex: MAT-2025-001" disabled={!!editingId} />
-            {editingId && <small style={{ color: '#888' }}>A matrícula não pode ser alterada.</small>}
-          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
+            <div className="input-group">
+              <label>Matrícula</label>
+              <input required value={matricula} onChange={(e) => setMatricula(e.target.value)} placeholder="Ex: MAT-2025" disabled={!!editingId} />
+            </div>
 
-          <div className="input-group">
-            <label>Nome Completo</label>
-            <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do Aluno" />
+            <div className="input-group">
+              <label>Nome Completo</label>
+              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do Aluno" />
+            </div>
           </div>
           
           <div className="input-group">
@@ -174,18 +190,34 @@ export default function AlunosPage() {
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="aluno@escola.com" />
           </div>
 
-          <div className="input-group">
-            <label>Turma</label>
-            <select required value={turmaId} onChange={(e) => setTurmaId(e.target.value)}>
-              {turmas.map(t => (
-                <option key={t._id} value={t._id}>{t.name}</option>
-              ))}
-            </select>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="input-group">
+              <label>Turma</label>
+              <select required value={turmaId} onChange={(e) => setTurmaId(e.target.value)}>
+                {turmas.map(t => (
+                  <option key={t._id} value={t._id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="input-group">
+              <label>Data de Nascimento</label>
+              <input type="date" required value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} />
+            </div>
           </div>
 
-          <div className="input-group">
-            <label>Data de Nascimento</label>
-            <input type="date" required value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} />
+          <div className="section-divider" style={{ margin: '1rem 0', height: '1px', background: 'rgba(255,255,255,0.05)' }}></div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="input-group">
+              <label>Mensalidade (R$)</label>
+              <input type="number" step="0.01" value={valorMensalidade} onChange={(e) => setValorMensalidade(parseFloat(e.target.value))} />
+            </div>
+
+            <div className="input-group">
+              <label>Dia Vencimento</label>
+              <input type="number" min="1" max="28" value={vencimentoDia} onChange={(e) => setVencimentoDia(parseInt(e.target.value))} />
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>

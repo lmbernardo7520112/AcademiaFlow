@@ -44,6 +44,14 @@ const alunoSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    valorMensalidade: {
+      type: Number,
+      default: 0,
+    },
+    vencimentoDia: {
+      type: Number,
+      default: 10,
+    },
   },
   {
     timestamps: true,

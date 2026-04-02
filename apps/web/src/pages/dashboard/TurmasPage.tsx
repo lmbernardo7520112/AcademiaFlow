@@ -3,7 +3,7 @@ import { api } from '../../services/api';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable from '../../components/ui/DataTable';
 import Modal from '../../components/ui/Modal';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Download } from 'lucide-react';
 import '../../styles/dashboard.css';
 
 interface Turma {
@@ -41,6 +41,24 @@ export default function TurmasPage() {
   useEffect(() => {
     fetchTurmas();
   }, []);
+
+  const handleExport = async (turmaId: string, turmaName: string) => {
+    try {
+      // Usando query params baseados no backend
+      const response = await api.get(`/reports/turmas/${turmaId}/boletins/export?year=${year}`, {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Boletins_${turmaName.replace(/\s+/g, '_')}_${year}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      alert('Erro ao exportar relatório. Verifique se existem notas cadastradas.');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,6 +113,7 @@ export default function TurmasPage() {
       title: 'Ações',
       render: (row: Turma) => (
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="btn-outline-small" onClick={() => handleExport(row._id, row.name)} title="Exportar Boletins"><Download size={14} color="#10b981" /></button>
           <button className="btn-outline-small" onClick={() => handleEdit(row)} title="Editar"><Edit2 size={14} /></button>
           <button className="btn-outline-small" onClick={() => alert('Para excluir/desativar acesse a edição.')} title="Excluir"><Trash2 size={14} color="hsl(345, 80%, 55%)" /></button>
         </div>
@@ -110,14 +129,16 @@ export default function TurmasPage() {
       </div>
 
       <div className="dashboard-section fade-in" style={{ animationDelay: '0.1s' }}>
-        <div className="section-header">
+        <div className="section-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
           <h2>Suas Turmas</h2>
           <button className="btn-primary flex-center gap-2" onClick={openNewForm}>
             <Plus size={16} /> Nova Turma
           </button>
         </div>
         
-        <DataTable data={turmas} columns={columns} loading={loading} emptyText="Nenhuma turma cadastrada. Crie uma nova para começar." />
+        <div className="glass-panel" style={{ padding: 0 }}>
+          <DataTable data={turmas} columns={columns} loading={loading} emptyText="Nenhuma turma cadastrada." />
+        </div>
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? 'Editar Turma' : 'Criar Nova Turma'}>

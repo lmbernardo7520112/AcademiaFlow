@@ -4,7 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import LandingPage from './pages/marketing/LandingPage';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
-import SecretariaPortal from './pages/dashboard/SecretariaPortal';
+import SecretariaDashboard from './pages/dashboard/SecretariaDashboard';
 
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import RoleRedirect from './components/auth/RoleRedirect';
@@ -40,7 +40,7 @@ function App() {
           {/* Jornada da Secretaria/Admin */}
           <Route element={<ProtectedRoute allowedRoles={['secretaria', 'admin', 'administrador']} />}>
             <Route element={<DashboardLayout />}>
-              <Route path="/secretaria" element={<SecretariaPortal />} />
+              <Route path="/secretaria" element={<SecretariaDashboard />} />
               <Route path="/secretaria/turmas" element={<TurmasPage />} />
               <Route path="/secretaria/alunos" element={<AlunosPage />} />
               <Route path="/secretaria/disciplinas" element={<DisciplinasPage />} />

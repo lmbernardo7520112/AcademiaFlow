@@ -14,6 +14,18 @@ export class ReportsService {
     const totalTurmas = await TurmaModel.countDocuments({ tenantId, isActive: true });
     const totalDisciplinas = await DisciplinaModel.countDocuments({ tenantId, isActive: true });
 
+    // Calculate Estimated Revenue (Sum of tuition of active students)
+    const revenueAggregation = await AlunoModel.aggregate([
+      { $match: { tenantId, isActive: true } },
+      { $group: { _id: null, total: { $sum: '$valorMensalidade' } } }
+    ]);
+    const estimatedRevenue = revenueAggregation.length > 0 ? revenueAggregation[0].total : 0;
+
+    // Calculate Occupancy (Active Students / Total Capacity)
+    // For now assuming each class has avg 40 capacity if not specified
+    const totalCapacity = totalTurmas * 40; 
+    const occupancyRate = totalCapacity > 0 ? parseFloat(((ativos / totalCapacity) * 100).toFixed(1)) : 0;
+
     // Calculate system average grade
     const avgScoreAggregation = await NotaModel.aggregate([
       { $match: { tenantId } },
@@ -37,6 +49,8 @@ export class ReportsService {
         totalTurmas,
         totalDisciplinas,
         overallAverage,
+        estimatedRevenue,
+        occupancyRate,
       },
       recentActivity: recentGrades,
     };

@@ -68,7 +68,7 @@ export class IaPedagogicoService {
       return { message: 'Parabéns! Nenhum aluno com média crítica para recuperação neste bimestre.' };
     }
 
-    const studentsNames = criticalGrades.map(n => (n.alunoId as any)?.name || 'Estudante').join(', ');
+    const studentsNames = (criticalGrades as unknown as Array<{ alunoId?: { name: string } }>).map(n => n.alunoId?.name || 'Estudante').join(', ');
     const disciplina = await DisciplinaModel.findById(disciplinaId);
     if (!disciplina) throw new Error('Disciplina não encontrada');
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import DataTable from '../../components/ui/DataTable';
@@ -36,7 +36,7 @@ export default function AlunosPage() {
   const [dataNascimento, setDataNascimento] = useState('');
   const [isActive, setIsActive] = useState(true);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [alunosRes, turmasRes] = await Promise.all([
@@ -55,11 +55,11 @@ export default function AlunosPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [turmaId]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,8 +80,9 @@ export default function AlunosPage() {
       }
       setIsModalOpen(false);
       fetchData();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Erro ao salvar aluno. Verifique os dados.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao salvar aluno. Verifique os dados.';
+      alert(errorMessage);
       console.error(error);
     }
   };

@@ -98,7 +98,7 @@ const SecretariaDashboard: React.FC = () => {
                <p className="text-secondary">Nenhuma atividade recente registrada.</p>
             ) : (
                <div className="activity-list">
-                 {metrics.recentActivity.map((grade: any) => (
+                 {metrics.recentActivity.map((grade) => (
                     <div key={grade._id} className="activity-item" style={{ 
                       padding: '1rem 0', 
                       borderBottom: '1px solid rgba(255,255,255,0.05)',

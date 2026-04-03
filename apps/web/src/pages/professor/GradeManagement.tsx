@@ -92,7 +92,14 @@ const GradeManagement: React.FC = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const payload: any[] = [];
+      const payload: Array<{ 
+        alunoId: string; 
+        turmaId: string | undefined; 
+        disciplinaId: string | undefined; 
+        year: number; 
+        bimester: number; 
+        value: number 
+      }> = [];
       boletins.forEach(b => {
         Object.entries(b.notas).forEach(([key, val]) => {
           if (val !== null && val !== undefined) {

@@ -27,9 +27,10 @@ export default function Login() {
         login(data.data.user, data.data.token);
         navigate('/dashboard');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
        console.error(error);
-       setErrorMsg(error.response?.data?.message || 'Falha ao autenticar. Verifique suas credenciais.');
+       const errorMessage = error instanceof Error ? error.message : 'Falha ao autenticar. Verifique suas credenciais.';
+       setErrorMsg(errorMessage);
     } finally {
        setLoading(false);
     }

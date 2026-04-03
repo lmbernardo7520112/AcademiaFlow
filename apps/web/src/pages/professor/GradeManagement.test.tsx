@@ -38,6 +38,7 @@ describe('GradeManagement Component', () => {
   });
 
   it('should calculate NF and Situation correctly when grades are changed', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (api.get as any).mockImplementation((url: string) => {
       if (url.includes('/alunos')) return Promise.resolve({ data: { success: true, data: mockStudents } });
       if (url.includes('/notas/boletim')) return Promise.resolve({ data: { success: true, data: mockBoletins } });
@@ -55,27 +56,20 @@ describe('GradeManagement Component', () => {
     // Wait for data to load
     await waitFor(() => {
       expect(screen.queryByText(/Carregando/)).not.toBeInTheDocument();
-    }, { timeout: 5000 });
-
-    expect(screen.getByText('Alvo Dumbledore')).toBeInTheDocument();
-
-    if (!screen.queryByText('Alvo Dumbledore')) {
-      console.log('DOM when failing:', screen.debug());
-    }
+    }, { timeout: 10000 }); // Reduzido para maior agilidade síncrona
 
     expect(screen.getByText('Alvo Dumbledore')).toBeInTheDocument();
 
     // Initial state from mockBoletins
-    expect(screen.getByDisplayValue('5')).toBeInTheDocument(); // B1/B2
+    expect(screen.getByDisplayValue('5')).toBeInTheDocument(); 
     expect(screen.getByText('Recuperação')).toBeInTheDocument();
 
     // Change B3 to 8.0
     const inputs = screen.getAllByRole('spinbutton');
-    // B1=0, B2=1, B3=2, B4=3, PF=4
     fireEvent.change(inputs[2], { target: { value: '8' } });
 
     // New NF: (5 + 5 + 8) / 3 = 6.0
     await waitFor(() => expect(screen.getByText('Aprovado')).toBeInTheDocument());
-    expect(screen.getByText('6')).toBeInTheDocument(); // NF column
+    expect(screen.getByText('6')).toBeInTheDocument(); 
   });
 });

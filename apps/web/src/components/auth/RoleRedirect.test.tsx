@@ -24,6 +24,7 @@ describe('RoleRedirect Component', () => {
   };
 
   it('should redirect to /auth/login if not authenticated', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useAuth as any).mockReturnValue({
       isAuthenticated: false,
       user: null,
@@ -34,6 +35,7 @@ describe('RoleRedirect Component', () => {
   });
 
   it('should redirect to /professor if user is a professor', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useAuth as any).mockReturnValue({
       isAuthenticated: true,
       user: { role: 'professor' },
@@ -44,6 +46,7 @@ describe('RoleRedirect Component', () => {
   });
 
   it('should redirect to /secretaria if user is secretaria', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useAuth as any).mockReturnValue({
       isAuthenticated: true,
       user: { role: 'secretaria' },
@@ -54,6 +57,7 @@ describe('RoleRedirect Component', () => {
   });
 
   it('should redirect to /secretaria if user is admin', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useAuth as any).mockReturnValue({
       isAuthenticated: true,
       user: { role: 'admin' },
@@ -64,6 +68,7 @@ describe('RoleRedirect Component', () => {
   });
 
   it('should redirect to /secretaria if user is administrador', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (useAuth as any).mockReturnValue({
       isAuthenticated: true,
       user: { role: 'administrador' },

@@ -20,9 +20,10 @@ export default function Register() {
       if (data.success) {
         navigate('/auth/login', { replace: true });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
        console.error(error);
-       setErrorMsg(error.response?.data?.message || 'Falha ao processar o registro da fundação educacional.');
+       const errorMessage = error instanceof Error ? error.message : 'Falha ao processar o registro da fundação educacional.';
+       setErrorMsg(errorMessage);
     } finally {
        setLoading(false);
     }

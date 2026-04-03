@@ -43,7 +43,7 @@ export default function DataTable<T>({ data, columns, emptyText = 'Nenhum regist
               <tr key={rowIndex}>
                 {columns.map((col, colIndex) => (
                   <td key={colIndex}>
-                    {col.render ? col.render(row) : String((row as any)[col.key] || '')}
+                    {col.render ? col.render(row) : String((row as Record<string, unknown>)[col.key] || '')}
                   </td>
                 ))}
               </tr>

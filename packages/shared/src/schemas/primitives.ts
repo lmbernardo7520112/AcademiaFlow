@@ -72,3 +72,17 @@ export const timestampFieldsSchema = z.object({
   createdAt: z.coerce.date().optional(),
   updatedAt: z.coerce.date().optional(),
 });
+
+/** Generic Success Schema */
+export const genericSuccessSchema = z.object({
+  success: z.boolean(),
+  message: z.string(),
+});
+
+/** Pagination Metadata Schema */
+export const paginationMetadataSchema = z.object({
+  total: z.number().int().min(0),
+  page: z.number().int().min(1),
+  limit: z.number().int().min(1),
+  pages: z.number().int().min(0),
+});

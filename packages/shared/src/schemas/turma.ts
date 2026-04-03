@@ -28,3 +28,13 @@ export type CreateTurmaPayload = z.infer<typeof createTurmaSchema>;
 export const updateTurmaSchema = createTurmaSchema.partial();
 
 export type UpdateTurmaPayload = z.infer<typeof updateTurmaSchema>;
+
+/**
+ * Turma List Response
+ */
+export const turmaListResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.array(turmaSchema),
+});
+
+export type TurmaListResponse = z.infer<typeof turmaListResponseSchema>;

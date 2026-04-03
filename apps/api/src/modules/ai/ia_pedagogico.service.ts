@@ -6,6 +6,21 @@ import type { FilterQuery } from 'mongoose';
 import type { ILLMProvider } from './providers/ILLMProvider.js';
 import { DisciplinaModel } from '../../models/Disciplina.js';
 
+interface PopulatedAluno {
+  _id: string;
+  name: string;
+}
+
+interface PopulatedNota {
+  alunoId?: PopulatedAluno;
+  value: number;
+}
+
+interface PopulatedTurma {
+  _id: string;
+  name: string;
+}
+
 export class IaPedagogicoService {
   private _aiProvider: ILLMProvider | null = null;
 
@@ -33,7 +48,7 @@ export class IaPedagogicoService {
     const notas = await NotaModel.find({ tenantId, disciplinaId, bimester, year }).populate('alunoId');
     
     // 2. Prepare Context for IA
-    const studentGrades = (notas as unknown as Array<{ alunoId?: { name: string }, value: number }>).map(n => ({
+    const studentGrades = (notas as unknown as PopulatedNota[]).map(n => ({
       name: n.alunoId?.name || 'Estudante',
       value: n.value
     }));
@@ -83,7 +98,7 @@ export class IaPedagogicoService {
       return { message: 'Parabéns! Nenhum aluno com média crítica para recuperação neste bimestre.' };
     }
 
-    const studentsNames = (criticalGrades as unknown as Array<{ alunoId?: { name: string } }>).map(n => n.alunoId?.name || 'Estudante').join(', ');
+    const studentsNames = (criticalGrades as unknown as PopulatedNota[]).map(n => n.alunoId?.name || 'Estudante').join(', ');
     const disciplina = await DisciplinaModel.findById(disciplinaId);
     if (!disciplina) throw new Error('Disciplina não encontrada');
 
@@ -122,7 +137,7 @@ export class IaPedagogicoService {
     const record = await ValidacaoPedagogicaModel.create({
       tenantId,
       professorId: disciplina.professorId,
-      turmaId: (disciplina.turmaId as unknown as { _id?: string })._id || disciplina.turmaId,
+      turmaId: (disciplina.turmaId as unknown as PopulatedTurma)._id || disciplina.turmaId,
       disciplinaId,
       bimester,
       year,

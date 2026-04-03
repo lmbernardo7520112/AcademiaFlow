@@ -58,4 +58,24 @@ export const userResponseSchema = userSchema.omit({
 
 export type UserResponse = z.infer<typeof userResponseSchema>;
 
+/**
+ * Paginated User List Response
+ */
+export const userListResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.array(userResponseSchema),
+  total: z.number().optional(), // Metadata direto como backup
+  page: z.number().optional(),
+  limit: z.number().optional(),
+  pages: z.number().optional(),
+  pagination: z.object({
+    total: z.number(),
+    page: z.number(),
+    limit: z.number(),
+    pages: z.number(),
+  }).optional(),
+});
+
+export type UserListResponse = z.infer<typeof userListResponseSchema>;
+
 

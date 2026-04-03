@@ -43,15 +43,15 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
         const payload = request.body as import('@academiaflow/shared').LoginPayload;
         const user = await authService.login(payload);
         
-        const token = await (reply.jwtSign(
+        const token = await reply.jwtSign(
           { id: String(user._id), role: user.role, tenantId: String(user.tenantId) },
           { expiresIn: env.JWT_EXPIRES_IN }
-        ) as unknown as Promise<string>);
+        );
 
-        const refreshToken = await (reply.jwtSign(
+        const refreshToken = await reply.jwtSign(
           { id: String(user._id), role: user.role, tenantId: String(user.tenantId) },
           { expiresIn: '7d' }
-        ) as unknown as Promise<string>);
+        );
 
         await authService.updateRefreshToken(String(user._id), refreshToken);
 
@@ -79,15 +79,15 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
         const decoded = await fastify.jwt.verify<{ id: string }>(refreshToken);
         const user = await authService.verifyRefreshToken(decoded.id, refreshToken);
 
-        const newToken = await (reply.jwtSign(
+        const newToken = await reply.jwtSign(
           { id: String(user._id), role: user.role, tenantId: String(user.tenantId) },
           { expiresIn: env.JWT_EXPIRES_IN }
-        ) as unknown as Promise<string>);
+        );
 
-        const newRefreshToken = await (reply.jwtSign(
+        const newRefreshToken = await reply.jwtSign(
           { id: String(user._id), role: user.role, tenantId: String(user.tenantId) },
           { expiresIn: '7d' }
-        ) as unknown as Promise<string>);
+        );
 
         await authService.updateRefreshToken(String(user._id), newRefreshToken);
 
@@ -134,6 +134,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
     },
     async (request, reply) => {
       try {
+        // [TENANT ISOLATION] Retorna apenas usuários do tenant autenticado
         const tenantId = request.user.tenantId;
         const { page, limit } = request.query as { page?: number, limit?: number };
         const result = await authService.listUsers(tenantId, page, limit);

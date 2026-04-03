@@ -162,10 +162,26 @@ export class NotasService {
       };
     }
 
+    interface PopulatedAluno {
+      _id: string;
+      name: string;
+      matricula: string;
+    }
+
+    interface PopulatedDisciplina {
+      _id: string;
+      name: string;
+    }
+
+    interface PopulatedTurma {
+      _id: string;
+      name: string;
+    }
+
     const firstNota = notas[0]!;
-    const alunoObj = firstNota.alunoId as unknown as { _id: string; name: string; matricula: string };
-    const descDisciplina = firstNota.disciplinaId as unknown as { _id: string; name: string };
-    const turmaObj = firstNota.turmaId as unknown as { _id: string; name: string } | null;
+    const alunoObj = firstNota.alunoId as unknown as PopulatedAluno;
+    const descDisciplina = firstNota.disciplinaId as unknown as PopulatedDisciplina;
+    const turmaObj = firstNota.turmaId as unknown as PopulatedTurma | null;
 
     const b1 = notas.find(n => n.bimester === 1)?.value ?? null;
     const b2 = notas.find(n => n.bimester === 2)?.value ?? null;

@@ -1,21 +1,24 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
-import type { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { alunosService } from './alunos.service.js';
 import { createAlunoSchema, updateAlunoSchema, alunoStatusUpdateSchema } from '@academiaflow/shared';
+import type { ZodTypeProvider } from 'fastify-type-provider-zod';
+import { z } from 'zod';
 
 export const alunosRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) => {
-  fastify.addHook('onRequest', (request, reply) => fastify.authenticate(request, reply));
+  const typedFastify = fastify.withTypeProvider<ZodTypeProvider>();
+  typedFastify.addHook('onRequest', (request, reply) => fastify.authenticate(request, reply));
 
-  fastify.post(
+  typedFastify.post(
     '/',
     {
       preHandler: [fastify.authorize(['admin', 'secretaria'])],
       schema: { body: createAlunoSchema },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request, reply) => {
       try {
         const tenantId = request.user.tenantId;
-        const payload = request.body as import('@academiaflow/shared').CreateAlunoPayload;
+        const payload = request.body;
         const aluno = await alunosService.create(tenantId, payload);
         reply.code(201).send({ success: true, data: aluno });
       } catch (error: Error | unknown) {
@@ -27,18 +30,28 @@ export const alunosRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstan
     }
   );
 
-  fastify.get('/', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const tenantId = request.user.tenantId;
-      const query = request.query as { turmaId?: string };
-      const alunos = await alunosService.list(tenantId, query);
-      reply.send({ success: true, data: alunos });
-    } catch {
-      reply.code(500).send({ success: false, message: 'Erro ao buscar alunos' });
+  typedFastify.get(
+    '/',
+    {
+      schema: {
+        querystring: z.object({
+          turmaId: z.string().optional()
+        })
+      }
+    },
+    async (request, reply) => {
+      try {
+        const tenantId = request.user.tenantId;
+        const query = request.query;
+        const alunos = await alunosService.list(tenantId, query);
+        reply.send({ success: true, data: alunos });
+      } catch {
+        reply.code(500).send({ success: false, message: 'Erro ao buscar alunos' });
+      }
     }
-  });
+  );
 
-  fastify.get('/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+  typedFastify.get('/:id', async (request, reply) => {
     try {
       const tenantId = request.user.tenantId;
       const { id } = request.params as { id: string };
@@ -52,16 +65,16 @@ export const alunosRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstan
     }
   });
 
-  fastify.put(
+  typedFastify.put(
     '/:id',
     {
       schema: { body: updateAlunoSchema },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request, reply) => {
       try {
         const tenantId = request.user.tenantId;
         const { id } = request.params as { id: string };
-        const payload = request.body as import('@academiaflow/shared').UpdateAlunoPayload;
+        const payload = request.body;
         const aluno = await alunosService.update(tenantId, id, payload);
         reply.send({ success: true, data: aluno });
       } catch (error: Error | unknown) {
@@ -73,10 +86,10 @@ export const alunosRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstan
     }
   );
 
-  fastify.delete(
+  typedFastify.delete(
     '/:id',
     { preHandler: [fastify.authorize(['admin', 'secretaria'])] },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request, reply) => {
     try {
       const tenantId = request.user.tenantId;
       const { id } = request.params as { id: string };
@@ -90,17 +103,17 @@ export const alunosRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstan
     }
   });
 
-  fastify.patch(
+  typedFastify.patch(
     '/:id/status',
     {
       preHandler: [fastify.authorize(['admin', 'secretaria'])],
       schema: { body: alunoStatusUpdateSchema },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request, reply) => {
       try {
         const tenantId = request.user.tenantId;
         const { id } = request.params as { id: string };
-        const payload = request.body as import('@academiaflow/shared').AlunoStatusUpdatePayload;
+        const payload = request.body;
         const aluno = await alunosService.updateStatus(tenantId, id, payload);
         reply.send({ success: true, data: aluno });
       } catch (error: Error | unknown) {

@@ -1,15 +1,19 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
-import type { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { professorService } from './professor.service.js';
+import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 
 export const professorRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) => {
-  fastify.addHook('onRequest', (request, reply) => fastify.authenticate(request, reply));
-  fastify.addHook('onRequest', (request, reply) => fastify.authorize(['professor'])(request, reply));
+  const typedFastify = fastify.withTypeProvider<ZodTypeProvider>();
+  
+  typedFastify.addHook('onRequest', (request, reply) => fastify.authenticate(request, reply));
+  typedFastify.addHook('onRequest', (request, reply) => fastify.authorize(['professor'])(request, reply));
 
-  fastify.get(
+  typedFastify.get(
     '/disciplinas',
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request, reply) => {
       try {
+        // [TENANT ISOLATION] Filtrado por tenantId + professorId
         const tenantId = request.user.tenantId;
         const professorId = request.user.id;
         const result = await professorService.getDisciplinesByProfessor(tenantId, professorId);
@@ -23,10 +27,11 @@ export const professorRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIns
     }
   );
 
-  fastify.get(
+  typedFastify.get(
     '/turmas',
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request, reply) => {
       try {
+        // [TENANT ISOLATION] Filtrado por tenantId + professorId
         const tenantId = request.user.tenantId;
         const professorId = request.user.id;
         const result = await professorService.getProfessorTurmas(tenantId, professorId);

@@ -21,8 +21,12 @@ export class AIEngineService {
       .sort({ year: -1, bimester: -1 })
       .limit(10);
 
+    interface PopulatedDisciplina {
+      name: string;
+    }
+
     const historicoNotas = (notasBD as unknown as Array<{ 
-      disciplinaId?: { name: string }; 
+      disciplinaId?: PopulatedDisciplina; 
       bimester: number; 
       value: number; 
     }>).map((nota) => ({

@@ -46,3 +46,19 @@ export const validacaoPedagogicaQuerySchema = z.object({
 });
 
 export type ValidacaoPedagogicaQuery = z.infer<typeof validacaoPedagogicaQuerySchema>;
+
+/**
+ * AI Pedagogical History Response
+ */
+export const aiHistoryResponseSchema = z.object({
+  success: z.boolean(),
+  data: z.array(validacaoPedagogicaSchema),
+  pagination: z.object({
+    total: z.number(),
+    page: z.number(),
+    limit: z.number(),
+    pages: z.number(),
+  }),
+});
+
+export type AiHistoryResponse = z.infer<typeof aiHistoryResponseSchema>;

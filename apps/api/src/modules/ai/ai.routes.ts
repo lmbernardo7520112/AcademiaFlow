@@ -1,5 +1,5 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
-import type { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import {
   analyzeStudentPayloadSchema,
   validacaoPedagogicaHistorySchema
@@ -10,8 +10,11 @@ import { MockLLMProvider } from './providers/MockLLMProvider.js';
 
 import { z } from 'zod';
 import { iaPedagogicoService } from './ia_pedagogico.service.js';
+import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 
 export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) => {
+  const typedFastify = fastify.withTypeProvider<ZodTypeProvider>();
+  
   // Instalação do Inversor de Dependência: Em testes, roda a classe Falsa (Custo Zero), Senão sobe a Real!
   const isTestEnv = process.env.NODE_ENV === 'test';
   const llmProvider = isTestEnv ? new MockLLMProvider() : new GeminiProvider();
@@ -21,19 +24,19 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
   iaPedagogicoService.setProvider(llmProvider);
 
   // Autenticação Global do endpoint
-  fastify.addHook('onRequest', (request, reply) => fastify.authenticate(request, reply));
+  typedFastify.addHook('onRequest', (request, reply) => fastify.authenticate(request, reply));
 
-  fastify.post(
+  typedFastify.post(
     '/generate-activity',
     {
       // Apenas professores e cargos administrativos podem gerar atividades B2B
       preHandler: [fastify.authorize(['admin', 'secretaria', 'professor'])],
       schema: { body: analyzeStudentPayloadSchema },
     },
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request, reply) => {
       try {
         const tenantId = request.user.tenantId;
-        const payload = request.body as import('@academiaflow/shared').AnalyzeStudentPayload;
+        const payload = request.body;
         const generatedActivity = await aiService.generateActivity(tenantId, payload);
         reply.code(200).send({ success: true, data: generatedActivity });
       } catch (error: Error | unknown) {
@@ -45,22 +48,24 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
     }
   );
 
+  const analysisBodySchema = z.object({
+    bimester: z.number().min(1).max(5),
+    year: z.number(),
+    disciplinaId: z.string()
+  });
+
   // IA Reactor 2.0: Validação Pedagógica (Análise)
-  fastify.post(
+  typedFastify.post(
     '/pedagogical/analysis',
     {
       schema: {
-        body: z.object({
-          bimester: z.number().min(1).max(5),
-          year: z.number(),
-          disciplinaId: z.string()
-        }),
+        body: analysisBodySchema,
       },
     },
     async (request, reply) => {
       try {
         const tenantId = request.user.tenantId;
-        const { bimester, year, disciplinaId } = request.body as { bimester: number; year: number; disciplinaId: string };
+        const { bimester, year, disciplinaId } = request.body;
         const analysis = await iaPedagogicoService.generatePerformanceAnalysis(tenantId, bimester, year, disciplinaId);
         reply.send({ success: true, data: analysis });
       } catch (error: Error | unknown) {
@@ -77,21 +82,17 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
   );
 
   // IA Reactor 2.0: Geração de Exercícios (Recuperação)
-  fastify.post(
+  typedFastify.post(
     '/pedagogical/exercises',
     {
       schema: {
-        body: z.object({
-          bimester: z.number().min(1).max(5),
-          year: z.number(),
-          disciplinaId: z.string()
-        }),
+        body: analysisBodySchema,
       },
     },
     async (request, reply) => {
       try {
         const tenantId = request.user.tenantId;
-        const { bimester, year, disciplinaId } = request.body as { bimester: number; year: number; disciplinaId: string };
+        const { bimester, year, disciplinaId } = request.body;
         const result = await iaPedagogicoService.generateRecoveryExercises(tenantId, bimester, year, disciplinaId);
         reply.send({ success: true, data: result });
       } catch (error: unknown) {
@@ -100,17 +101,20 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
     }
   );
 
-  fastify.get(
+  typedFastify.get(
     '/pedagogical/history',
     {
-      preHandler: [fastify.authorize(['admin', 'secretaria', 'professor'])]
+      preHandler: [fastify.authorize(['admin', 'secretaria', 'professor'])],
+      schema: {
+        querystring: validacaoPedagogicaHistorySchema
+      }
     },
     async (request, reply) => {
       try {
         const tenantId = request.user.tenantId;
         const userId = request.user.id;
         const role = request.user.role;
-        const filters = validacaoPedagogicaHistorySchema.parse(request.query);
+        const filters = request.query;
 
         const result = await iaPedagogicoService.listHistory(tenantId, filters, userId, role);
         reply.send({ success: true, ...result });
@@ -123,17 +127,22 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
     }
   );
 
-  fastify.delete(
+  typedFastify.delete(
     '/pedagogical/:id',
     {
-      preHandler: [fastify.authorize(['admin', 'secretaria', 'professor'])]
+      preHandler: [fastify.authorize(['admin', 'secretaria', 'professor'])],
+      schema: {
+        params: z.object({
+          id: z.string()
+        })
+      }
     },
     async (request, reply) => {
       try {
         const tenantId = request.user.tenantId;
         const userId = request.user.id;
         const role = request.user.role;
-        const { id } = request.params as { id: string };
+        const { id } = request.params;
 
         const result = await iaPedagogicoService.deleteAnalysis(tenantId, id, userId, role);
         reply.send(result);

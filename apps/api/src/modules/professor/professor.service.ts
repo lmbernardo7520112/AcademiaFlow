@@ -18,9 +18,15 @@ export class ProfessorService {
 
     // Extrair turmas únicas
     const turmasMap = new Map<string, { _id: string; name: string }>();
+    
+    interface PopulatedTurma {
+      _id: string;
+      name: string;
+    }
+
     disciplinas.forEach(d => {
       if (d.turmaId) {
-        const turma = d.turmaId as unknown as { _id: string; name: string };
+        const turma = d.turmaId as unknown as PopulatedTurma;
         turmasMap.set(turma._id.toString(), turma);
       }
     });

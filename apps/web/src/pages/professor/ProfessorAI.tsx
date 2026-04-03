@@ -105,24 +105,25 @@ export default function ProfessorAIPage() {
           <h3 style={{ margin: 0, color: 'hsl(var(--clr-cyan))' }}>Câmara de Combustão</h3>
           
           <div className="input-group">
-            <label>Selecione a Turma</label>
-            <select value={selectedTurma} onChange={e => setSelectedTurma(e.target.value)}>
+            <label htmlFor="turma-select">Selecione a Turma</label>
+            <select id="turma-select" value={selectedTurma} onChange={e => setSelectedTurma(e.target.value)}>
               <option value="">-- Selecione --</option>
               {turmas.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
             </select>
           </div>
 
           <div className="input-group">
-            <label>Aluno Alvo</label>
-            <select value={selectedAluno} onChange={e => setSelectedAluno(e.target.value)} disabled={!selectedTurma}>
+            <label htmlFor="aluno-select">Aluno Alvo</label>
+            <select id="aluno-select" value={selectedAluno} onChange={e => setSelectedAluno(e.target.value)} disabled={!selectedTurma}>
               <option value="">-- Selecione --</option>
               {alunos.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
             </select>
           </div>
 
           <div className="input-group">
-            <label>Foco Pedagógico</label>
+            <label htmlFor="foco-input">Foco Pedagógico</label>
             <input 
+              id="foco-input"
               value={focoAtividade} 
               onChange={e => setFocoAtividade(e.target.value)} 
               placeholder="Ex: Reforço em Frações" 

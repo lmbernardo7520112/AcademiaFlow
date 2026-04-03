@@ -136,8 +136,9 @@ describe('AI Engine Module Integration (Mocked Provider)', () => {
       url: '/api/ai/pedagogical/history',
       headers: { Authorization: `Bearer ${token}` }
     });
-    expect(historyRes2.json().data.find((a: any) => a._id === analysisId)).toBeUndefined();
+    expect(historyRes2.json().data.find((a: Record<string, unknown>) => a._id === analysisId)).toBeUndefined();
   });
+
 
 
   afterAll(async () => {

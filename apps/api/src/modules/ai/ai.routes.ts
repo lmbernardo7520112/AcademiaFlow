@@ -1,6 +1,9 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
-import { analyzeStudentPayloadSchema } from '@academiaflow/shared';
+import {
+  analyzeStudentPayloadSchema,
+  validacaoPedagogicaHistorySchema
+} from '@academiaflow/shared';
 import { AIEngineService } from './ai.service.js';
 import { GeminiProvider } from './providers/GeminiProvider.js';
 import { MockLLMProvider } from './providers/MockLLMProvider.js';
@@ -107,7 +110,7 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
         const tenantId = request.user.tenantId;
         const userId = request.user.id;
         const role = request.user.role;
-        const filters = request.query as any;
+        const filters = validacaoPedagogicaHistorySchema.parse(request.query);
 
         const result = await iaPedagogicoService.listHistory(tenantId, filters, userId, role);
         reply.send({ success: true, ...result });

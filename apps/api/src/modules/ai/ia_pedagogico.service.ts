@@ -1,12 +1,15 @@
 import { GeminiProvider } from './providers/GeminiProvider.js';
 import { NotaModel } from '../../models/Nota.js';
 import { ValidacaoPedagogicaModel } from '../../models/ValidacaoPedagogica.js';
+import type { AiHistoryFilters } from '@academiaflow/shared';
+import type { FilterQuery } from 'mongoose';
+import type { ILLMProvider } from './providers/ILLMProvider.js';
 import { DisciplinaModel } from '../../models/Disciplina.js';
 
 export class IaPedagogicoService {
-  private _aiProvider: import('./providers/ILLMProvider.js').ILLMProvider | null = null;
+  private _aiProvider: ILLMProvider | null = null;
 
-  public setProvider(provider: import('./providers/ILLMProvider.js').ILLMProvider) {
+  public setProvider(provider: ILLMProvider) {
     this._aiProvider = provider;
   }
 
@@ -131,11 +134,11 @@ export class IaPedagogicoService {
     return record;
   }
 
-  async listHistory(tenantId: string, filters: any, userId: string, role: string) {
+  async listHistory(tenantId: string, filters: AiHistoryFilters, userId: string, role: string) {
     const { turmaId, disciplinaId, page = 1, limit = 20 } = filters;
     const skip = (page - 1) * limit;
 
-    const query: any = { tenantId };
+    const query: FilterQuery<typeof ValidacaoPedagogicaModel> = { tenantId };
 
     // Regra de Escopo: Professor vê apenas as próprias. Admin/Secretaria vê tudo do tenant.
     if (role === 'professor') {
@@ -168,7 +171,7 @@ export class IaPedagogicoService {
   }
 
   async deleteAnalysis(tenantId: string, id: string, userId: string, role: string) {
-    const query: any = { _id: id, tenantId };
+    const query: FilterQuery<typeof ValidacaoPedagogicaModel> = { _id: id, tenantId };
 
     // Isolamento de Dono: Professor só deleta as próprias
     if (role === 'professor') {

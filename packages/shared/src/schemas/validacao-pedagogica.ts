@@ -27,6 +27,15 @@ export const validacaoPedagogicaSchema = z.object({
 
 export type ValidacaoPedagogica = z.infer<typeof validacaoPedagogicaSchema>;
 
+export const validacaoPedagogicaHistorySchema = z.object({
+  turmaId: z.string().optional(),
+  disciplinaId: z.string().optional(),
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(20),
+});
+
+export type AiHistoryFilters = z.infer<typeof validacaoPedagogicaHistorySchema>;
+
 export const validacaoPedagogicaQuerySchema = z.object({
   turmaId: objectIdSchema.optional(),
   disciplinaId: objectIdSchema.optional(),

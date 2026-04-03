@@ -15,28 +15,38 @@ jobs:
     name: Lint, Test & Build
     runs-on: ubuntu-latest
 
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Enable Corepack
-        run: corepack enable pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22.x
+          node-version: 22
           cache: 'pnpm'
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build Shared Types
+        run: pnpm --filter @academiaflow/shared build
+
       - name: Lint
-        run: pnpm turbo lint
+        run: pnpm lint
 
       - name: Test
-        run: pnpm turbo test
+        run: pnpm test
 
       - name: Build
-        run: pnpm turbo build
-
+        run: pnpm build

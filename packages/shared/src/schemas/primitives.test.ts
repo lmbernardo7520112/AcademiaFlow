@@ -82,15 +82,15 @@ describe('gradeValueSchema', () => {
 });
 
 describe('bimesterSchema', () => {
-  it('should accept 1, 2, 3, 4', () => {
-    for (const b of [1, 2, 3, 4]) {
+  it('should accept 1, 2, 3, 4, 5', () => {
+    for (const b of [1, 2, 3, 4, 5]) {
       expect(bimesterSchema.safeParse(b).success).toBe(true);
     }
   });
 
-  it('should reject 0, 5, or decimals', () => {
+  it('should reject 0, 6, or decimals', () => {
     expect(bimesterSchema.safeParse(0).success).toBe(false);
-    expect(bimesterSchema.safeParse(5).success).toBe(false);
+    expect(bimesterSchema.safeParse(6).success).toBe(false);
     expect(bimesterSchema.safeParse(1.5).success).toBe(false);
   });
 });

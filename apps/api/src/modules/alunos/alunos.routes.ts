@@ -1,7 +1,7 @@
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { FastifyRequest, FastifyReply, FastifyInstance } from 'fastify';
 import { alunosService } from './alunos.service.js';
-import { createAlunoSchema, updateAlunoSchema } from '@academiaflow/shared';
+import { createAlunoSchema, updateAlunoSchema, alunoStatusUpdateSchema } from '@academiaflow/shared';
 
 export const alunosRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) => {
   fastify.addHook('onRequest', (request, reply) => fastify.authenticate(request, reply));
@@ -89,4 +89,30 @@ export const alunosRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstan
       });
     }
   });
+
+  fastify.patch(
+    '/:id/status',
+    {
+      preHandler: [fastify.authorize(['admin', 'secretaria'])],
+      schema: { body: alunoStatusUpdateSchema },
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const tenantId = request.user.tenantId;
+        const { id } = request.params as { id: string };
+        const payload = request.body as import('@academiaflow/shared').AlunoStatusUpdatePayload;
+        const aluno = await alunosService.updateStatus(tenantId, id, payload);
+        reply.send({ success: true, data: aluno });
+      } catch (error: Error | unknown) {
+        // Normalização: 422 para erros de regra de negócio (exclusividade) ou validação
+        const message = error instanceof Error ? error.message : 'Erro ao atualizar status';
+        const code = message.includes('encontrado') ? 404 : 422;
+        reply.code(code).send({
+          success: false,
+          message,
+        });
+      }
+    }
+  );
 };
+

@@ -22,4 +22,22 @@ export const professorRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIns
       }
     }
   );
+
+  fastify.get(
+    '/turmas',
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const tenantId = request.user.tenantId;
+        const professorId = request.user.id;
+        const result = await professorService.getProfessorTurmas(tenantId, professorId);
+        reply.send({ success: true, data: result });
+      } catch (error: Error | unknown) {
+        reply.code(400).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Erro ao carregar turmas do professor',
+        });
+      }
+    }
+  );
 };
+

@@ -130,6 +130,60 @@ export class IaPedagogicoService {
 
     return record;
   }
+
+  async listHistory(tenantId: string, filters: any, userId: string, role: string) {
+    const { turmaId, disciplinaId, page = 1, limit = 20 } = filters;
+    const skip = (page - 1) * limit;
+
+    const query: any = { tenantId };
+
+    // Regra de Escopo: Professor vê apenas as próprias. Admin/Secretaria vê tudo do tenant.
+    if (role === 'professor') {
+      query.professorId = userId;
+    }
+
+    if (turmaId) query.turmaId = turmaId;
+    if (disciplinaId) query.disciplinaId = disciplinaId;
+
+    const [data, total] = await Promise.all([
+      ValidacaoPedagogicaModel.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('turmaId', 'name')
+        .populate('disciplinaId', 'name')
+        .populate('targetStudents', 'name'),
+      ValidacaoPedagogicaModel.countDocuments(query)
+    ]);
+
+    return {
+      data,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  async deleteAnalysis(tenantId: string, id: string, userId: string, role: string) {
+    const query: any = { _id: id, tenantId };
+
+    // Isolamento de Dono: Professor só deleta as próprias
+    if (role === 'professor') {
+      query.professorId = userId;
+    }
+
+    const result = await ValidacaoPedagogicaModel.deleteOne(query);
+    
+    if (result.deletedCount === 0) {
+      throw new Error('Análise não encontrada ou você não tem permissão para excluí-la');
+    }
+
+    return { success: true, message: 'Análise pedagógica excluída permanentemente' };
+  }
 }
+
 
 export const iaPedagogicoService = new IaPedagogicoService();

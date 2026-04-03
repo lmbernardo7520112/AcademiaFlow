@@ -60,6 +60,36 @@ export class AuthService {
     if (!user) throw new Error('Usuário não encontrado');
     return user;
   }
+
+  async listUsers(tenantId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+    
+    // Projeção segura: Nunca retornar senhas ou tokens em listagens
+    const users = await UserModel.find({ tenantId, isActive: true })
+      .select('-password -refreshToken')
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(limit);
+
+    const total = await UserModel.countDocuments({ tenantId, isActive: true });
+
+    return {
+      data: users,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit),
+      }
+    };
+  }
+
+  async logout(userId: string) {
+    // Invalidação operacional do refresh token
+    await UserModel.findByIdAndUpdate(userId, { refreshToken: null });
+    return { success: true, message: 'Sessão encerrada com sucesso' };
+  }
 }
+
 
 export const authService = new AuthService();

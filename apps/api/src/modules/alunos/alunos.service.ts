@@ -66,6 +66,26 @@ export class AlunosService {
     if (!aluno) throw new Error('Aluno não encontrado para deleção');
     return { success: true, message: 'Aluno inativado com sucesso' };
   }
+
+  async updateStatus(tenantId: string, id: string, data: { transferido?: boolean, abandono?: boolean }) {
+    if (Object.keys(data).length === 0) {
+      throw new Error('Nenhum dado fornecido para atualização');
+    }
+
+    if (data.transferido && data.abandono) {
+      throw new Error('Um aluno não pode estar transferido e abandonado simultaneamente');
+    }
+
+    const aluno = await AlunoModel.findOneAndUpdate(
+      { _id: id, tenantId, isActive: true },
+      data,
+      { new: true }
+    );
+
+    if (!aluno) throw new Error('Aluno não encontrado para atualização de status');
+    return aluno;
+  }
 }
+
 
 export const alunosService = new AlunosService();

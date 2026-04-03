@@ -96,4 +96,54 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
       }
     }
   );
+
+  fastify.get(
+    '/pedagogical/history',
+    {
+      preHandler: [fastify.authorize(['admin', 'secretaria', 'professor'])]
+    },
+    async (request, reply) => {
+      try {
+        const tenantId = request.user.tenantId;
+        const userId = request.user.id;
+        const role = request.user.role;
+        const filters = request.query as any;
+
+        const result = await iaPedagogicoService.listHistory(tenantId, filters, userId, role);
+        reply.send({ success: true, ...result });
+      } catch (error: Error | unknown) {
+        reply.code(400).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Erro ao listar histórico de IA',
+        });
+      }
+    }
+  );
+
+  fastify.delete(
+    '/pedagogical/:id',
+    {
+      preHandler: [fastify.authorize(['admin', 'secretaria', 'professor'])]
+    },
+    async (request, reply) => {
+      try {
+        const tenantId = request.user.tenantId;
+        const userId = request.user.id;
+        const role = request.user.role;
+        const { id } = request.params as { id: string };
+
+        const result = await iaPedagogicoService.deleteAnalysis(tenantId, id, userId, role);
+        reply.send(result);
+      } catch (error: Error | unknown) {
+        // Normalização de erro para 404 se não encontrado ou sem permissão (Security mapping)
+        const message = error instanceof Error ? error.message : 'Erro ao excluir análise';
+        const code = message.includes('não encontrada') ? 404 : 400;
+        reply.code(code).send({
+          success: false,
+          message
+        });
+      }
+    }
+  );
 };
+

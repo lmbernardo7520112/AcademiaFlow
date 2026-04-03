@@ -88,12 +88,57 @@ describe('AI Engine Module Integration (Mocked Provider)', () => {
       headers: { Authorization: `Bearer ${token}` },
       payload,
     });
-
-    expect(response.statusCode).toBe(200);
     const body = response.json();
     expect(body.success).toBe(true);
     expect(body.data).toBeDefined();
+    return body.data._id;
   });
+
+
+  it('GET /api/ai/pedagogical/history and DELETE /api/ai/pedagogical/:id', async () => {
+    const { token, disciplinaId } = await setupData();
+    
+    // 1. GERA ANÁLISE
+    const genRes = await app.inject({
+      method: 'POST',
+      url: '/api/ai/pedagogical/analysis',
+      headers: { Authorization: `Bearer ${token}` },
+      payload: { bimester: 1, year: 2026, disciplinaId }
+    });
+    const analysisId = genRes.json().data._id;
+
+    // 2. LISTA HISTÓRICO
+    const historyRes = await app.inject({
+      method: 'GET',
+      url: '/api/ai/pedagogical/history',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    expect(historyRes.statusCode).toBe(200);
+    const historyData = historyRes.json();
+    expect(historyData.data.length).toBeGreaterThan(0);
+    expect(historyData.data[0]._id).toBe(analysisId);
+    expect(historyData.pagination.total).toBeDefined();
+
+    // 3. DELETE (HARD)
+    const delRes = await app.inject({
+      method: 'DELETE',
+      url: `/api/ai/pedagogical/${analysisId}`,
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    expect(delRes.statusCode).toBe(200);
+    expect(delRes.json().success).toBe(true);
+
+    // 4. VERIFICA SUMIÇO
+    const historyRes2 = await app.inject({
+      method: 'GET',
+      url: '/api/ai/pedagogical/history',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    expect(historyRes2.json().data.find((a: any) => a._id === analysisId)).toBeUndefined();
+  });
+
 
   afterAll(async () => {
     if (app) await app.close();

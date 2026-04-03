@@ -1,32 +1,39 @@
 import { z } from 'zod';
-import { objectIdSchema, nonEmptyStringSchema, timestampFieldsSchema, tenantIdSchema } from './primitives.js';
+import { objectIdSchema, timestampFieldsSchema, tenantIdSchema } from './primitives.js';
 
-const feedbackEntrySchema = z.object({
-  atividadeId: objectIdSchema,
-  comentario: nonEmptyStringSchema,
-  qualidadeIA: z.number().min(0).max(10).describe('Nota de qualidade da IA (0-10)'),
-  data: z.coerce.date().default(() => new Date()),
+export const VALIDACAO_TYPES = ['ANALYSIS', 'EXERCISES'] as const;
+
+export const exerciseSchema = z.object({
+  question: z.string(),
+  options: z.array(z.string()),
+  correctAnswer: z.string(),
+  explanation: z.string().optional(),
 });
-
-export type FeedbackEntry = z.infer<typeof feedbackEntrySchema>;
 
 export const validacaoPedagogicaSchema = z.object({
   id: objectIdSchema,
   tenantId: tenantIdSchema,
   professorId: objectIdSchema,
+  turmaId: objectIdSchema,
   disciplinaId: objectIdSchema,
-  atividadesValidadas: z.number().int().min(0).default(0),
-  feedbacks: z.array(feedbackEntrySchema).default([]),
-  ultimaValidacao: z.coerce.date().optional().nullable(),
+  bimester: z.number().int().min(1).max(5),
+  year: z.number().int().min(2000).max(2100),
+  type: z.enum(VALIDACAO_TYPES),
+  content: z.string().optional().nullable(),
+  exercises: z.array(exerciseSchema).optional().default([]),
+  targetStudents: z.array(objectIdSchema).optional().default([]),
   ...timestampFieldsSchema.shape,
 });
 
 export type ValidacaoPedagogica = z.infer<typeof validacaoPedagogicaSchema>;
 
-export const createValidacaoFeedbackSchema = z.object({
-  atividadeId: objectIdSchema,
-  comentario: nonEmptyStringSchema,
-  qualidadeIA: z.number().min(0).max(10),
+export const validacaoPedagogicaQuerySchema = z.object({
+  turmaId: objectIdSchema.optional(),
+  disciplinaId: objectIdSchema.optional(),
+  year: z.coerce.number().optional(),
+  bimester: z.coerce.number().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 
-export type CreateValidacaoFeedbackPayload = z.infer<typeof createValidacaoFeedbackSchema>;
+export type ValidacaoPedagogicaQuery = z.infer<typeof validacaoPedagogicaQuerySchema>;

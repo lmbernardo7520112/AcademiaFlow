@@ -45,3 +45,17 @@ export const loginSchema = z.object({
 });
 
 export type LoginPayload = z.infer<typeof loginSchema>;
+
+
+/**
+ * Public User Response (Security: Omit sensitive fields)
+ */
+export const userResponseSchema = userSchema.omit({
+  refreshToken: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type UserResponse = z.infer<typeof userResponseSchema>;
+
+

@@ -125,4 +125,48 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
       }
     }
   );
+
+  fastify.get(
+    '/users',
+    {
+      onRequest: [fastify.authenticate],
+      preHandler: [fastify.authorize(['admin', 'secretaria', 'administrador'])],
+    },
+    async (request, reply) => {
+      try {
+        const tenantId = request.user.tenantId;
+        const { page, limit } = request.query as { page?: number, limit?: number };
+        const result = await authService.listUsers(tenantId, page, limit);
+        reply.send({
+          success: true,
+          ...result
+        });
+      } catch (error: Error | unknown) {
+        reply.code(400).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Erro ao listar usuários',
+        });
+      }
+    }
+  );
+
+  fastify.post(
+    '/logout',
+    {
+      onRequest: [fastify.authenticate],
+    },
+    async (request, reply) => {
+      try {
+        const userId = request.user.id;
+        const result = await authService.logout(userId);
+        reply.send(result);
+      } catch (error: Error | unknown) {
+        reply.code(400).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Erro ao realizar logout',
+        });
+      }
+    }
+  );
 };
+

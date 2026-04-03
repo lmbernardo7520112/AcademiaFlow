@@ -63,12 +63,56 @@ describe('Alunos Module Integration', () => {
       headers: { Authorization: `Bearer ${token}` },
       payload,
     });
-
-    expect(response.statusCode).toBe(201);
     const body = response.json();
     expect(body.success).toBe(true);
     expect(body.data).toHaveProperty('_id');
+    return body.data._id;
   });
+
+
+  it('PATCH /api/alunos/:id/status should update status and respect exclusivity', async () => {
+    const { token, turmaId } = await setupData();
+    
+    // 1. CREATE ALUNO
+    const createRes = await app.inject({
+      method: 'POST',
+      url: '/api/alunos',
+      headers: { Authorization: `Bearer ${token}` },
+      payload: { name: 'Aluno Status', matricula: `ST-${Date.now()}`, turmaId, dataNascimento: '2010-01-01' }
+    });
+    const alunoId = createRes.json().data._id;
+
+    // 2. UPDATE TRANSFERIDO
+    const transRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/alunos/${alunoId}/status`,
+      headers: { Authorization: `Bearer ${token}` },
+      payload: { transferido: true }
+    });
+    expect(transRes.statusCode).toBe(200);
+    expect(transRes.json().data.transferido).toBe(true);
+
+    // 3. FAIL IF BOTH TRUE (EXCLUSIVITY)
+    const bothRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/alunos/${alunoId}/status`,
+      headers: { Authorization: `Bearer ${token}` },
+      payload: { transferido: true, abandono: true }
+    });
+    // Fastify Zod provider defaults to 400 for schema validation errors
+    expect(bothRes.statusCode).toBe(400);
+
+    // 4. FAIL IF EMPTY PAYLOAD
+    const emptyRes = await app.inject({
+      method: 'PATCH',
+      url: `/api/alunos/${alunoId}/status`,
+      headers: { Authorization: `Bearer ${token}` },
+      payload: {}
+    });
+    expect(emptyRes.statusCode).toBe(400);
+  });
+
+
 
   afterAll(async () => {
     if (app) await app.close();

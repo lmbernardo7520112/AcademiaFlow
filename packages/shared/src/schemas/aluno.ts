@@ -29,3 +29,20 @@ export type CreateAlunoPayload = z.infer<typeof createAlunoSchema>;
 export const updateAlunoSchema = createAlunoSchema.partial();
 
 export type UpdateAlunoPayload = z.infer<typeof updateAlunoSchema>;
+
+/**
+ * Semantic status update (Exclusive: transferido OR abandono)
+ */
+export const alunoStatusUpdateSchema = z.object({
+  transferido: z.boolean().optional(),
+  abandono: z.boolean().optional(),
+}).refine(data => {
+  if (data.transferido && data.abandono) return false;
+  return data.transferido !== undefined || data.abandono !== undefined;
+}, {
+  message: "Transferido e Abandono são mutuamente exclusivos e ao menos um deve ser fornecido",
+  path: ["status"]
+});
+
+export type AlunoStatusUpdatePayload = z.infer<typeof alunoStatusUpdateSchema>;
+

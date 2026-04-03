@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 
+// Garantir ambiente de teste em todos os workers
+process.env.NODE_ENV = 'test';
+process.env.VITEST = 'true';
+
 beforeAll(async () => {
   // Use the global DATABASE_URL
   if (process.env.DATABASE_URL) {

@@ -4,11 +4,16 @@ import { ValidacaoPedagogicaModel } from '../../models/ValidacaoPedagogica.js';
 import { DisciplinaModel } from '../../models/Disciplina.js';
 
 export class IaPedagogicoService {
-  private aiProvider: GeminiProvider;
+  private _aiProvider: GeminiProvider | null = null;
 
-  constructor() {
-    this.aiProvider = new GeminiProvider();
+  private get aiProvider(): GeminiProvider {
+    if (!this._aiProvider) {
+      this._aiProvider = new GeminiProvider();
+    }
+    return this._aiProvider;
   }
+
+  constructor() {}
 
   async generatePerformanceAnalysis(tenantId: string, bimester: number, year: number, disciplinaId: string) {
     // 1. Get Discipline and Student Data

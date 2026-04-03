@@ -8,12 +8,12 @@ import { MockLLMProvider } from './providers/MockLLMProvider.js';
 import { z } from 'zod';
 import { iaPedagogicoService } from './ia_pedagogico.service.js';
 
-// Instalação do Inversor de Dependência: Em testes, roda a classe Falsa (Custo Zero), Senão sobe a Real!
-const isTestEnv = process.env.NODE_ENV === 'test';
-const llmProvider = isTestEnv ? new MockLLMProvider() : new GeminiProvider();
-const aiService = new AIEngineService(llmProvider);
-
 export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) => {
+  // Instalação do Inversor de Dependência: Em testes, roda a classe Falsa (Custo Zero), Senão sobe a Real!
+  const isTestEnv = process.env.NODE_ENV === 'test';
+  const llmProvider = isTestEnv ? new MockLLMProvider() : new GeminiProvider();
+  const aiService = new AIEngineService(llmProvider);
+
   // Autenticação Global do endpoint
   fastify.addHook('onRequest', (request, reply) => fastify.authenticate(request, reply));
 

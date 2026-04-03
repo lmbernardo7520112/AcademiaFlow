@@ -13,8 +13,11 @@ export default fp(async (fastify) => {
     });
 
     // Don't connect if it's already connected (useful for testing envs)
-    if (mongoose.connection.readyState === 0) {
-      await mongoose.connect(env.DATABASE_URL);
+    const isTest = process.env.NODE_ENV === 'test' || !!process.env.VITEST;
+    if (mongoose.connection.readyState === 0 && !isTest) {
+      await mongoose.connect(env.DATABASE_URL, {
+        serverSelectionTimeoutMS: 5000, // 5 segundos de timeout
+      });
     }
     
     // Graceful shutdown

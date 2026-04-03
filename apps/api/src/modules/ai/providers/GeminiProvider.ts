@@ -10,10 +10,13 @@ export class GeminiProvider implements ILLMProvider {
 
   constructor() {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    const isTest = process.env.NODE_ENV === 'test' || !!process.env.VITEST;
+
+    if (!apiKey && !isTest) {
       throw new Error('Variável de ambiente GEMINI_API_KEY não foi configurada.');
     }
-    this.ai = new GoogleGenAI({ apiKey });
+
+    this.ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key-for-testing' });
   }
 
   /**

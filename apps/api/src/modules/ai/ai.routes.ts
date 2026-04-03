@@ -13,6 +13,9 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
   const isTestEnv = process.env.NODE_ENV === 'test';
   const llmProvider = isTestEnv ? new MockLLMProvider() : new GeminiProvider();
   const aiService = new AIEngineService(llmProvider);
+  
+  // Sincronizar o serviço pedagógico com o provider (Mock ou Real)
+  iaPedagogicoService.setProvider(llmProvider);
 
   // Autenticação Global do endpoint
   fastify.addHook('onRequest', (request, reply) => fastify.authenticate(request, reply));
@@ -57,8 +60,15 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
         const { bimester, year, disciplinaId } = request.body as { bimester: number; year: number; disciplinaId: string };
         const analysis = await iaPedagogicoService.generatePerformanceAnalysis(tenantId, bimester, year, disciplinaId);
         reply.send({ success: true, data: analysis });
-      } catch (error: unknown) {
-        reply.code(500).send({ success: false, message: error instanceof Error ? error.message : 'Erro interno na análise IA' });
+      } catch (error: Error | unknown) {
+        console.error('\n--- ERRO IA PEDAGOGICAL ANALYSIS ---');
+        console.error(error instanceof Error ? error.message : 'Erro genérico');
+        console.error(error instanceof Error ? error.stack : 'Sem stack');
+        reply.code(500).send({ 
+          success: false, 
+          message: error instanceof Error ? error.message : 'Erro interno na análise IA',
+          debug: error instanceof Error ? error.stack : undefined
+        });
       }
     }
   );

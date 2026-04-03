@@ -4,9 +4,13 @@ import { ValidacaoPedagogicaModel } from '../../models/ValidacaoPedagogica.js';
 import { DisciplinaModel } from '../../models/Disciplina.js';
 
 export class IaPedagogicoService {
-  private _aiProvider: GeminiProvider | null = null;
+  private _aiProvider: import('./providers/ILLMProvider.js').ILLMProvider | null = null;
 
-  private get aiProvider(): GeminiProvider {
+  public setProvider(provider: import('./providers/ILLMProvider.js').ILLMProvider) {
+    this._aiProvider = provider;
+  }
+
+  private get aiProvider(): import('./providers/ILLMProvider.js').ILLMProvider {
     if (!this._aiProvider) {
       this._aiProvider = new GeminiProvider();
     }

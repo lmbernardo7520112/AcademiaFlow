@@ -12,7 +12,10 @@ export class IaPedagogicoService {
 
   private get aiProvider(): import('./providers/ILLMProvider.js').ILLMProvider {
     if (!this._aiProvider) {
+      console.error('\n[FORENSIC] iaPedagogicoService: PROVIDER NÃO INJETADO. Utilizando fallback (GeminiProvider)...');
       this._aiProvider = new GeminiProvider();
+    } else {
+      console.log(`\n[FORENSIC] iaPedagogicoService: PROVIDER ATIVO -> ${this._aiProvider.providerName}`);
     }
     return this._aiProvider;
   }

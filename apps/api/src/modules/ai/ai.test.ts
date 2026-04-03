@@ -33,6 +33,7 @@ describe('AI Engine Module Integration (Mocked Provider)', () => {
       role: 'admin',
     };
     
+    // 1. Setup dependências: Admin -> Turma
     const regRes = await app.inject({ method: 'POST', url: '/api/auth/register', payload: payloadInfo });
     expectSuccessStep('Register Admin', regRes, 201);
 
@@ -44,14 +45,25 @@ describe('AI Engine Module Integration (Mocked Provider)', () => {
     const loginData = expectSuccessStep('Login Admin', loginRes, 200);
     const token = loginData.data.token;
 
-    // Create a disciplina
+    // IA Reactor exige vínculo com Turma: Criando Turma síncronamente
+    const turmaRes = await app.inject({
+      method: 'POST',
+      url: '/api/turmas',
+      headers: { Authorization: `Bearer ${token}` },
+      payload: { name: 'Turma AI Test', year: 2026 }
+    });
+    const turmaData = expectSuccessStep('Create Turma', turmaRes, 201);
+    const turmaId = turmaData.data._id;
+
+    // 2. Criar Disciplina VINCULADA à Turma (Requisito de ValidacaoPedagogica)
     const discRes = await app.inject({
       method: 'POST',
       url: '/api/disciplinas',
       headers: { Authorization: `Bearer ${token}` },
       payload: { 
         name: 'Matemática', 
-        codigo: `MAT-${Math.floor(Math.random() * 900) + 100}` 
+        codigo: `MAT-${Math.floor(Math.random() * 900) + 100}`,
+        turmaId // VÍNCULO OBRIGATÓRIO PARA O TESTE
       }
     });
     const discData = expectSuccessStep('Create Disc', discRes, 201);

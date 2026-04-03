@@ -44,6 +44,7 @@ describe('AI Engine Module Integration (Mocked Provider)', () => {
     });
     const loginData = expectSuccessStep('Login Admin', loginRes, 200);
     const token = loginData.data.token;
+    const userId = loginData.data.user._id;
 
     // IA Reactor exige vínculo com Turma: Criando Turma síncronamente
     const turmaRes = await app.inject({
@@ -63,7 +64,8 @@ describe('AI Engine Module Integration (Mocked Provider)', () => {
       payload: { 
         name: 'Matemática', 
         codigo: `MAT-${Math.floor(Math.random() * 900) + 100}`,
-        turmaId // VÍNCULO OBRIGATÓRIO PARA O TESTE
+        turmaId, // VÍNCULO OBRIGATÓRIO PARA O TESTE
+        professorId: userId // OBRIGATÓRIO PARA PERSISTIR VALIDACAO PEDAGOGICA
       }
     });
     const discData = expectSuccessStep('Create Disc', discRes, 201);

@@ -27,6 +27,8 @@ describe('GradeManagement Component', () => {
   const mockBoletins = [
     {
       alunoId: 'student1',
+      alunoName: 'Alvo Dumbledore',
+      matricula: 'GRYF-001',
       notas: { bimestre1: 5.0, bimestre2: 5.0, bimestre3: null, bimestre4: null },
       nf: 5.0,
       situacao: 'Recuperação',
@@ -40,8 +42,9 @@ describe('GradeManagement Component', () => {
   it('should calculate NF and Situation correctly when grades are changed', async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (api.get as any).mockImplementation((url: string) => {
-      if (url.includes('/alunos')) return Promise.resolve({ data: { success: true, data: mockStudents } });
-      if (url.includes('/notas/boletim')) return Promise.resolve({ data: { success: true, data: mockBoletins } });
+      const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+      if (cleanUrl.includes('/alunos')) return Promise.resolve({ data: { success: true, data: mockStudents } });
+      if (cleanUrl.includes('/notas/boletim')) return Promise.resolve({ data: { success: true, data: mockBoletins } });
       return Promise.resolve({ data: { success: true, data: [] } });
     });
 
@@ -53,16 +56,20 @@ describe('GradeManagement Component', () => {
       </MemoryRouter>
     );
 
-    // Wait for data to load
+    // 1. Aguardar sumiço do Carregando
     await waitFor(() => {
       expect(screen.queryByText(/Carregando/)).not.toBeInTheDocument();
-    }, { timeout: 10000 }); // Reduzido para maior agilidade síncrona
+    }, { timeout: 10000 });
 
-    expect(screen.getByText('Alvo Dumbledore')).toBeInTheDocument();
+    // 2. Aguardar renderização resiliente do nome do aluno (ponto crítico de falha no CI)
+    await waitFor(() => {
+      expect(screen.getByText('Alvo Dumbledore')).toBeInTheDocument();
+    }, { timeout: 10000 });
 
     // Initial state from mockBoletins
-    expect(screen.getByDisplayValue('5')).toBeInTheDocument(); 
-    expect(screen.getByText('Recuperação')).toBeInTheDocument();
+    expect(screen.getAllByDisplayValue('5').length).toBeGreaterThanOrEqual(2); 
+    // Initial state from mockBoletins - Check if both AI button and student status exist
+    expect(screen.getAllByText('Recuperação').length).toBeGreaterThanOrEqual(2); 
 
     // Change B3 to 8.0
     const inputs = screen.getAllByRole('spinbutton');

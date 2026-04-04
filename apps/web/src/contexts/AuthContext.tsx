@@ -31,6 +31,7 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Hook nativo para validar Sessões Armazenadas Localmente
   useEffect(() => {
@@ -39,8 +40,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (savedToken && savedUser) {
       setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error("Erro ao recuperar perfil", e);
+      }
     }
+    setLoading(false);
   }, []);
 
   const login = (userData: User, jwt: string) => {
@@ -59,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, login, logout }}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

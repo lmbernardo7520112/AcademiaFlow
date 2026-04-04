@@ -16,7 +16,7 @@ export default function ProfessorAIPage() {
   
   const [selectedTurma, setSelectedTurma] = useState('');
   const [selectedAluno, setSelectedAluno] = useState('');
-  const [focoAtividade, setFocoAtividade] = useState('reforco-matematica');
+  const [focoAtividade, setFocoAtividade] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -156,15 +156,17 @@ export default function ProfessorAIPage() {
             ) : notas.length === 0 ? (
                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>Aluno sem registros de notas no período.</div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="name" stroke="#888" />
-                  <YAxis domain={[0, 10]} stroke="#888" />
-                  <Tooltip contentStyle={{ backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.1)' }} />
-                  <Line type="monotone" dataKey="Nota" stroke="hsl(var(--clr-cyan))" strokeWidth={3} dot={{ fill: 'hsl(var(--clr-cyan))', r: 5 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              <div style={{ width: '100%', height: '220px' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="name" stroke="#888" fontSize={12} />
+                    <YAxis domain={[0, 10]} stroke="#888" fontSize={12} />
+                    <Tooltip contentStyle={{ backgroundColor: '#111', border: '1px solid rgba(255,255,255,0.1)' }} />
+                    <Line type="monotone" dataKey="Nota" stroke="hsl(var(--clr-cyan))" strokeWidth={3} dot={{ fill: 'hsl(var(--clr-cyan))', r: 5 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </div>
         </div>

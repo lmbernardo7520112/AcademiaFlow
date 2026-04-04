@@ -40,7 +40,7 @@ const SecretariaDashboard: React.FC = () => {
       try {
         const { data } = await api.get('/reports/dashboard');
         if (data.success) {
-          setMetrics(data);
+          setMetrics(data.data);
         }
       } catch (error) {
         console.error('Erro ao carregar métricas', error);
@@ -57,12 +57,12 @@ const SecretariaDashboard: React.FC = () => {
   const kpis = metrics.kpis;
 
   const cards = [
-    { label: 'Alunos Ativos', value: kpis.ativos, icon: Users, color: '#10b981', suffix: '' },
-    { label: 'Receita Mensal', value: `R$ ${kpis.estimatedRevenue.toLocaleString('pt-BR')}`, icon: DollarSign, color: '#3b82f6', suffix: '' },
-    { label: 'Retenção', value: `${((kpis.ativos / kpis.totalAlunos) * 100 || 0).toFixed(1)}%`, icon: TrendingUp, color: '#8b5cf6', suffix: '' },
-    { label: 'Ocupação', value: `${kpis.occupancyRate}%`, icon: PieChart, color: '#f59e0b', suffix: '' },
-    { label: 'Média Geral', value: kpis.overallAverage || 'N/A', icon: Activity, color: '#ec4899', suffix: '' },
-    { label: 'Cursos/Turmas', value: `${kpis.totalDisciplinas} / ${kpis.totalTurmas}`, icon: BookOpen, color: '#06b6d4', suffix: '' },
+    { label: 'Alunos Ativos', value: kpis?.ativos ?? 0, icon: Users, color: '#10b981', suffix: '' },
+    { label: 'Receita Mensal', value: `R$ ${(kpis?.estimatedRevenue ?? 0).toLocaleString('pt-BR')}`, icon: DollarSign, color: '#3b82f6', suffix: '' },
+    { label: 'Retenção', value: `${((kpis?.ativos / kpis?.totalAlunos) * 100 || 0).toFixed(1)}%`, icon: TrendingUp, color: '#8b5cf6', suffix: '' },
+    { label: 'Ocupação', value: `${kpis?.occupancyRate ?? 0}%`, icon: PieChart, color: '#f59e0b', suffix: '' },
+    { label: 'Média Geral', value: kpis?.overallAverage || 'N/A', icon: Activity, color: '#ec4899', suffix: '' },
+    { label: 'Cursos/Turmas', value: `${kpis?.totalDisciplinas ?? 0} / ${kpis?.totalTurmas ?? 0}`, icon: BookOpen, color: '#06b6d4', suffix: '' },
   ];
 
   return (
@@ -99,7 +99,7 @@ const SecretariaDashboard: React.FC = () => {
             ) : (
                <div className="activity-list">
                  {metrics.recentActivity.map((grade) => (
-                    <div key={grade._id} className="activity-item" style={{ 
+                     <div key={grade._id} className="activity-item" style={{ 
                       padding: '1rem 0', 
                       borderBottom: '1px solid rgba(255,255,255,0.05)',
                       display: 'flex',
@@ -113,10 +113,10 @@ const SecretariaDashboard: React.FC = () => {
                           padding: '0.25rem 0.5rem', 
                           borderRadius: '6px', 
                           fontWeight: 'bold',
-                          background: grade.value >= 6 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                          color: grade.value >= 6 ? '#10b981' : '#ef4444'
+                          background: (grade?.value ?? 0) >= 6 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                          color: (grade?.value ?? 0) >= 6 ? '#10b981' : '#ef4444'
                        }}>
-                          {grade.value.toFixed(1)}
+                          {grade?.value?.toFixed(1) ?? '0.0'}
                        </div>
                     </div>
                  ))}
@@ -128,12 +128,12 @@ const SecretariaDashboard: React.FC = () => {
             <h3>Status de Evasão</h3>
             <div style={{ marginTop: '2rem', textAlign: 'center' }}>
                <div className="evasao-stat">
-                  <span style={{ fontSize: '3rem', fontWeight: 'bold' }}>{kpis.evadidos}</span>
+                  <span style={{ fontSize: '3rem', fontWeight: 'bold' }}>{kpis?.evadidos ?? 0}</span>
                   <p className="text-secondary">Alunos Evadidos este ano</p>
                </div>
                
                <div style={{ marginTop: '2rem' }}>
-                  {kpis.evadidos > 5 ? (
+                  {(kpis?.evadidos ?? 0) > 5 ? (
                      <div className="alert-warning flex-center gap-2" style={{ color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '1rem', borderRadius: '8px' }}>
                         <ArrowUpRight size={20} /> Alerta crítico de evasão detectado.
                      </div>

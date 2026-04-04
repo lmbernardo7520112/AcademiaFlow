@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { reportsService } from '../../services/reports.service.js';
 import { TurmaPerformanceChart } from '../../components/dashboard/TurmaPerformanceChart.js';
@@ -12,7 +12,7 @@ const TurmaAnalyticsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!turmaId) return;
     setLoading(true);
     try {
@@ -23,11 +23,11 @@ const TurmaAnalyticsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [turmaId]);
 
   useEffect(() => {
     fetchData();
-  }, [turmaId]);
+  }, [fetchData]);
 
   if (loading) return <div className="loading-overlay">Analisando dados pedagógicos...</div>;
   if (!data) return <div className="p-8 text-white">Turma não encontrada ou sem dados analíticos.</div>;

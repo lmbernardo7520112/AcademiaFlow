@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api.js';
 import DashboardLayout from '../../components/layout/DashboardLayout.js';
 import DataTable from '../../components/ui/DataTable.js';
@@ -30,7 +30,7 @@ export default function TurmasPage() {
   const [periodo, setPeriodo] = useState('matutino');
   const [isActive, setIsActive] = useState(true);
 
-  const fetchTurmas = async () => {
+  const fetchTurmas = useCallback(async () => {
     setLoading(true);
     try {
       const [turmasRes, taxas] = await Promise.all([
@@ -50,11 +50,11 @@ export default function TurmasPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchTurmas();
-  }, []);
+  }, [fetchTurmas]);
 
   const handleExport = async (turmaId: string, turmaName: string) => {
     try {

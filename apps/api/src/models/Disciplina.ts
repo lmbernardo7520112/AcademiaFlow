@@ -25,11 +25,11 @@ const disciplinaSchema = new Schema(
       ref: 'User',
       default: null,
     },
-    turmaId: {
+    turmaIds: [{
       type: Schema.Types.ObjectId,
       ref: 'Turma',
-      default: null,
-    },
+      default: [],
+    }],
     cargaHoraria: {
       type: Number,
       min: 10,

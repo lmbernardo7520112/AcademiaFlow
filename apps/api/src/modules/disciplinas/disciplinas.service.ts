@@ -13,11 +13,16 @@ export class DisciplinasService {
   }
 
   async list(tenantId: string) {
-    return DisciplinaModel.find({ tenantId, isActive: true }).sort({ name: 1 });
+    return DisciplinaModel.find({ tenantId, isActive: true })
+      .populate('professorId', 'name')
+      .populate('turmaIds', 'name')
+      .sort({ name: 1 });
   }
 
   async getById(tenantId: string, id: string) {
-    const disciplina = await DisciplinaModel.findOne({ _id: id, tenantId, isActive: true });
+    const disciplina = await DisciplinaModel.findOne({ _id: id, tenantId, isActive: true })
+      .populate('professorId', 'name')
+      .populate('turmaIds', 'name');
     if (!disciplina) throw new Error('Disciplina não encontrada ou inativa');
     return disciplina;
   }

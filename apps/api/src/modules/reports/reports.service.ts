@@ -15,15 +15,7 @@ export class ReportsService {
     const totalTurmas = await TurmaModel.countDocuments({ tenantId, isActive: true });
     const totalDisciplinas = await DisciplinaModel.countDocuments({ tenantId, isActive: true });
 
-    // Calculate Estimated Revenue (Sum of tuition of active students)
-    const revenueAggregation = await AlunoModel.aggregate([
-      { $match: { tenantId, isActive: true } },
-      { $group: { _id: null, total: { $sum: '$valorMensalidade' } } }
-    ]);
-    const estimatedRevenue = revenueAggregation.length > 0 ? revenueAggregation[0].total : 0;
-
-    // Calculate Occupancy (Active Students / Total Capacity)
-    // For now assuming each class has avg 40 capacity if not specified
+    // Occupational metrics (Active Students / Total Capacity)
     const totalCapacity = totalTurmas * 40; 
     const occupancyRate = totalCapacity > 0 ? parseFloat(((ativos / totalCapacity) * 100).toFixed(1)) : 0;
 
@@ -50,7 +42,6 @@ export class ReportsService {
         totalTurmas,
         totalDisciplinas,
         overallAverage,
-        estimatedRevenue,
         occupancyRate,
       },
       recentActivity: recentGrades,
@@ -180,22 +171,28 @@ export class ReportsService {
     };
   }
 
-  async getProfessorAnalytics(tenantId: string, professorId: string) {
-    const disciplinas = await DisciplinaModel.find({ tenantId, professorId, isActive: true });
-    const turmaIds = [...new Set(disciplinas.map(d => d.turmaId?.toString()).filter(Boolean))];
+  async getProfessorAnalytics(tenantId: string, professorId: string, turmaId?: string) {
+    const query: any = { tenantId, professorId, isActive: true };
+    
+    const disciplinas = await DisciplinaModel.find(query);
+    // Agrupa todas as IDs de turmas únicas atendidas pelo professor
+    const allTurmaIds = [...new Set(disciplinas.map(d => d.turmaIds).flat().map(id => id?.toString()).filter(Boolean))];
 
-    if (turmaIds.length === 0) {
+    // Se um turmaId foi passado, garantimos que ele está nas turmas atendidas pelo professor
+    const targetTurmaIds = turmaId ? [turmaId] : allTurmaIds;
+
+    if (targetTurmaIds.length === 0) {
       return { globalAverage: null, riskTotal: 0, classes: [] };
     }
 
-    const objectTurmaIds = turmaIds.map(id => new mongoose.Types.ObjectId(id!));
+    const objectTurmaIds = targetTurmaIds.map(id => new mongoose.Types.ObjectId(id));
 
-    const globalStats = await NotaModel.aggregate([
+    const stats = await NotaModel.aggregate([
       { $match: { tenantId, turmaId: { $in: objectTurmaIds } } },
       { $group: { _id: null, avg: { $avg: '$value' } } }
     ]);
 
-    const riskTotal = await NotaModel.aggregate([
+    const riskAggregation = await NotaModel.aggregate([
       { $match: { tenantId, turmaId: { $in: objectTurmaIds } } },
       { $group: { _id: '$alunoId', avg: { $avg: '$value' } } },
       { $match: { avg: { $lt: 6 } } },
@@ -203,24 +200,78 @@ export class ReportsService {
     ]);
 
     const classesPerformance = [];
-    for (const id of turmaIds) {
+    for (const id of allTurmaIds) {
       const turma = await TurmaModel.findById(id);
       const avg = await NotaModel.aggregate([
-        { $match: { tenantId, turmaId: new mongoose.Types.ObjectId(id!) } },
+        { $match: { tenantId, turmaId: new mongoose.Types.ObjectId(id) } },
         { $group: { _id: null, avg: { $avg: '$value' } } }
       ]);
       classesPerformance.push({
-        id: id!,
+        id: id,
         name: turma?.name || 'Desconhecida',
         average: avg.length > 0 ? parseFloat(avg[0].avg.toFixed(2)) : null,
         trend: 'stable' as const
       });
     }
 
+    // Contexto selecionado
+    let context = undefined;
+    if (turmaId) {
+      const selectedTurma = await TurmaModel.findById(turmaId);
+      context = {
+        turmaId,
+        turmaName: selectedTurma?.name
+      };
+    }
+
     return {
-      globalAverage: globalStats.length > 0 ? parseFloat(globalStats[0].avg.toFixed(2)) : null,
-      riskTotal: riskTotal.length > 0 ? riskTotal[0].total : 0,
+      context,
+      globalAverage: stats.length > 0 ? parseFloat(stats[0].avg.toFixed(2)) : null,
+      riskTotal: riskAggregation.length > 0 ? riskAggregation[0].total : 0,
       classes: classesPerformance
+    };
+  }
+
+  async getBoletimIndividual(tenantId: string, alunoId: string, year: number) {
+    const aluno = await AlunoModel.findOne({ _id: alunoId, tenantId }).populate('turmaId');
+    if (!aluno) throw new Error('Aluno não encontrado');
+
+    const disciplinas = await DisciplinaModel.find({ 
+      tenantId, 
+      turmaIds: aluno.turmaId,
+      isActive: true 
+    });
+
+    const { notasService } = await import('../notas/notas.service.js');
+    
+    const disciplinasComNotas = await Promise.all(disciplinas.map(async (disc) => {
+      const boletim = await notasService.getBoletim(tenantId, alunoId, disc._id.toString(), year);
+      return {
+        id: disc._id.toString(),
+        name: disc.name,
+        notas: {
+          bimestre1: boletim.notas.bimestre1,
+          bimestre2: boletim.notas.bimestre2,
+          bimestre3: boletim.notas.bimestre3,
+          bimestre4: boletim.notas.bimestre4,
+          pf: (boletim.notas as any).pf || null,
+        },
+        nf: boletim.nf,
+        mg: boletim.mg,
+        mf: boletim.mf,
+        situacao: boletim.situacao
+      };
+    }));
+
+    return {
+      aluno: {
+        id: aluno._id.toString(),
+        name: aluno.name,
+        matricula: aluno.matricula,
+        turmaName: (aluno.turmaId as any)?.name
+      },
+      year,
+      disciplinas: disciplinasComNotas
     };
   }
 

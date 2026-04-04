@@ -109,6 +109,9 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
     {
       preHandler: [fastify.authorize(['professor'])],
       schema: {
+        querystring: z.object({
+          turmaId: z.string().optional(),
+        }),
         response: {
           200: z.object({ success: z.literal(true), data: professorAnalyticsSchema }),
           '4xx': z.object({ success: z.literal(false), message: z.string() }),
@@ -120,7 +123,8 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
       try {
         const tenantId = request.user.tenantId;
         const professorId = request.user.id;
-        const analytics = await reportsService.getProfessorAnalytics(tenantId, professorId);
+        const { turmaId } = (request.query as any);
+        const analytics = await reportsService.getProfessorAnalytics(tenantId, professorId, turmaId);
         reply.send({ success: true, data: analytics });
       } catch (error: Error | unknown) {
         reply.code(500).send({
@@ -157,6 +161,33 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
         reply.code(500).send({
           success: false,
           message: error instanceof Error ? error.message : 'Erro ao exportar boletins',
+        });
+      }
+    }
+  );
+  typedFastify.get(
+    '/notas/boletim/aluno/:alunoId',
+    {
+      preHandler: [fastify.authorize(['admin', 'secretaria', 'professor'])],
+      schema: {
+        params: z.object({ alunoId: z.string() }),
+        querystring: z.object({
+          year: z.coerce.number().int().default(() => new Date().getFullYear()),
+        }),
+      }
+    },
+    async (request, reply) => {
+      try {
+        const tenantId = request.user.tenantId;
+        const { alunoId } = request.params;
+        const { year } = (request.query as any);
+        
+        const boletim = await reportsService.getBoletimIndividual(tenantId, alunoId, year);
+        reply.send({ success: true, data: boletim });
+      } catch (error: Error | unknown) {
+        reply.code(500).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Erro ao gerar boletim individual',
         });
       }
     }

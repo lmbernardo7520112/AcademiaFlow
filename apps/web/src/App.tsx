@@ -47,7 +47,8 @@ function App() {
             </Route>
           </Route>
 
-          {/* Fallback */}
+          {/* Fallback & Parity Drifts */}
+          <Route path="/professor/notas" element={<Navigate to="/professor" replace />} />
           <Route path="/dashboard/*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

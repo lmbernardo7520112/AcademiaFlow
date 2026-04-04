@@ -71,6 +71,9 @@ describe('ProfessorAI Integration Test', () => {
     await waitFor(() => screen.getByText('Aluno 1'));
     fireEvent.change(screen.getByLabelText(/Aluno Alvo/i), { target: { value: 'a1' } });
 
+    // Type Focal Point
+    fireEvent.change(screen.getByLabelText(/Foco Pedagógico/i), { target: { value: 'Frações e Decimais' } });
+
     // Click Generate
     const btn = screen.getByText(/Gerar Materiais via IA/i);
     fireEvent.click(btn);
@@ -79,7 +82,7 @@ describe('ProfessorAI Integration Test', () => {
       expect(screen.getByText('Atividade Teste')).toBeInTheDocument();
       expect(api.post).toHaveBeenCalledWith('/ai/generate-activity', {
         alunoId: 'a1',
-        focoAtividade: 'reforco-matematica',
+        focoAtividade: 'Frações e Decimais',
       });
     });
   });

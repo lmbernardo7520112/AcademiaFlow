@@ -51,7 +51,7 @@ describe('SecretariaDashboard', () => {
     });
 
     expect(screen.getByText('João')).toBeInTheDocument();
-    expect(screen.getByText('8.5')).toBeInTheDocument();
+    expect(screen.getAllByText('8.5')[0]).toBeInTheDocument();
   });
 
   it('deve lidar com falha na API graciosamente', async () => {

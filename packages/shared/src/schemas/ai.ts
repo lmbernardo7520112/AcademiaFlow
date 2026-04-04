@@ -8,7 +8,7 @@ export const AI_PROVIDERS = ['gemini', 'n8n', 'openai'] as const;
  */
 export const analyzeStudentPayloadSchema = z.object({
   alunoId: objectIdSchema,
-  focoAtividade: nonEmptyStringSchema.describe('Exemplo: reforco-matematica, quiz-historia'),
+  focoAtividade: nonEmptyStringSchema.describe('Tópico pedagógico alvo da atividade'),
 });
 
 export type AnalyzeStudentPayload = z.infer<typeof analyzeStudentPayloadSchema>;

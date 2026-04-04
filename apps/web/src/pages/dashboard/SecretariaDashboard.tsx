@@ -42,8 +42,13 @@ const SecretariaDashboard: React.FC = () => {
         if (data.success) {
           setMetrics(data.data);
         }
-      } catch (error) {
-        console.error('Erro ao carregar métricas', error);
+      } catch (error: unknown) {
+        const err = error as { response?: { status?: number } };
+        console.error('Erro ao carregar métricas', err);
+        // Garantir que não crashamos a tela, mas mostramos o estado honesto de erro.
+        if (err?.response?.status === 401) {
+          setMetrics(null);
+        }
       } finally {
         setLoading(false);
       }
@@ -55,11 +60,15 @@ const SecretariaDashboard: React.FC = () => {
   if (!metrics) return <div>Erro ao carregar dados.</div>;
 
   const kpis = metrics.kpis;
+  
+  // Guardas preventivas contra divisões por zero ou dados ausentes que causam NaN e crasham o gráfico
+  const totalAlunosValidos = Math.max(kpis?.totalAlunos ?? 1, 1);
+  const taxaRetencao = ((kpis?.ativos ?? 0) / totalAlunosValidos * 100).toFixed(1);
 
   const cards = [
     { label: 'Alunos Ativos', value: kpis?.ativos ?? 0, icon: Users, color: '#10b981', suffix: '' },
     { label: 'Receita Mensal', value: `R$ ${(kpis?.estimatedRevenue ?? 0).toLocaleString('pt-BR')}`, icon: DollarSign, color: '#3b82f6', suffix: '' },
-    { label: 'Retenção', value: `${((kpis?.ativos / kpis?.totalAlunos) * 100 || 0).toFixed(1)}%`, icon: TrendingUp, color: '#8b5cf6', suffix: '' },
+    { label: 'Retenção', value: `${taxaRetencao}%`, icon: TrendingUp, color: '#8b5cf6', suffix: '' },
     { label: 'Ocupação', value: `${kpis?.occupancyRate ?? 0}%`, icon: PieChart, color: '#f59e0b', suffix: '' },
     { label: 'Média Geral', value: kpis?.overallAverage || 'N/A', icon: Activity, color: '#ec4899', suffix: '' },
     { label: 'Cursos/Turmas', value: `${kpis?.totalDisciplinas ?? 0} / ${kpis?.totalTurmas ?? 0}`, icon: BookOpen, color: '#06b6d4', suffix: '' },

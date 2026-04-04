@@ -1,14 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
-import { api } from '../../services/api';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import DataTable from '../../components/ui/DataTable';
-import Modal from '../../components/ui/Modal';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { api } from '../../services/api.js';
+import DashboardLayout from '../../components/layout/DashboardLayout.js';
+import DataTable from '../../components/ui/DataTable.js';
+import Modal from '../../components/ui/Modal.js';
+import { Plus, Edit2, FileText, ChevronLeft } from 'lucide-react';
+import { TurmaGrid } from '../../components/dashboard/TurmaGrid.js';
 import '../../styles/dashboard.css';
 
 interface Turma {
   _id: string;
   name: string;
+  year: number;
+  periodo: string;
 }
 
 interface Aluno {
@@ -27,6 +30,8 @@ export default function AlunosPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null);
+  const [selectedTurmaName, setSelectedTurmaName] = useState<string | null>(null);
 
   // Form State
   const [name, setName] = useState('');
@@ -43,23 +48,37 @@ export default function AlunosPage() {
         api.get('/alunos'),
         api.get('/turmas')
       ]);
-      if (alunosRes.data.success) setAlunos(alunosRes.data.data);
+      if (alunosRes.data.success) {
+        setAlunos(alunosRes.data.data);
+      }
       if (turmasRes.data.success) {
-         setTurmas(turmasRes.data.data);
-         if (turmasRes.data.data.length > 0 && !turmaId) {
-             setTurmaId(turmasRes.data.data[0]._id);
-         }
+        setTurmas(turmasRes.data.data);
       }
     } catch {
       console.error('Erro ao buscar dados');
     } finally {
       setLoading(false);
     }
-  }, [turmaId]);
+  }, []);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const filteredAlunos = selectedTurmaId 
+    ? alunos.filter(a => (a.turmaId as any)?._id === selectedTurmaId)
+    : [];
+
+  const handleSelectTurma = (id: string, name: string) => {
+    setSelectedTurmaId(id);
+    setSelectedTurmaName(name);
+    setTurmaId(id); // Set default for modal registration
+  };
+
+  const handleBack = () => {
+    setSelectedTurmaId(null);
+    setSelectedTurmaName(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,10 +99,9 @@ export default function AlunosPage() {
       }
       setIsModalOpen(false);
       fetchData();
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Erro ao salvar aluno. Verifique os dados.';
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 'Erro ao salvar aluno.';
       alert(errorMessage);
-      console.error(error);
     }
   };
 
@@ -92,7 +110,7 @@ export default function AlunosPage() {
     setName(aluno.name);
     setEmail(aluno.email || '');
     setMatricula(aluno.matricula);
-    setTurmaId(aluno.turmaId._id ? aluno.turmaId._id : (aluno.turmaId as unknown as string));
+    setTurmaId((aluno.turmaId as any)._id || (aluno.turmaId as any));
     setDataNascimento(new Date(aluno.dataNascimento).toISOString().split('T')[0]);
     setIsActive(aluno.isActive);
     setIsModalOpen(true);
@@ -103,7 +121,7 @@ export default function AlunosPage() {
     setName('');
     setEmail('');
     setMatricula('');
-    if (turmas.length > 0) setTurmaId(turmas[0]._id);
+    // Manter turmaId se já estiver filtrado
     setDataNascimento('');
     setIsActive(true);
     setIsModalOpen(true);
@@ -112,11 +130,6 @@ export default function AlunosPage() {
   const columns = [
     { key: 'matricula', title: 'Matrícula' },
     { key: 'name', title: 'Nome do Aluno' },
-    { 
-      key: 'turma', 
-      title: 'Turma', 
-      render: (row: Aluno) => row.turmaId?.name || 'Desconhecida' 
-    },
     { 
       key: 'isActive', 
       title: 'Status', 
@@ -130,9 +143,9 @@ export default function AlunosPage() {
       key: 'actions',
       title: 'Ações',
       render: (row: Aluno) => (
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
           <button className="btn-outline-small" onClick={() => handleEdit(row)} title="Editar"><Edit2 size={14} /></button>
-          <button className="btn-outline-small" onClick={() => alert('Para excluir/desativar acesse a edição.')} title="Excluir"><Trash2 size={14} color="hsl(345, 80%, 55%)" /></button>
+          <button className="btn-outline-small" onClick={() => window.location.href = `/dashboard/alunos/${row._id}/boletim`} title="Boletim Individual"><FileText size={14} color="#3b82f6" /></button>
         </div>
       )
     }
@@ -142,23 +155,44 @@ export default function AlunosPage() {
     <DashboardLayout>
       <div className="dashboard-header fade-in">
         <h1 className="text-gradient">Gestão de Alunos</h1>
-        <p className="text-secondary">Cadastro e alocação de estudantes.</p>
+        <p className="text-secondary">Ponto de centralização discente e paridade funcional.</p>
       </div>
 
-      <div className="dashboard-section fade-in" style={{ animationDelay: '0.1s' }}>
-        <div className="section-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
-          <h2>Alunos Registrados</h2>
-          <button className="btn-primary flex-center gap-2" onClick={openNewForm}>
-            <Plus size={16} /> Novo Aluno
-          </button>
+      {!selectedTurmaId ? (
+        <div className="dashboard-section fade-in" style={{ animationDelay: '0.1s' }}>
+          <div className="section-header" style={{ marginBottom: '1.5rem' }}>
+            <h2>Selecione uma Turma</h2>
+          </div>
+          <TurmaGrid turmas={turmas} onSelect={handleSelectTurma} />
         </div>
-        
-        <div className="glass-panel" style={{ padding: 0 }}>
-          <DataTable data={alunos} columns={columns} loading={loading} emptyText="Nenhum aluno encontrado." />
+      ) : (
+        <div className="dashboard-section fade-in" style={{ animationDelay: '0.1s' }}>
+          <div className="section-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <button 
+                onClick={handleBack}
+                className="btn-outline-small flex-center"
+                style={{ padding: '0.5rem', borderRadius: '50%' }}
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <div>
+                <h2 style={{ margin: 0 }}>Alunos: {selectedTurmaName}</h2>
+                <p className="text-secondary" style={{ fontSize: '0.8rem' }}>Visualizando registros acadêmicos ativos.</p>
+              </div>
+            </div>
+            <button className="btn-primary flex-center gap-2" onClick={openNewForm}>
+              <Plus size={16} /> Novo Aluno
+            </button>
+          </div>
+          
+          <div className="glass-panel" style={{ padding: 0 }}>
+            <DataTable data={filteredAlunos} columns={columns} loading={loading} emptyText="Nenhum aluno encontrado nesta turma." />
+          </div>
         </div>
-      </div>
+      )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? 'Editar Aluno' : 'Cadastrar Aluno'}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? 'Editar Registro' : 'Cadastro Forense de Aluno'}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
@@ -169,19 +203,20 @@ export default function AlunosPage() {
 
             <div className="input-group">
               <label>Nome Completo</label>
-              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do Aluno" />
+              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Conforme documento" />
             </div>
           </div>
           
           <div className="input-group">
-            <label>E-mail (Opcional)</label>
+            <label>E-mail Institucional</label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="aluno@escola.com" />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="input-group">
-              <label>Turma</label>
+              <label>Turma Designada</label>
               <select required value={turmaId} onChange={(e) => setTurmaId(e.target.value)}>
+                <option value="">Selecione...</option>
                 {turmas.map(t => (
                   <option key={t._id} value={t._id}>{t.name}</option>
                 ))}
@@ -196,12 +231,12 @@ export default function AlunosPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
             <input type="checkbox" id="isActive" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-            <label htmlFor="isActive" style={{ margin: 0 }}>Matrícula Ativa</label>
+            <label htmlFor="isActive" style={{ margin: 0 }}>Matrícula Ativa (Vínculo Mantido)</label>
           </div>
           
           <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
             <button type="button" className="btn-outline-small" onClick={() => setIsModalOpen(false)}>Cancelar</button>
-            <button type="submit" className="btn-primary">{editingId ? 'Atualizar Aluno' : 'Cadastrar'}</button>
+            <button type="submit" className="btn-primary">{editingId ? 'Efetivar Mudanças' : 'Cadastrar Aluno'}</button>
           </div>
         </form>
       </Modal>

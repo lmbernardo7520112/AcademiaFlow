@@ -11,8 +11,10 @@ export const reportsService = {
     return data.data;
   },
 
-  async getProfessorAnalytics(): Promise<ProfessorAnalytics> {
-    const { data } = await api.get<{ success: boolean; data: ProfessorAnalytics }>('/reports/professor/analytics');
+  async getProfessorAnalytics(turmaId?: string): Promise<ProfessorAnalytics> {
+    const { data } = await api.get<{ success: boolean; data: ProfessorAnalytics }>('/reports/professor/analytics', {
+      params: { turmaId }
+    });
     return data.data;
   },
 

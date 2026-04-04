@@ -17,7 +17,7 @@ interface Props {
 }
 
 export const ProfessorAnalyticsHeader: React.FC<Props> = ({ data }) => {
-  const { globalAverage, riskTotal, classes } = data;
+  const { globalAverage, riskTotal, classes, context } = data;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -28,7 +28,9 @@ export const ProfessorAnalyticsHeader: React.FC<Props> = ({ data }) => {
             <BookOpen size={24} />
           </div>
           <div>
-            <p className="text-xs text-gray-400 uppercase tracking-wider">Média Global</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wider">
+              {context ? `Média da Turma: ${context.turmaName}` : 'Média Global'}
+            </p>
             <h3 className="text-2xl font-bold text-white">{globalAverage || '--'}</h3>
           </div>
         </GlassCard>

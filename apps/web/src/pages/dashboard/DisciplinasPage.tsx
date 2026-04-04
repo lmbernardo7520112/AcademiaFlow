@@ -1,58 +1,88 @@
 import { useState, useEffect } from 'react';
-import { api } from '../../services/api';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import DataTable from '../../components/ui/DataTable';
-import Modal from '../../components/ui/Modal';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { api } from '../../services/api.js';
+import DashboardLayout from '../../components/layout/DashboardLayout.js';
+import DataTable from '../../components/ui/DataTable.js';
+import Modal from '../../components/ui/Modal.js';
+import { Plus, Edit2, BookOpen } from 'lucide-react';
 import '../../styles/dashboard.css';
 
 interface Disciplina {
   _id: string;
   name: string;
-  description?: string;
+  codigo: string;
+  professorId?: { _id: string; name: string };
+  turmaIds: Array<{ _id: string; name: string }>;
   isActive: boolean;
+}
+
+interface Professor {
+  _id: string;
+  name: string;
+}
+
+interface Turma {
+  _id: string;
+  name: string;
 }
 
 export default function DisciplinasPage() {
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
+  const [professores, setProfessores] = useState<Professor[]>([]);
+  const [turmas, setTurmas] = useState<Turma[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form State
   const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [codigo, setCodigo] = useState('');
+  const [professorId, setProfessorId] = useState('');
+  const [selectedTurmaIds, setSelectedTurmaIds] = useState<string[]>([]);
   const [isActive, setIsActive] = useState(true);
 
-  const fetchDisciplinas = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/disciplinas');
-      if (data.success) setDisciplinas(data.data);
+      const [discRes, profRes, turmasRes] = await Promise.all([
+        api.get('/disciplinas'),
+        api.get('/users/professores'), // Ajustar se rota for diferente
+        api.get('/turmas')
+      ]);
+      
+      if (discRes.data.success) setDisciplinas(discRes.data.data);
+      if (profRes.data.success) setProfessores(profRes.data.data);
+      if (turmasRes.data.success) setTurmas(turmasRes.data.data);
     } catch (error) {
-      console.error('Erro ao buscar disciplinas', error);
+      console.error('Erro ao buscar dados', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchDisciplinas();
+    fetchData();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const payload = { name, description: description || undefined, isActive };
+      const payload = { 
+        name, 
+        codigo, 
+        professorId: professorId || null, 
+        turmaIds: selectedTurmaIds,
+        isActive 
+      };
+      
       if (editingId) {
         await api.put(`/disciplinas/${editingId}`, payload);
       } else {
         await api.post('/disciplinas', payload);
       }
       setIsModalOpen(false);
-      fetchDisciplinas();
+      fetchData();
     } catch (error) {
-      alert('Erro ao salvar disciplina. Verifique os dados.');
+      alert('Erro ao salvar disciplina. Verifique o padrão do código (ex: MAT-001).');
       console.error(error);
     }
   };
@@ -60,7 +90,9 @@ export default function DisciplinasPage() {
   const handleEdit = (disciplina: Disciplina) => {
     setEditingId(disciplina._id);
     setName(disciplina.name);
-    setDescription(disciplina.description || '');
+    setCodigo(disciplina.codigo);
+    setProfessorId(disciplina.professorId?._id || '');
+    setSelectedTurmaIds(disciplina.turmaIds.map(t => t._id));
     setIsActive(disciplina.isActive);
     setIsModalOpen(true);
   };
@@ -68,14 +100,42 @@ export default function DisciplinasPage() {
   const openNewForm = () => {
     setEditingId(null);
     setName('');
-    setDescription('');
+    setCodigo('');
+    setProfessorId('');
+    setSelectedTurmaIds([]);
     setIsActive(true);
     setIsModalOpen(true);
   };
 
   const columns = [
-    { key: 'name', title: 'Nome da Disciplina' },
-    { key: 'description', title: 'Ementa / Descrição', render: (row: Disciplina) => row.description || '-' },
+    { 
+      key: 'name', 
+      title: 'Nome da Disciplina',
+      render: (row: Disciplina) => (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{ fontWeight: 'bold' }}>{row.name}</span>
+          <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>{row.codigo}</span>
+        </div>
+      )
+    },
+    { 
+      key: 'professor', 
+      title: 'Docente Responsável', 
+      render: (row: Disciplina) => row.professorId?.name || <span className="text-secondary">Não atribuído</span> 
+    },
+    { 
+      key: 'turmas', 
+      title: 'Turmas Vinculadas', 
+      render: (row: Disciplina) => (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
+          {row.turmaIds?.length > 0 ? row.turmaIds.map(t => (
+            <span key={t._id} className="status-pill" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', borderColor: 'transparent' }}>
+              {t.name}
+            </span>
+          )) : <span className="text-secondary">-</span>}
+        </div>
+      )
+    },
     { 
       key: 'isActive', 
       title: 'Status', 
@@ -91,7 +151,6 @@ export default function DisciplinasPage() {
       render: (row: Disciplina) => (
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button className="btn-outline-small" onClick={() => handleEdit(row)} title="Editar"><Edit2 size={14} /></button>
-          <button className="btn-outline-small" onClick={() => alert('Para excluir/desativar acesse a edição.')} title="Excluir"><Trash2 size={14} color="hsl(345, 80%, 55%)" /></button>
         </div>
       )
     }
@@ -100,39 +159,88 @@ export default function DisciplinasPage() {
   return (
     <DashboardLayout>
       <div className="dashboard-header fade-in">
-        <h1 className="text-gradient">Gestão de Disciplinas</h1>
-        <p className="text-secondary">Catálogo curricular e controle de matérias B2B.</p>
+        <h1 className="text-gradient">Gestão Curricular</h1>
+        <p className="text-secondary">Administração de disciplinas, docentes e alocação de turmas.</p>
       </div>
 
       <div className="dashboard-section fade-in" style={{ animationDelay: '0.1s' }}>
-        <div className="section-header">
-          <h2>Disciplinas Cadastradas</h2>
+        <div className="section-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div className="flex-center" style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
+              <BookOpen size={18} />
+            </div>
+            <h2 style={{ margin: 0 }}>Grade Ativa</h2>
+          </div>
           <button className="btn-primary flex-center gap-2" onClick={openNewForm}>
-            <Plus size={16} /> Nova Disciplina
+            <Plus size={16} /> Nova Matéria
           </button>
         </div>
         
-        <DataTable data={disciplinas} columns={columns} loading={loading} emptyText="Nenhuma disciplina configurada." />
+        <div className="glass-panel" style={{ padding: 0 }}>
+          <DataTable data={disciplinas} columns={columns} loading={loading} emptyText="Aguardando carga de dados da secretaria." />
+        </div>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? 'Editar Disciplina' : 'Criar Nova Disciplina'}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? 'Refinar Disciplina' : 'Nova Carga Disciplinar'}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div className="input-group">
-            <label>Nome da Disciplina</label>
-            <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Matemática Avançada" />
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
+            <div className="input-group">
+              <label>Código (Paridade)</label>
+              <input required value={codigo} onChange={(e) => setCodigo(e.target.value.toUpperCase())} placeholder="Ex: MAT-001" />
+            </div>
+            <div className="input-group">
+              <label>Nome da Disciplina</label>
+              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Biologia Molecular" />
+            </div>
           </div>
+
           <div className="input-group">
-            <label>Descrição Opcional</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ementa resumida..." rows={3} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.2)', backgroundColor: 'transparent', color: '#fff' }} />
+            <label>Docente Responsável</label>
+            <select value={professorId} onChange={(e) => setProfessorId(e.target.value)}>
+              <option value="">Nenhum/Aguardando Atribuição</option>
+              {professores.map(p => (
+                <option key={p._id} value={p._id}>{p.name}</option>
+              ))}
+            </select>
           </div>
+
+          <div className="input-group">
+            <label>Vínculo com Turmas (Seleção Múltipla)</label>
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
+              gap: '0.5rem',
+              maxHeight: '150px',
+              overflowY: 'auto',
+              padding: '0.5rem',
+              background: 'rgba(0,0,0,0.2)',
+              borderRadius: '8px'
+            }}>
+              {turmas.map(t => (
+                <label key={t._id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', cursor: 'pointer' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={selectedTurmaIds.includes(t._id)}
+                    onChange={(e) => {
+                      if (e.target.checked) setSelectedTurmaIds([...selectedTurmaIds, t._id]);
+                      else setSelectedTurmaIds(selectedTurmaIds.filter(id => id !== t._id));
+                    }}
+                  />
+                  {t.name}
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
             <input type="checkbox" id="isActive" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-            <label htmlFor="isActive" style={{ margin: 0 }}>Matéria Ativa no Semestre</label>
+            <label htmlFor="isActive" style={{ margin: 0 }}>Disciplina Ativa (Visível para Professores)</label>
           </div>
           
           <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
             <button type="button" className="btn-outline-small" onClick={() => setIsModalOpen(false)}>Cancelar</button>
-            <button type="submit" className="btn-primary">{editingId ? 'Salvar Mudanças' : 'Cadastrar Disciplina'}</button>
+            <button type="submit" className="btn-primary">{editingId ? 'Atualizar Grade' : 'Efetivar Carga'}</button>
           </div>
         </form>
       </Modal>

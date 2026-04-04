@@ -14,7 +14,7 @@ export const disciplinaSchema = z.object({
   name: nonEmptyStringSchema.describe('Course or Subject name (e.g. Matemática)'),
   codigo: codigoDisciplinaSchema.describe('Código único da disciplina (ex: MAT-001)'),
   professorId: objectIdSchema.optional().nullable().describe('Professor atribuído'),
-  turmaId: objectIdSchema.optional().nullable().describe('Turma vinculada'),
+  turmaIds: z.array(objectIdSchema).default([]).describe('Turmas vinculadas'),
   cargaHoraria: z.number().int().min(10).max(400).default(60).describe('Carga horária em horas'),
   isActive: z.boolean().default(true),
   ...timestampFieldsSchema.shape,

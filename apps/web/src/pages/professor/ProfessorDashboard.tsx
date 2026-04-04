@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../../services/api';
-import { BookOpen, Users, ArrowRight } from 'lucide-react';
+import { api } from '../../services/api.js';
+import { BookOpen, Users, ArrowRight, BarChart3 } from 'lucide-react';
+import { reportsService } from '../../services/reports.service.js';
+import { ProfessorAnalyticsHeader } from '../../components/dashboard/ProfessorAnalyticsHeader.js';
+import type { ProfessorAnalytics } from '@academiaflow/shared';
 import '../../styles/dashboard.css';
 
 interface Discipline {
@@ -17,35 +20,55 @@ interface Discipline {
 
 const ProfessorDashboard: React.FC = () => {
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
+  const [analytics, setAnalytics] = useState<ProfessorAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchDisciplines = async () => {
+    const fetchData = async () => {
       try {
-        const { data } = await api.get('/professor/disciplinas');
-        if (data.success) {
-          setDisciplines(data.data);
-        }
+        const [disciplinesRes, analyticsRes] = await Promise.all([
+          api.get('/professor/disciplinas'),
+          reportsService.getProfessorAnalytics()
+        ]);
+        
+        if (disciplinesRes.data.success) setDisciplines(disciplinesRes.data.data);
+        setAnalytics(analyticsRes);
       } catch (error) {
-        console.error('Erro ao carregar disciplinas', error);
+        console.error('Erro ao carregar dashboard', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchDisciplines();
+    fetchData();
   }, []);
 
   if (loading) return <div className="loading-overlay">Carregando sua jornada...</div>;
 
   return (
     <div className="professor-dashboard">
-      <div className="dashboard-header fade-in">
-        <h1 className="text-gradient">Minhas Disciplinas</h1>
-        <p className="text-secondary">Selecione uma disciplina para gerenciar notas e frequência.</p>
+      <div className="dashboard-header fade-in flex justify-between items-end mb-8">
+        <div>
+          <h1 className="text-gradient text-4xl font-bold">Painel do Professor</h1>
+          <p className="text-secondary">Visão analítica de performance e gestão de turmas.</p>
+        </div>
+        <div className="hidden md:block">
+          <div className="flex items-center space-x-2 text-xs text-gray-500 uppercase tracking-tighter">
+            <BarChart3 size={14} />
+            <span>Telemetria em Tempo Real</span>
+          </div>
+        </div>
       </div>
 
+      {analytics && <ProfessorAnalyticsHeader data={analytics} />}
+
       <div className="dashboard-section fade-in">
+        <div className="flex items-center justify-between mb-4">
+           <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+             <BookOpen size={20} className="text-blue-400" />
+             Minhas Disciplinas
+           </h2>
+        </div>
         {disciplines.length === 0 ? (
           <div className="glass-panel" style={{ textAlign: 'center', padding: '3rem' }}>
              <BookOpen size={48} style={{ opacity: 0.2, marginBottom: '1rem' }} />

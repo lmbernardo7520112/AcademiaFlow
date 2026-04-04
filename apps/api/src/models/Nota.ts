@@ -44,7 +44,10 @@ const notaSchema = new Schema(
   }
 );
 
-// Compount index for fast lookups per report card
+// Compound index for fast lookups per report card
 notaSchema.index({ alunoId: 1, disciplinaId: 1, year: 1, bimester: 1 }, { unique: true });
+
+// Otimização para Agregações por Turma e Analytics de Desempenho
+notaSchema.index({ tenantId: 1, turmaId: 1, value: 1 });
 
 export const NotaModel = mongoose.model('Nota', notaSchema);

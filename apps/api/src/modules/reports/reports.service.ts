@@ -2,6 +2,7 @@ import { AlunoModel } from '../../models/Aluno.js';
 import { TurmaModel } from '../../models/Turma.js';
 import { DisciplinaModel } from '../../models/Disciplina.js';
 import { NotaModel } from '../../models/Nota.js';
+import mongoose from 'mongoose';
 
 export class ReportsService {
   async getDashboardMetrics(tenantId: string) {
@@ -58,57 +59,168 @@ export class ReportsService {
 
   async getTaxasAprovacaoPorTurma(tenantId: string, year: number) {
     const turmas = await TurmaModel.find({ tenantId, year, isActive: true });
-    const disciplinas = await DisciplinaModel.find({ tenantId, isActive: true });
+    const { notasService } = await import('../notas/notas.service.js');
     
     const results = [];
-    
-    // Using import inside method to avoid circular dependency just in case, but top level is fine.
-    // For now we'll require it from notas.service
-    const { notasService } = await import('../notas/notas.service.js');
-
     for (const turma of turmas) {
-      let aprovados = 0;
-      let reprovados = 0;
-      let recuperacao = 0;
-      let totalAvaliacoes = 0;
+      const disciplinasDaTurma = await DisciplinaModel.find({ tenantId, turmaId: turma._id, isActive: true });
+      
+      let aprovadosTotal = 0;
+      let reprovadosTotal = 0;
+      let recuperacaoTotal = 0;
+      let count = 0;
 
-      for (const disciplina of disciplinas) {
-        const boletins = await notasService.getBoletimTurma(tenantId, turma._id.toString(), disciplina._id.toString(), year);
-        for (const boletim of boletins) {
-          if (boletim.situacao === 'Aprovado') aprovados++;
-          else if (boletim.situacao === 'Reprovado') reprovados++;
-          else if (boletim.situacao === 'Recuperação') recuperacao++;
-          
-          if (boletim.situacao !== 'Pendente') totalAvaliacoes++;
-        }
+      for (const disc of disciplinasDaTurma) {
+        const boletins = await notasService.getBoletimTurma(tenantId, turma._id.toString(), disc._id.toString(), year);
+        boletins.forEach(b => {
+          if (b.situacao === 'Aprovado') aprovadosTotal++;
+          else if (b.situacao === 'Reprovado') reprovadosTotal++;
+          else if (b.situacao === 'Recuperação') recuperacaoTotal++;
+          if (b.situacao !== 'Pendente') count++;
+        });
       }
 
       results.push({
-        turmaId: turma._id,
+        turmaId: turma._id.toString(),
         turmaName: turma.name,
-        aprovados,
-        reprovados,
-        recuperacao,
-        totalAvaliacoes,
-        taxaAprovacao: totalAvaliacoes > 0 ? parseFloat(((aprovados / totalAvaliacoes) * 100).toFixed(1)) : 0
+        aprovados: aprovadosTotal,
+        reprovados: reprovadosTotal,
+        recuperacao: recuperacaoTotal,
+        taxaAprovacao: count > 0 ? parseFloat(((aprovadosTotal / count) * 100).toFixed(1)) : 0
       });
     }
 
-    // Sort by taxaAprovacao descending
     return results.sort((a, b) => b.taxaAprovacao - a.taxaAprovacao);
   }
 
   async getDashboardTurma(tenantId: string, turmaId: string) {
     const turma = await TurmaModel.findOne({ _id: turmaId, tenantId, isActive: true });
-    if (!turma) throw new Error('Turma não encontrada');
+    if (!turma) throw new Error('Turma não encontrada ou inativa');
 
-    const totalAlunos = await AlunoModel.countDocuments({ tenantId, turmaId, isActive: true });
-    
+    // 1. KPI Aggregation (Avg, Total Students)
+    const stats = await NotaModel.aggregate([
+      { $match: { tenantId, turmaId: new mongoose.Types.ObjectId(turmaId) } },
+      {
+        $group: {
+          _id: null,
+          avg: { $avg: '$value' },
+          total: { $addToSet: '$alunoId' }
+        }
+      }
+    ]);
+
+    const averageGrade = stats.length > 0 ? parseFloat(stats[0].avg.toFixed(2)) : null;
+    const totalStudents = await AlunoModel.countDocuments({ tenantId, turmaId, isActive: true });
+
+    // 2. Distribution (Histogram)
+    const distributionRaw = await NotaModel.aggregate([
+      { $match: { tenantId, turmaId: new mongoose.Types.ObjectId(turmaId) } },
+      {
+        $bucket: {
+          groupBy: '$value',
+          boundaries: [0, 4, 6, 8, 10.1], // Includes 10
+          default: 'Outros',
+          output: { count: { $sum: 1 } }
+        }
+      }
+    ]);
+
+    const rangeLabels: Record<number, string> = { 0: '0-4', 4: '4-6', 6: '6-8', 8: '8-10' };
+    const distribution = distributionRaw.map(d => ({
+      range: rangeLabels[d._id as number] || 'Indefinido',
+      count: d.count
+    }));
+
+    // 3. Students At Risk (Média < 6)
+    const riskAggregation = await NotaModel.aggregate([
+      { $match: { tenantId, turmaId: new mongoose.Types.ObjectId(turmaId) } },
+      {
+        $group: {
+          _id: '$alunoId',
+          avg: { $avg: '$value' }
+        }
+      },
+      { $match: { avg: { $lt: 6 } } },
+      { $sort: { avg: 1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: 'alunos',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'aluno'
+        }
+      },
+      { $unwind: '$aluno' },
+      {
+        $project: {
+          _id: 1,
+          name: '$aluno.name',
+          average: { $round: ['$avg', 2] }
+        }
+      }
+    ]);
+
+    // 4. Approval Rates
+    const genericTaxas = await this.getTaxasAprovacaoPorTurma(tenantId, turma.year);
+    const specificTaxa = genericTaxas.find(t => t.turmaId === turmaId);
+
     return {
+      turmaId,
       turmaName: turma.name,
-      turmaYear: turma.year,
-      totalAlunos,
-      // Expandable logically
+      metrics: {
+        averageGrade,
+        approvalRate: specificTaxa?.taxaAprovacao ?? 0,
+        reprovadosRate: specificTaxa ? parseFloat(((specificTaxa.reprovados / Math.max(specificTaxa.aprovados + specificTaxa.reprovados + specificTaxa.recuperacao, 1)) * 100).toFixed(1)) : 0,
+        recoveryRate: specificTaxa ? parseFloat(((specificTaxa.recuperacao / Math.max(specificTaxa.aprovados + specificTaxa.reprovados + specificTaxa.recuperacao, 1)) * 100).toFixed(1)) : 0,
+        totalStudents,
+      },
+      distribution,
+      studentsAtRisk: riskAggregation,
+    };
+  }
+
+  async getProfessorAnalytics(tenantId: string, professorId: string) {
+    const disciplinas = await DisciplinaModel.find({ tenantId, professorId, isActive: true });
+    const turmaIds = [...new Set(disciplinas.map(d => d.turmaId?.toString()).filter(Boolean))];
+
+    if (turmaIds.length === 0) {
+      return { globalAverage: null, riskTotal: 0, classes: [] };
+    }
+
+    const objectTurmaIds = turmaIds.map(id => new mongoose.Types.ObjectId(id!));
+
+    const globalStats = await NotaModel.aggregate([
+      { $match: { tenantId, turmaId: { $in: objectTurmaIds } } },
+      { $group: { _id: null, avg: { $avg: '$value' } } }
+    ]);
+
+    const riskTotal = await NotaModel.aggregate([
+      { $match: { tenantId, turmaId: { $in: objectTurmaIds } } },
+      { $group: { _id: '$alunoId', avg: { $avg: '$value' } } },
+      { $match: { avg: { $lt: 6 } } },
+      { $count: 'total' }
+    ]);
+
+    const classesPerformance = [];
+    for (const id of turmaIds) {
+      const turma = await TurmaModel.findById(id);
+      const avg = await NotaModel.aggregate([
+        { $match: { tenantId, turmaId: new mongoose.Types.ObjectId(id!) } },
+        { $group: { _id: null, avg: { $avg: '$value' } } }
+      ]);
+      classesPerformance.push({
+        id: id!,
+        name: turma?.name || 'Desconhecida',
+        average: avg.length > 0 ? parseFloat(avg[0].avg.toFixed(2)) : null,
+        trend: 'stable' as const
+      });
+    }
+
+    return {
+      globalAverage: globalStats.length > 0 ? parseFloat(globalStats[0].avg.toFixed(2)) : null,
+      riskTotal: riskTotal.length > 0 ? riskTotal[0].total : 0,
+      classes: classesPerformance
     };
   }
 

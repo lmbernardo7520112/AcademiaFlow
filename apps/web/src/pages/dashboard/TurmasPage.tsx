@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
-import { api } from '../../services/api';
-import DashboardLayout from '../../components/layout/DashboardLayout';
-import DataTable from '../../components/ui/DataTable';
-import Modal from '../../components/ui/Modal';
-import { Plus, Edit2, Trash2, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { api } from '../../services/api.js';
+import DashboardLayout from '../../components/layout/DashboardLayout.js';
+import DataTable from '../../components/ui/DataTable.js';
+import Modal from '../../components/ui/Modal.js';
+import { Plus, Edit2, Download, BarChart2 } from 'lucide-react';
+import { reportsService } from '../../services/reports.service.js';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/dashboard.css';
 
 interface Turma {
@@ -12,6 +14,7 @@ interface Turma {
   year: number;
   periodo: string;
   isActive: boolean;
+  taxaAprovacao?: number;
 }
 
 export default function TurmasPage() {
@@ -19,6 +22,7 @@ export default function TurmasPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   // Form State
   const [name, setName] = useState('');
@@ -29,8 +33,18 @@ export default function TurmasPage() {
   const fetchTurmas = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get('/turmas');
-      if (data.success) setTurmas(data.data);
+      const [turmasRes, taxas] = await Promise.all([
+        api.get('/turmas'),
+        reportsService.getTurmasTaxas()
+      ]);
+      
+      if (turmasRes.data.success) {
+        const merged = turmasRes.data.data.map((t: Turma) => ({
+          ...t,
+          taxaAprovacao: taxas.find((tx: { turmaId: string; taxaAprovacao: number }) => tx.turmaId === t._id)?.taxaAprovacao || 0
+        }));
+        setTurmas(merged);
+      }
     } catch (error) {
       console.error('Erro ao buscar turmas', error);
     } finally {
@@ -98,6 +112,21 @@ export default function TurmasPage() {
   const columns = [
     { key: 'name', title: 'Nome da Turma' },
     { key: 'year', title: 'Ano Letivo' },
+    { 
+      key: 'taxaAprovacao', 
+      title: 'Aproveitamento', 
+      render: (row: Turma) => (
+        <div className="flex items-center gap-2">
+          <div className="flex-1 bg-white/10 rounded-full h-1.5 w-16 overflow-hidden">
+            <div 
+              className={`h-full ${row.taxaAprovacao && row.taxaAprovacao > 70 ? 'bg-green-500' : 'bg-yellow-500'}`} 
+              style={{ width: `${row.taxaAprovacao}%` }} 
+            />
+          </div>
+          <span className="text-xs font-bold text-gray-300">{row.taxaAprovacao}%</span>
+        </div>
+      )
+    },
     { key: 'periodo', title: 'Período', render: (row: Turma) => <span style={{ textTransform: 'capitalize' }}>{row.periodo}</span> },
     { 
       key: 'isActive', 
@@ -112,10 +141,10 @@ export default function TurmasPage() {
       key: 'actions',
       title: 'Ações',
       render: (row: Turma) => (
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.4rem' }}>
+          <button className="btn-outline-small" onClick={() => navigate(`/secretaria/turma/${row._id}`)} title="Dashboard Analítico"><BarChart2 size={14} color="#3b82f6" /></button>
           <button className="btn-outline-small" onClick={() => handleExport(row._id, row.name)} title="Exportar Boletins"><Download size={14} color="#10b981" /></button>
           <button className="btn-outline-small" onClick={() => handleEdit(row)} title="Editar"><Edit2 size={14} /></button>
-          <button className="btn-outline-small" onClick={() => alert('Para excluir/desativar acesse a edição.')} title="Excluir"><Trash2 size={14} color="hsl(345, 80%, 55%)" /></button>
         </div>
       )
     }

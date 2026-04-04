@@ -188,9 +188,9 @@ async function resetDB() {
     console.log(`👉 Primary Admin: admin@academiaflow.com / 123456`);
     
     // Final Validation Landmark
-    const landmark = await AlunoModel.findOne({ name: 'Alicia Natália Alves de Sousa' }).populate('turmaId');
-    if (landmark) {
-      console.log(`🔍 Validation Landmark: [${landmark.name}] found in Turma [${(landmark.turmaId as any).name}]`);
+    const landmark = await AlunoModel.findOne({ name: 'Alicia Natália Alves de Sousa' }).populate<{ turmaId: { name: string } }>('turmaId');
+    if (landmark && landmark.turmaId) {
+      console.log(`🔍 Validation Landmark: [${landmark.name}] found in Turma [${landmark.turmaId.name}]`);
     } else {
       console.warn('⚠️ Validation Landmark NOT found. Review seed logic.');
     }

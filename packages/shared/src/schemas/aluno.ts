@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { objectIdSchema, nonEmptyStringSchema, emailSchema, timestampFieldsSchema, tenantIdSchema } from './primitives.js';
+import { turmaSchema } from './turma.js';
 
 export const alunoSchema = z.object({
   id: objectIdSchema,
@@ -7,7 +8,7 @@ export const alunoSchema = z.object({
   name: nonEmptyStringSchema,
   email: emailSchema.optional().nullable(),
   matricula: nonEmptyStringSchema.describe('Número de matrícula único'),
-  turmaId: objectIdSchema,
+  turmaId: z.union([objectIdSchema, z.any()]), // Permite ID ou objeto populado para evitar casts no frontend
   dataNascimento: z.coerce.date().max(new Date(), 'Data de nascimento não pode estar no futuro'),
   isActive: z.boolean().default(true),
   transferido: z.boolean().default(false).describe('Aluno transferido para outra instituição'),
@@ -16,6 +17,13 @@ export const alunoSchema = z.object({
 });
 
 export type Aluno = z.infer<typeof alunoSchema>;
+
+/** Tipo para Aluno com Turma Populada */
+export const populatedAlunoSchema = alunoSchema.extend({
+  turmaId: turmaSchema
+});
+
+export type PopulatedAluno = z.infer<typeof populatedAlunoSchema>;
 
 export const createAlunoSchema = alunoSchema.omit({
   id: true,

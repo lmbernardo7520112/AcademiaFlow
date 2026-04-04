@@ -36,7 +36,8 @@ async function validate() {
 
     // 2. Validar Alunos
     const dbAlunos = await AlunoModel.countDocuments({ isActive: true });
-    const legacyAlunosCount = legacyTurmas.reduce((acc: number, curr: any) => acc + (curr.alunos?.length || 0), 0);
+    interface LegacyTurmaWithAlunos { alunos?: unknown[] }
+    const legacyAlunosCount = (legacyTurmas as LegacyTurmaWithAlunos[]).reduce((acc: number, curr) => acc + (curr.alunos?.length || 0), 0);
     
     console.log(`\n--- ALUNOS ---`);
     console.log(`Legado: ${legacyAlunosCount}`);
@@ -70,8 +71,9 @@ async function validate() {
       }
     }
 
-  } catch (err: any) {
-    console.error('❌ Erro na validação:', err.message);
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
+    console.error('❌ Erro na validação:', errorMessage);
   } finally {
     await mongoose.connection.close();
     process.exit(0);

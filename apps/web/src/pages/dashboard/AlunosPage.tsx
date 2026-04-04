@@ -1,28 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import { api } from '../../services/api.js';
 import DashboardLayout from '../../components/layout/DashboardLayout.js';
 import DataTable from '../../components/ui/DataTable.js';
 import Modal from '../../components/ui/Modal.js';
 import { Plus, Edit2, FileText, ChevronLeft } from 'lucide-react';
 import { TurmaGrid } from '../../components/dashboard/TurmaGrid.js';
+import type { Aluno, Turma, PopulatedAluno } from '@academiaflow/shared';
 import '../../styles/dashboard.css';
 
-interface Turma {
-  _id: string;
-  name: string;
-  year: number;
-  periodo: string;
-}
-
-interface Aluno {
-  _id: string;
-  name: string;
-  matricula: string;
-  email?: string;
-  turmaId: Turma;
-  dataNascimento: string;
-  isActive: boolean;
-}
+// Tipos importados do @academiaflow/shared
 
 export default function AlunosPage() {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
@@ -66,7 +53,10 @@ export default function AlunosPage() {
   }, [fetchData]);
 
   const filteredAlunos = selectedTurmaId 
-    ? alunos.filter(a => (a.turmaId as any)?._id === selectedTurmaId)
+    ? (alunos as unknown as PopulatedAluno[]).filter(a => {
+        const tId = typeof a.turmaId === 'string' ? a.turmaId : (a.turmaId as any)?._id || (a.turmaId as any)?.id;
+        return tId === selectedTurmaId;
+      })
     : [];
 
   const handleSelectTurma = (id: string, name: string) => {
@@ -99,18 +89,22 @@ export default function AlunosPage() {
       }
       setIsModalOpen(false);
       fetchData();
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Erro ao salvar aluno.';
+    } catch (error: unknown) {
+      let errorMessage = 'Erro ao salvar aluno.';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message || errorMessage;
+      }
       alert(errorMessage);
     }
   };
 
   const handleEdit = (aluno: Aluno) => {
-    setEditingId(aluno._id);
+    setEditingId((aluno as any)._id || aluno.id);
     setName(aluno.name);
     setEmail(aluno.email || '');
     setMatricula(aluno.matricula);
-    setTurmaId((aluno.turmaId as any)._id || (aluno.turmaId as any));
+    const tId = typeof aluno.turmaId === 'string' ? aluno.turmaId : (aluno.turmaId as any)?._id || (aluno.turmaId as any)?.id;
+    setTurmaId(tId || '');
     setDataNascimento(new Date(aluno.dataNascimento).toISOString().split('T')[0]);
     setIsActive(aluno.isActive);
     setIsModalOpen(true);
@@ -145,7 +139,7 @@ export default function AlunosPage() {
       render: (row: Aluno) => (
         <div style={{ display: 'flex', gap: '0.4rem' }}>
           <button className="btn-outline-small" onClick={() => handleEdit(row)} title="Editar"><Edit2 size={14} /></button>
-          <button className="btn-outline-small" onClick={() => window.location.href = `/dashboard/alunos/${row._id}/boletim`} title="Boletim Individual"><FileText size={14} color="#3b82f6" /></button>
+          <button className="btn-outline-small" onClick={() => window.location.href = `/dashboard/alunos/${(row as any)._id || row.id}/boletim`} title="Boletim Individual"><FileText size={14} color="#3b82f6" /></button>
         </div>
       )
     }
@@ -163,7 +157,7 @@ export default function AlunosPage() {
           <div className="section-header" style={{ marginBottom: '1.5rem' }}>
             <h2>Selecione uma Turma</h2>
           </div>
-          <TurmaGrid turmas={turmas} onSelect={handleSelectTurma} />
+          <TurmaGrid turmas={turmas as any} onSelect={handleSelectTurma} />
         </div>
       ) : (
         <div className="dashboard-section fade-in" style={{ animationDelay: '0.1s' }}>
@@ -217,9 +211,10 @@ export default function AlunosPage() {
               <label>Turma Designada</label>
               <select required value={turmaId} onChange={(e) => setTurmaId(e.target.value)}>
                 <option value="">Selecione...</option>
-                {turmas.map(t => (
-                  <option key={t._id} value={t._id}>{t.name}</option>
-                ))}
+                {turmas.map(t => {
+                  const tId = (t as any)._id || t.id;
+                  return <option key={tId} value={tId}>{t.name}</option>;
+                })}
               </select>
             </div>
 

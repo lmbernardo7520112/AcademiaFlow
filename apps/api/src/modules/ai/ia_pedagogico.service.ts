@@ -42,7 +42,7 @@ export class IaPedagogicoService {
 
   async generatePerformanceAnalysis(tenantId: string, bimester: number, year: number, disciplinaId: string) {
     // 1. Get Discipline and Student Data
-    const disciplina = await DisciplinaModel.findById(disciplinaId).populate('turmaId');
+    const disciplina = await DisciplinaModel.findById(disciplinaId).populate('turmaIds');
     if (!disciplina) throw new Error('Disciplina não encontrada');
 
     const notas = await NotaModel.find({ tenantId, disciplinaId, bimester, year }).populate('alunoId');
@@ -73,7 +73,7 @@ export class IaPedagogicoService {
     const record = await ValidacaoPedagogicaModel.create({
       tenantId,
       professorId: disciplina.professorId,
-      turmaId: disciplina.turmaId?._id || disciplina.turmaId,
+      turmaId: disciplina.turmaIds?.[0], // Use the first turma for context analysis
       disciplinaId,
       bimester,
       year,
@@ -137,7 +137,7 @@ export class IaPedagogicoService {
     const record = await ValidacaoPedagogicaModel.create({
       tenantId,
       professorId: disciplina.professorId,
-      turmaId: (disciplina.turmaId as unknown as PopulatedTurma)._id || disciplina.turmaId,
+      turmaId: (disciplina.turmaIds as unknown as PopulatedTurma[])?.[0]?._id || disciplina.turmaIds?.[0],
       disciplinaId,
       bimester,
       year,

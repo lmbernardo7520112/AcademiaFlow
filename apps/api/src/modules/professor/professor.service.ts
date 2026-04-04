@@ -6,7 +6,7 @@ export class ProfessorService {
       tenantId, 
       professorId, 
       isActive: true 
-    }).populate('turmaId', 'name');
+    }).populate('turmaIds', 'name');
   }
 
   async getProfessorTurmas(tenantId: string, professorId: string) {
@@ -14,7 +14,7 @@ export class ProfessorService {
       tenantId, 
       professorId, 
       isActive: true 
-    }).populate('turmaId');
+    }).populate('turmaIds');
 
     // Extrair turmas únicas
     const turmasMap = new Map<string, { _id: string; name: string }>();
@@ -25,9 +25,11 @@ export class ProfessorService {
     }
 
     disciplinas.forEach(d => {
-      if (d.turmaId) {
-        const turma = d.turmaId as unknown as PopulatedTurma;
-        turmasMap.set(turma._id.toString(), turma);
+      if (d.turmaIds && Array.isArray(d.turmaIds)) {
+        d.turmaIds.forEach(t => {
+          const turma = t as unknown as PopulatedTurma;
+          turmasMap.set(turma._id.toString(), turma);
+        });
       }
     });
 

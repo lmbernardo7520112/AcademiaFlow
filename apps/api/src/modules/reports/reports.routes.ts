@@ -123,7 +123,7 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
       try {
         const tenantId = request.user.tenantId;
         const professorId = request.user.id;
-        const { turmaId } = (request.query as any);
+        const { turmaId } = request.query;
         const analytics = await reportsService.getProfessorAnalytics(tenantId, professorId, turmaId);
         reply.send({ success: true, data: analytics });
       } catch (error: Error | unknown) {
@@ -180,7 +180,7 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
       try {
         const tenantId = request.user.tenantId;
         const { alunoId } = request.params;
-        const { year } = (request.query as any);
+        const { year } = request.query;
         
         const boletim = await reportsService.getBoletimIndividual(tenantId, alunoId, year);
         reply.send({ success: true, data: boletim });

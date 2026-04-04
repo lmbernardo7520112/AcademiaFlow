@@ -172,7 +172,7 @@ export class ReportsService {
   }
 
   async getProfessorAnalytics(tenantId: string, professorId: string, turmaId?: string) {
-    const query: any = { tenantId, professorId, isActive: true };
+    const query: mongoose.FilterQuery<typeof DisciplinaModel> = { tenantId, professorId, isActive: true };
     
     const disciplinas = await DisciplinaModel.find(query);
     // Agrupa todas as IDs de turmas únicas atendidas pelo professor
@@ -233,7 +233,7 @@ export class ReportsService {
   }
 
   async getBoletimIndividual(tenantId: string, alunoId: string, year: number) {
-    const aluno = await AlunoModel.findOne({ _id: alunoId, tenantId }).populate('turmaId');
+    const aluno = await AlunoModel.findOne({ _id: alunoId, tenantId }).populate<{ turmaId: { name: string } }>('turmaId');
     if (!aluno) throw new Error('Aluno não encontrado');
 
     const disciplinas = await DisciplinaModel.find({ 
@@ -254,7 +254,7 @@ export class ReportsService {
           bimestre2: boletim.notas.bimestre2,
           bimestre3: boletim.notas.bimestre3,
           bimestre4: boletim.notas.bimestre4,
-          pf: (boletim.notas as any).pf || null,
+          pf: boletim.notas.pf ?? null,
         },
         nf: boletim.nf,
         mg: boletim.mg,
@@ -268,7 +268,7 @@ export class ReportsService {
         id: aluno._id.toString(),
         name: aluno.name,
         matricula: aluno.matricula,
-        turmaName: (aluno.turmaId as any)?.name
+        turmaName: aluno.turmaId?.name
       },
       year,
       disciplinas: disciplinasComNotas

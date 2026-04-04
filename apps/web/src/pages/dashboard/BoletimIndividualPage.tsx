@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { api } from '../../services/api.js';
 import { ChevronLeft, Printer, FileText } from 'lucide-react';
 import type { BoletimIndividualResponse } from '@academiaflow/shared';
@@ -19,8 +20,12 @@ const BoletimIndividualPage: React.FC = () => {
         if (response.data.success) {
           setData(response.data.data);
         }
-      } catch (err: any) {
-        setError(err.response?.data?.message || 'Erro ao carregar boletim.');
+      } catch (err: unknown) {
+        let message = 'Erro ao carregar boletim.';
+        if (axios.isAxiosError(err)) {
+          message = err.response?.data?.message || message;
+        }
+        setError(message);
       } finally {
         setLoading(false);
       }

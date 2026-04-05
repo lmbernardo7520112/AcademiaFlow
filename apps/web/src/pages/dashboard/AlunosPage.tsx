@@ -9,7 +9,15 @@ import { TurmaGrid } from '../../components/dashboard/TurmaGrid.js';
 import type { Aluno, Turma, PopulatedAluno } from '@academiaflow/shared';
 import '../../styles/dashboard.css';
 
-// Tipos importados do @academiaflow/shared
+const getSafeId = (obj: { id?: string; _id?: string } | null | undefined): string => {
+  return obj?.id || obj?._id || '';
+};
+
+const getTurmaId = (turma: string | Turma | null | undefined): string => {
+  if (!turma) return '';
+  if (typeof turma === 'string') return turma;
+  return getSafeId(turma);
+};
 
 export default function AlunosPage() {
   const [alunos, setAlunos] = useState<Aluno[]>([]);
@@ -54,7 +62,7 @@ export default function AlunosPage() {
 
   const filteredAlunos = selectedTurmaId 
     ? (alunos as unknown as PopulatedAluno[]).filter(a => {
-        const tId = typeof a.turmaId === 'string' ? a.turmaId : (a.turmaId as any)?._id || (a.turmaId as any)?.id;
+        const tId = getTurmaId(a.turmaId);
         return tId === selectedTurmaId;
       })
     : [];
@@ -99,11 +107,11 @@ export default function AlunosPage() {
   };
 
   const handleEdit = (aluno: Aluno) => {
-    setEditingId((aluno as any)._id || aluno.id);
+    setEditingId(getSafeId(aluno));
     setName(aluno.name);
     setEmail(aluno.email || '');
     setMatricula(aluno.matricula);
-    const tId = typeof aluno.turmaId === 'string' ? aluno.turmaId : (aluno.turmaId as any)?._id || (aluno.turmaId as any)?.id;
+    const tId = getTurmaId(aluno.turmaId);
     setTurmaId(tId || '');
     setDataNascimento(new Date(aluno.dataNascimento).toISOString().split('T')[0]);
     setIsActive(aluno.isActive);
@@ -139,7 +147,7 @@ export default function AlunosPage() {
       render: (row: Aluno) => (
         <div style={{ display: 'flex', gap: '0.4rem' }}>
           <button className="btn-outline-small" onClick={() => handleEdit(row)} title="Editar"><Edit2 size={14} /></button>
-          <button className="btn-outline-small" onClick={() => window.location.href = `/dashboard/alunos/${(row as any)._id || row.id}/boletim`} title="Boletim Individual"><FileText size={14} color="#3b82f6" /></button>
+          <button className="btn-outline-small" onClick={() => window.location.href = `/dashboard/alunos/${getSafeId(row)}/boletim`} title="Boletim Individual"><FileText size={14} color="#3b82f6" /></button>
         </div>
       )
     }
@@ -157,7 +165,7 @@ export default function AlunosPage() {
           <div className="section-header" style={{ marginBottom: '1.5rem' }}>
             <h2>Selecione uma Turma</h2>
           </div>
-          <TurmaGrid turmas={turmas as any} onSelect={handleSelectTurma} />
+          <TurmaGrid turmas={turmas} onSelect={handleSelectTurma} />
         </div>
       ) : (
         <div className="dashboard-section fade-in" style={{ animationDelay: '0.1s' }}>
@@ -212,7 +220,7 @@ export default function AlunosPage() {
               <select required value={turmaId} onChange={(e) => setTurmaId(e.target.value)}>
                 <option value="">Selecione...</option>
                 {turmas.map(t => {
-                  const tId = (t as any)._id || t.id;
+                  const tId = getSafeId(t);
                   return <option key={tId} value={tId}>{t.name}</option>;
                 })}
               </select>

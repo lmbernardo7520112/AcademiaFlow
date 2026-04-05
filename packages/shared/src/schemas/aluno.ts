@@ -4,11 +4,12 @@ import { turmaSchema } from './turma.js';
 
 export const alunoSchema = z.object({
   id: objectIdSchema,
+  _id: z.string().optional(),
   tenantId: tenantIdSchema,
   name: nonEmptyStringSchema,
   email: emailSchema.optional().nullable(),
   matricula: nonEmptyStringSchema.describe('Número de matrícula único'),
-  turmaId: z.union([objectIdSchema, z.any()]), // Permite ID ou objeto populado para evitar casts no frontend
+  turmaId: z.union([objectIdSchema, turmaSchema]), // Tipagem estrita: ID ou Objeto Turma
   dataNascimento: z.coerce.date().max(new Date(), 'Data de nascimento não pode estar no futuro'),
   isActive: z.boolean().default(true),
   transferido: z.boolean().default(false).describe('Aluno transferido para outra instituição'),

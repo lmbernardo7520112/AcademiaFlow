@@ -79,6 +79,12 @@ export const genericSuccessSchema = z.object({
   message: z.string(),
 });
 
+/** Base for objects with ID/ObjectId from MonogoDB */
+export const identifiableSchema = z.object({
+  id: objectIdSchema.optional(),
+  _id: z.string().optional(),
+});
+
 /** Pagination Metadata Schema */
 export const paginationMetadataSchema = z.object({
   total: z.number().int().min(0),

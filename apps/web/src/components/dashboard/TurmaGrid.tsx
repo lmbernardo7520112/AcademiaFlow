@@ -1,12 +1,5 @@
-import React from 'react';
+import { Turma } from '@academiaflow/shared';
 import { TurmaCard } from './TurmaCard.js';
-
-interface Turma {
-  _id: string;
-  name: string;
-  year: number;
-  periodo: string;
-}
 
 interface TurmaGridProps {
   turmas: Turma[];
@@ -30,16 +23,19 @@ export const TurmaGrid: React.FC<TurmaGridProps> = ({ turmas, onSelect }) => {
         gap: '1.5rem' 
       }}
     >
-      {turmas.map((t) => (
-        <TurmaCard 
-          key={t._id}
-          id={t._id}
-          name={t.name}
-          year={t.year}
-          periodo={t.periodo}
-          onClick={onSelect}
-        />
-      ))}
+      {turmas.map((t) => {
+        const tId = t.id || t._id || '';
+        return (
+          <TurmaCard 
+            key={tId}
+            id={tId}
+            name={t.name}
+            year={t.year}
+            periodo={t.periodo}
+            onClick={onSelect}
+          />
+        );
+      })}
     </div>
   );
 };

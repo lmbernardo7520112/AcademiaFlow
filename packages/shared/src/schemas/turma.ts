@@ -5,6 +5,7 @@ export const TURMA_PERIODOS = ['matutino', 'vespertino', 'noturno'] as const;
 
 export const turmaSchema = z.object({
   id: objectIdSchema,
+  _id: z.string().optional(),
   tenantId: tenantIdSchema,
   name: nonEmptyStringSchema.describe('Nome da Turma, ex: 3º Ano A'),
   year: academicYearSchema,

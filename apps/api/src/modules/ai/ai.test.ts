@@ -16,9 +16,9 @@ describe('AI Engine Module Integration (Mocked Provider)', () => {
 
   const expectSuccessStep = (stepName: string, response: LightMyRequestResponse, expectedStatus = 201) => {
     if (response.statusCode !== expectedStatus) {
-      console.error(`\n--- FALHA NO STEP API: ${stepName} ---`);
+      console.error(`\n--- [FORENSIC] FALHA NO STEP API: ${stepName} ---`);
       console.error(`URL: ${response.raw.req?.method} ${response.raw.req?.url}`);
-      console.error(`STATUS: ${response.statusCode} | BODY: ${JSON.stringify(response.json(), null, 2)}`);
+      console.error(`STATUS: ${response.statusCode} | MSG: ${response.json().message || JSON.stringify(response.json())}`);
       throw new Error(`Step ${stepName} failed`);
     }
     return response.json();
@@ -64,7 +64,7 @@ describe('AI Engine Module Integration (Mocked Provider)', () => {
       payload: { 
         name: 'Matemática', 
         codigo: `MAT-${Math.floor(Math.random() * 900) + 100}`,
-        turmaId, // VÍNCULO OBRIGATÓRIO PARA O TESTE
+        turmaIds: [turmaId], // VÍNCULO OBRIGATÓRIO (MODO 1:N)
         professorId: userId // OBRIGATÓRIO PARA PERSISTIR VALIDACAO PEDAGOGICA
       }
     });

@@ -73,12 +73,16 @@ export class IaPedagogicoService {
     const record = await ValidacaoPedagogicaModel.create({
       tenantId,
       professorId: disciplina.professorId,
-      turmaId: disciplina.turmaIds?.[0], // Use the first turma for context analysis
+      turmaId: disciplina.turmaIds?.[0] || null, // Fallback explícito para auditoria de validação
       disciplinaId,
       bimester,
       year,
       type: 'ANALYSIS',
       content: analysisText
+    }).catch(err => {
+      console.error('\n--- [FORENSIC] ERRO IA PEDAGOGICAL ANALYSIS ---');
+      console.error(err.message);
+      throw err;
     });
 
     return record;

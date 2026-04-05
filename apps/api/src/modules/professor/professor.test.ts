@@ -69,7 +69,7 @@ describe('Professor Module Integration', () => {
       method: 'POST',
       url: '/api/disciplinas',
       headers: { Authorization: `Bearer ${adminToken}` },
-      payload: { name: 'Disciplina Prof', codigo: `MAT-${Math.floor(Math.random() * 899) + 100}`, turmaId, professorId: userId }
+      payload: { name: 'Disciplina Prof', codigo: `MAT-${Math.floor(Math.random() * 899) + 100}`, turmaIds: [turmaId], professorId: userId }
     });
 
     return { token, userId, tenantId, turmaId };

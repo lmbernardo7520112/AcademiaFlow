@@ -22,7 +22,7 @@ jobs:
           - 27017:27017
 
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE22: true
 
     steps:
       - name: Checkout
@@ -34,7 +34,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4.2.0
         with:
-          node-version: '24.16.2'
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install Dependencies

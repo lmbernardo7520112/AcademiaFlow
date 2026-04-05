@@ -11,7 +11,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "clean": "rm -rf dist",
-    "seed": "tsx src/scripts/seed.ts"
+    "seed": "tsx src/scripts/reset-db.ts",
+    "validate-seed": "tsx src/scripts/validate-seed.ts",
+    "count-parity": "tsx src/scripts/validate-seed.ts"
   },
   "dependencies": {
     "@academiaflow/shared": "workspace:*",

@@ -61,6 +61,13 @@ const ProfessorDashboard: React.FC = () => {
     setSelectedTurmaId(e.target.value);
   };
 
+  // Auto-select first turma if none selected and data loaded
+  useEffect(() => {
+    if (!selectedTurmaId && availableTurmas.length > 0) {
+      setSelectedTurmaId(availableTurmas[0].id);
+    }
+  }, [availableTurmas, selectedTurmaId]);
+
   if (loading && !analytics) return <div className="loading-overlay">Carregando sua jornada...</div>;
 
   return (
@@ -80,7 +87,6 @@ const ProfessorDashboard: React.FC = () => {
             className="bg-transparent text-white border-none focus:ring-0 text-sm font-semibold cursor-pointer"
             style={{ minWidth: '150px' }}
           >
-            <option value="" className="bg-slate-900 text-gray-400">Ver Todas as Turmas</option>
             {availableTurmas.map(t => (
               <option key={t.id} value={t.id} className="bg-slate-900 text-white">{t.name}</option>
             ))}

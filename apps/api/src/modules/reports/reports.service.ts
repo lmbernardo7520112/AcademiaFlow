@@ -54,7 +54,11 @@ export class ReportsService {
     
     const results = [];
     for (const turma of turmas) {
-      const disciplinasDaTurma = await DisciplinaModel.find({ tenantId, turmaId: turma._id, isActive: true });
+      const disciplinasDaTurma = await DisciplinaModel.find({ 
+        tenantId, 
+        turmaIds: { $in: [turma._id] }, 
+        isActive: true 
+      });
       
       let aprovadosTotal = 0;
       let reprovadosTotal = 0;

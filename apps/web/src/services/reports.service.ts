@@ -45,5 +45,10 @@ export const reportsService = {
     document.body.appendChild(link);
     link.click();
     link.remove();
-  }
+  },
+
+  async getBoletimIndividual(alunoId: string): Promise<import('@academiaflow/shared').BoletimIndividualResponse> {
+    const { data } = await api.get<{ success: boolean; data: import('@academiaflow/shared').BoletimIndividualResponse }>(`/reports/notas/boletim/aluno/${alunoId}`);
+    return data.data;
+  },
 };

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { api } from '../../services/api.js';
 import { ChevronLeft, Printer, FileText } from 'lucide-react';
+import { reportsService } from '../../services/reports.service.js';
 import type { BoletimIndividualResponse } from '@academiaflow/shared';
 import '../../styles/dashboard.css';
 
@@ -16,10 +16,9 @@ const BoletimIndividualPage: React.FC = () => {
   useEffect(() => {
     const fetchBoletim = async () => {
       try {
-        const response = await api.get(`/reports/notas/boletim/aluno/${alunoId}`);
-        if (response.data.success) {
-          setData(response.data.data);
-        }
+        if (!alunoId) return;
+        const responseData = await reportsService.getBoletimIndividual(alunoId);
+        setData(responseData);
       } catch (err: unknown) {
         let message = 'Erro ao carregar boletim.';
         if (axios.isAxiosError(err)) {

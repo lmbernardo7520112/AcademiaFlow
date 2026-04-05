@@ -6,7 +6,7 @@ import DataTable from '../../components/ui/DataTable.js';
 import Modal from '../../components/ui/Modal.js';
 import { Plus, Edit2, FileText, ChevronLeft } from 'lucide-react';
 import { TurmaGrid } from '../../components/dashboard/TurmaGrid.js';
-import type { Aluno, Turma, PopulatedAluno } from '@academiaflow/shared';
+import type { Aluno, Turma } from '@academiaflow/shared';
 import '../../styles/dashboard.css';
 
 const getSafeId = (obj: { id?: string; _id?: string } | null | undefined): string => {
@@ -36,36 +36,45 @@ export default function AlunosPage() {
   const [dataNascimento, setDataNascimento] = useState('');
   const [isActive, setIsActive] = useState(true);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchTurmas = useCallback(async () => {
     try {
-      const [alunosRes, turmasRes] = await Promise.all([
-        api.get('/alunos'),
-        api.get('/turmas')
-      ]);
-      if (alunosRes.data.success) {
-        setAlunos(alunosRes.data.data);
-      }
-      if (turmasRes.data.success) {
-        setTurmas(turmasRes.data.data);
+      const res = await api.get('/turmas');
+      if (res.data.success) {
+        setTurmas(res.data.data);
       }
     } catch {
-      console.error('Erro ao buscar dados');
+      console.error('Erro ao buscar turmas');
+    }
+  }, []);
+
+  const fetchAlunos = useCallback(async (tId: string) => {
+    setLoading(true);
+    try {
+      const res = await api.get(`/alunos?turmaId=${tId}`);
+      if (res.data.success) {
+        setAlunos(res.data.data);
+      }
+    } catch {
+      console.error('Erro ao buscar alunos da turma');
+      setAlunos([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchTurmas().then(() => setLoading(false));
+  }, [fetchTurmas]);
 
-  const filteredAlunos = selectedTurmaId 
-    ? (alunos as unknown as PopulatedAluno[]).filter(a => {
-        const tId = getTurmaId(a.turmaId);
-        return tId === selectedTurmaId;
-      })
-    : [];
+  useEffect(() => {
+    if (selectedTurmaId) {
+      fetchAlunos(selectedTurmaId);
+    } else {
+      setAlunos([]);
+    }
+  }, [selectedTurmaId, fetchAlunos]);
+
+  const filteredAlunos = alunos;
 
   const handleSelectTurma = (id: string, name: string) => {
     setSelectedTurmaId(id);
@@ -96,7 +105,7 @@ export default function AlunosPage() {
         await api.post('/alunos', payload);
       }
       setIsModalOpen(false);
-      fetchData();
+      if (selectedTurmaId) fetchAlunos(selectedTurmaId);
     } catch (error: unknown) {
       let errorMessage = 'Erro ao salvar aluno.';
       if (axios.isAxiosError(error)) {

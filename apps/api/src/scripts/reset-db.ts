@@ -110,12 +110,35 @@ async function resetDB() {
 
     // 4. SETUP: TURMAS & ALUNOS (Parser turmas_alunos.json)
     console.log('🏫 Setup: Loading turmas_alunos.json...');
-    const legacyPath = resolve(__dirname, '../../../../../workspace/reference/academiaflow_legacy/server/seed/turmas_alunos.json');
+    
+    // Portabilidade: Tenta localizar o diretório reference nas workspaces conhecidas
+    const possiblePaths = [
+      resolve(__dirname, '../../../../../workspace/reference/academiaflow_legacy/server/seed/turmas_alunos.json'),
+      resolve(process.cwd(), 'reference/academiaflow_legacy/server/seed/turmas_alunos.json'),
+      resolve(process.cwd(), '../workspace/reference/academiaflow_legacy/server/seed/turmas_alunos.json')
+    ];
+    
+    let legacyPath = '';
+    for (const p of possiblePaths) {
+      try {
+        await fs.access(p);
+        legacyPath = p;
+        break;
+      } catch { continue; }
+    }
+
+    if (!legacyPath) {
+      throw new Error('❌ legacy JSON not found in any of the expected paths. Check portability.');
+    }
+
     const rawData = await fs.readFile(legacyPath, 'utf8');
     const legacyData: LegacyJSON = JSON.parse(rawData);
 
     let totalAlunosSeed = 0;
     const currentYear = new Date().getFullYear();
+
+    // 11 Disciplines for Assignment (as per legacy assignDisciplinesToTurmas.ts)
+    const assignableDisciplines = disciplineDocs.filter(d => d.name !== 'Matemática');
 
     for (const legacyTurma of legacyData.turmas) {
       // Create Turma
@@ -128,9 +151,9 @@ async function resetDB() {
       });
 
       // Update Disciplines (1:N link)
-      // Assign all disciplines to all turmas (as per assignDisciplinesToTurmas.ts)
+      // Assign only 11 disciplines to the class (Matemática stays unassigned as per legacy)
       await DisciplinaModel.updateMany(
-        { tenantId },
+        { _id: { $in: assignableDisciplines.map(d => d._id) } },
         { $addToSet: { turmaIds: turmaDoc._id } }
       );
 
@@ -144,9 +167,7 @@ async function resetDB() {
           matricula: `${turmaDoc.name.replace(/\s+/g, '')}-${legacyAluno.numero}`,
           turmaId: turmaDoc._id,
           dataNascimento: new Date(2000 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1),
-          isActive: true,
-          valorMensalidade: 650,
-          vencimentoDia: 10
+          isActive: true
         });
         totalAlunosSeed++;
       }
@@ -156,8 +177,9 @@ async function resetDB() {
       console.log(`📝 Creating initial empty grades for Turma: ${turmaDoc.name}...`);
       const notasDocs = [];
       for (const aluno of createdAlunos) {
-        for (const disc of disciplineDocs) {
-          // Initialize B1..B4 as Pendente
+        // Create notes for the 11 assigned disciplines
+        for (const disc of assignableDisciplines) {
+          // Initialize B1..B4 as null (Pendente)
           for (let b = 1; b <= 4; b++) {
             notasDocs.push({
               tenantId,
@@ -165,11 +187,8 @@ async function resetDB() {
               disciplinaId: disc._id,
               turmaId: turmaDoc._id,
               year: currentYear,
-              bimester: b,
-              value: 0 // Will be managed as Pendente by UI when value is exactly 0 and no data exists? 
-                       // Actually, let's just create them or leave them for the teacher to create.
-                       // The legacy created them as "null". Our schema might require number.
-                       // Let's check schema.
+              bimester: b
+              // value is omitted -> null (Pendente)
             });
           }
         }

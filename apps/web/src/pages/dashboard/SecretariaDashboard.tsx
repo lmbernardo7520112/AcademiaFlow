@@ -3,7 +3,6 @@ import { api } from '../../services/api';
 import { 
   Users, 
   TrendingUp, 
-  DollarSign, 
   PieChart, 
   BookOpen, 
   Activity,
@@ -17,7 +16,6 @@ interface DashboardKPIs {
   ativos: number;
   inativos: number;
   evadidos: number;
-  estimatedRevenue: number;
   occupancyRate: number;
   overallAverage: number;
   totalTurmas: number;
@@ -67,7 +65,6 @@ const SecretariaDashboard: React.FC = () => {
 
   const cards = [
     { label: 'Alunos Ativos', value: kpis?.ativos ?? 0, icon: Users, color: '#10b981', suffix: '' },
-    { label: 'Receita Mensal', value: `R$ ${(kpis?.estimatedRevenue ?? 0).toLocaleString('pt-BR')}`, icon: DollarSign, color: '#3b82f6', suffix: '' },
     { label: 'Retenção', value: `${taxaRetencao}%`, icon: TrendingUp, color: '#8b5cf6', suffix: '' },
     { label: 'Ocupação', value: `${kpis?.occupancyRate ?? 0}%`, icon: PieChart, color: '#f59e0b', suffix: '' },
     { label: 'Média Geral', value: kpis?.overallAverage || 'N/A', icon: Activity, color: '#ec4899', suffix: '' },
@@ -78,7 +75,7 @@ const SecretariaDashboard: React.FC = () => {
     <div className="secretaria-dashboard">
       <div className="dashboard-header fade-in">
         <h1 className="text-gradient">Painel Estratégico</h1>
-        <p className="text-secondary">Visão consolidada da operação e saúde financeira da instituição.</p>
+        <p className="text-secondary">Visão consolidada da operação e saúde acadêmica da instituição.</p>
       </div>
 
       <div className="kpi-grid fade-in" style={{ 

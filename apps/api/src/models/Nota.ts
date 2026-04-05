@@ -34,7 +34,7 @@ const notaSchema = new Schema(
     },
     value: {
       type: Number,
-      required: true,
+      required: false,
       min: 0,
       max: 10,
     },

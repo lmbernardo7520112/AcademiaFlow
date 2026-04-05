@@ -5,7 +5,8 @@ import { reportsService } from './reports.service.js';
 import { 
   turmasTaxasResponseSchema, 
   turmaDashboardSchema, 
-  professorAnalyticsSchema 
+  professorAnalyticsSchema,
+  boletimIndividualSchema 
 } from '@academiaflow/shared';
 import { DisciplinaModel } from '../../models/Disciplina.js';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
@@ -174,6 +175,11 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
         querystring: z.object({
           year: z.coerce.number().int().default(() => new Date().getFullYear()),
         }),
+        response: {
+          200: z.object({ success: z.literal(true), data: boletimIndividualSchema }),
+          '4xx': z.object({ success: z.literal(false), message: z.string() }),
+          '5xx': z.object({ success: z.literal(false), message: z.string() })
+        }
       }
     },
     async (request, reply) => {

@@ -54,6 +54,10 @@ jobs:
 
       - name: Seed Database
         run: pnpm --filter @academiaflow/api seed
+        env:
+          DATABASE_URL: mongodb://localhost:27017/academiaflow
 
       - name: Validate Seed Integrity
         run: pnpm validate-seed
+        env:
+          DATABASE_URL: mongodb://localhost:27017/academiaflow

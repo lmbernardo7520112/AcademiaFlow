@@ -25,9 +25,11 @@ async function validate() {
     
     // Portabilidade: Localizar turmas_alunos.json
     const possiblePaths = [
+      resolve(__dirname, './data/turmas_alunos.json'),
       resolve(__dirname, '../../../../../workspace/reference/academiaflow_legacy/server/seed/turmas_alunos.json'),
       resolve(process.cwd(), 'reference/academiaflow_legacy/server/seed/turmas_alunos.json'),
-      resolve(process.cwd(), '../workspace/reference/academiaflow_legacy/server/seed/turmas_alunos.json')
+      resolve(process.cwd(), '../workspace/reference/academiaflow_legacy/server/seed/turmas_alunos.json'),
+      resolve(process.cwd(), 'apps/api/src/data/turmas_alunos.json')
     ];
     
     let legacyPath = '';

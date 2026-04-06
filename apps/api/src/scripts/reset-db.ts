@@ -113,6 +113,7 @@ async function resetDB() {
     
     // Portabilidade: Tenta localizar o diretório reference nas workspaces conhecidas
     const possiblePaths = [
+      resolve(__dirname, './data/turmas_alunos.json'),
       resolve(__dirname, '../../../../../workspace/reference/academiaflow_legacy/server/seed/turmas_alunos.json'),
       resolve(process.cwd(), 'reference/academiaflow_legacy/server/seed/turmas_alunos.json'),
       resolve(process.cwd(), '../workspace/reference/academiaflow_legacy/server/seed/turmas_alunos.json')

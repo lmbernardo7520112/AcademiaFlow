@@ -39,13 +39,36 @@ const ProfessorDashboard: React.FC = () => {
   const fetchData = async (turmaId?: string) => {
     setLoading(true);
     try {
-      const [disciplinesRes, analyticsRes] = await Promise.all([
-        api.get('/professor/disciplinas'),
-        reportsService.getProfessorAnalytics(turmaId)
-      ]);
-      
-      if (disciplinesRes.data.success) setDisciplines(disciplinesRes.data.data);
-      setAnalytics(analyticsRes);
+      // 1. Fetch disciplines first if we don't have them
+      if (disciplines.length === 0) {
+        const disciplinesRes = await api.get('/professor/disciplinas');
+        if (disciplinesRes.data.success) {
+          const discData = disciplinesRes.data.data;
+          setDisciplines(discData);
+          
+          // If no turmaId provided, try to pick the first one from newly loaded disciplines
+          if (!turmaId) {
+             const map = new Map();
+             discData.forEach((d: any) => {
+               d.turmaIds?.forEach((t: any) => {
+                 if (!map.has(t._id)) map.set(t._id, t.name);
+               });
+             });
+             const firstTurmaId = Array.from(map.keys())[0];
+             if (firstTurmaId) {
+                setSelectedTurmaId(firstTurmaId);
+                // The useEffect will trigger a new fetchData with this ID
+                return;
+             }
+          }
+        }
+      }
+
+      // 2. Fetch analytics only if we have a turmaId
+      if (turmaId) {
+        const analyticsRes = await reportsService.getProfessorAnalytics(turmaId);
+        setAnalytics(analyticsRes);
+      }
     } catch (error) {
       console.error('Erro ao carregar dashboard', error);
     } finally {
@@ -54,7 +77,7 @@ const ProfessorDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchData(selectedTurmaId || undefined);
+    fetchData(selectedTurmaId);
   }, [selectedTurmaId]);
 
   const handleTurmaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

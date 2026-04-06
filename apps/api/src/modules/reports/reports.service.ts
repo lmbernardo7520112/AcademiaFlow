@@ -183,19 +183,20 @@ export class ReportsService {
     const allTurmaIds = [...new Set(disciplinas.map(d => d.turmaIds).flat().map(id => id?.toString()).filter(Boolean))];
 
     // Validação de Contexto: O professor deve atender a turma solicitada
-    if (!allTurmaIds.includes(turmaId)) {
+    // Se não houver turmaId fornecida ou se o professor não tiver acesso, lançamos erro
+    if (!turmaId || !allTurmaIds.includes(turmaId)) {
        throw new Error('Acesso negado: Professor não leciona nesta turma.');
     }
 
-    const objectTurmaIds = [new mongoose.Types.ObjectId(turmaId)];
+    const objectTurmaId = new mongoose.Types.ObjectId(turmaId);
 
     const stats = await NotaModel.aggregate([
-      { $match: { tenantId, turmaId: { $in: objectTurmaIds } } },
+      { $match: { tenantId, turmaId: objectTurmaId } },
       { $group: { _id: null, avg: { $avg: '$value' } } }
     ]);
 
     const riskAggregation = await NotaModel.aggregate([
-      { $match: { tenantId, turmaId: { $in: objectTurmaIds } } },
+      { $match: { tenantId, turmaId: objectTurmaId } },
       { $group: { _id: '$alunoId', avg: { $avg: '$value' } } },
       { $match: { avg: { $lt: 6 } } },
       { $count: 'total' }
@@ -209,27 +210,24 @@ export class ReportsService {
         { $group: { _id: null, avg: { $avg: '$value' } } }
       ]);
       classesPerformance.push({
-        id: id,
+        id,
         name: turma?.name || 'Desconhecida',
         average: avg.length > 0 ? parseFloat(avg[0].avg.toFixed(2)) : null,
         trend: 'stable' as const
       });
     }
 
-    // Contexto selecionado
-    let context = undefined;
-    if (turmaId) {
-      const selectedTurma = await TurmaModel.findById(turmaId);
-      context = {
-        turmaId,
-        turmaName: selectedTurma?.name
-      };
-    }
+    // Contexto selecionado (Garantido pela validação acima)
+    const selectedTurma = await TurmaModel.findById(turmaId);
+    const context = {
+      turmaId,
+      turmaName: selectedTurma?.name || 'Turma Selecionada'
+    };
 
     return {
       context,
       globalAverage: stats.length > 0 ? parseFloat(stats[0].avg.toFixed(2)) : null,
-      riskTotal: riskAggregation.length > 0 ? riskAggregation[0].total : 0,
+      riskTotal: riskAggregation.length > 0 ? (riskAggregation[0].total as number) : 0,
       classes: classesPerformance
     };
   }

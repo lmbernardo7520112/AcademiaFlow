@@ -109,7 +109,7 @@ const BoletimIndividualPage: React.FC = () => {
                   <td className="py-4 px-4 text-center text-sm">{d.notas.bimestre3 !== null ? d.notas.bimestre3.toFixed(1) : '-'}</td>
                   <td className="py-4 px-4 text-center text-sm">{d.notas.bimestre4 !== null ? d.notas.bimestre4.toFixed(1) : '-'}</td>
                   <td className="py-4 px-4 text-center text-sm font-bold bg-blue-500/5">
-                    {d.mg !== null ? d.mg.toFixed(1) : '--'}
+                    {d.mg !== null ? d.mg.toFixed(1) : '-'}
                   </td>
                   <td className="py-4 px-4 text-center">
                     <span className={`status-pill ${d.situacao === 'Aprovado' || d.situacao.includes('Aprovado') ? 'active' : 'inactive'}`} style={{ fontSize: '10px' }}>

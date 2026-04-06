@@ -85,7 +85,7 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
         if (request.user.role === 'professor') {
           const isOwner = await DisciplinaModel.exists({ 
             tenantId, 
-            turmaId, 
+            turmaIds: { $in: [turmaId] }, 
             professorId: request.user.id,
             isActive: true 
           });
@@ -111,7 +111,7 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
       preHandler: [fastify.authorize(['professor'])],
       schema: {
         querystring: z.object({
-          turmaId: z.string().optional(),
+          turmaId: z.string(),
         }),
         response: {
           200: z.object({ success: z.literal(true), data: professorAnalyticsSchema }),

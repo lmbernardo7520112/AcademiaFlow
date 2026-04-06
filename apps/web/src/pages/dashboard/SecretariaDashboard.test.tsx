@@ -21,7 +21,6 @@ describe('SecretariaDashboard', () => {
         ativos: 80,
         inativos: 20,
         evadidos: 5,
-        estimatedRevenue: 50000,
         occupancyRate: 80,
         overallAverage: 8.5,
         totalTurmas: 10,
@@ -46,12 +45,20 @@ describe('SecretariaDashboard', () => {
 
     // Aguarda a renderização dos dados
     await waitFor(() => {
-      expect(screen.getByText('80')).toBeInTheDocument(); // Alunos Ativos
-      expect(screen.getByText(/R\$ 50.000/i)).toBeInTheDocument(); // Receita
+      // Busca especificamente o card de Alunos Ativos e verifica o valor exato
+      const ativosCard = screen.getByText('Alunos Ativos').closest('.kpi-card');
+      expect(ativosCard).toBeTruthy();
+      expect(ativosCard?.querySelector('.kpi-value')?.textContent).toBe('80');
+      
+      expect(screen.getByText('80.0%')).toBeInTheDocument(); // Retenção (80/100)
+      
+      const mediaCard = screen.getByText('Média Geral').closest('.kpi-card');
+      expect(mediaCard?.querySelector('.kpi-value')?.textContent).toBe('8.5');
     });
 
     expect(screen.getByText('João')).toBeInTheDocument();
-    expect(screen.getAllByText('8.5')[0]).toBeInTheDocument();
+    // A nota 8.5 aparece no KPI e na lista de atividade
+    expect(screen.getAllByText('8.5').length).toBeGreaterThanOrEqual(2);
   });
 
   it('deve lidar com falha na API graciosamente', async () => {

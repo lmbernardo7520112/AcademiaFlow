@@ -29,9 +29,9 @@ export const turmaDashboardSchema = z.object({
 
 export const professorAnalyticsSchema = z.object({
   context: z.object({
-    turmaId: z.string().optional(),
+    turmaId: z.string(),
     turmaName: z.string().optional(),
-  }).optional(),
+  }),
   globalAverage: z.number().nullable(),
   riskTotal: z.number(),
   classes: z.array(

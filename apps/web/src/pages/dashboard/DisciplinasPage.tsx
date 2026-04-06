@@ -128,9 +128,9 @@ export default function DisciplinasPage() {
       title: 'Turmas Vinculadas', 
       render: (row: Disciplina) => (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-          {row.turmaIds?.length > 0 ? row.turmaIds.map(t => (
-            <span key={t._id} className="status-pill" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', borderColor: 'transparent' }}>
-              {t.name}
+          {Array.isArray(row.turmaIds) && row.turmaIds.length > 0 ? row.turmaIds.map(t => (
+            <span key={t?._id || Math.random().toString()} className="status-pill" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', borderColor: 'transparent' }}>
+              {t?.name || 'Inexistente'}
             </span>
           )) : <span className="text-secondary">-</span>}
         </div>
@@ -186,18 +186,18 @@ export default function DisciplinasPage() {
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
             <div className="input-group">
-              <label>Código (Paridade)</label>
-              <input required value={codigo} onChange={(e) => setCodigo(e.target.value.toUpperCase())} placeholder="Ex: MAT-001" />
+              <label htmlFor="codigo">Código (Paridade)</label>
+              <input id="codigo" required value={codigo} onChange={(e) => setCodigo(e.target.value.toUpperCase())} placeholder="Ex: MAT-001" />
             </div>
             <div className="input-group">
-              <label>Nome da Disciplina</label>
-              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Biologia Molecular" />
+              <label htmlFor="name">Nome da Disciplina</label>
+              <input id="name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Biologia Molecular" />
             </div>
           </div>
 
           <div className="input-group">
-            <label>Docente Responsável</label>
-            <select value={professorId} onChange={(e) => setProfessorId(e.target.value)}>
+            <label htmlFor="professorId">Docente Responsável</label>
+            <select id="professorId" value={professorId} onChange={(e) => setProfessorId(e.target.value)}>
               <option value="">Nenhum/Aguardando Atribuição</option>
               {professores.map(p => (
                 <option key={p._id} value={p._id}>{p.name}</option>

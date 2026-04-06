@@ -175,21 +175,19 @@ export class ReportsService {
     };
   }
 
-  async getProfessorAnalytics(tenantId: string, professorId: string, turmaId?: string) {
+  async getProfessorAnalytics(tenantId: string, professorId: string, turmaId: string) {
     const query: mongoose.FilterQuery<typeof DisciplinaModel> = { tenantId, professorId, isActive: true };
     
     const disciplinas = await DisciplinaModel.find(query);
-    // Agrupa todas as IDs de turmas únicas atendidas pelo professor
+    // Agrupa todas as IDs de turmas únicas atendidas pelo professor para a lista lateral
     const allTurmaIds = [...new Set(disciplinas.map(d => d.turmaIds).flat().map(id => id?.toString()).filter(Boolean))];
 
-    // Se um turmaId foi passado, garantimos que ele está nas turmas atendidas pelo professor
-    const targetTurmaIds = turmaId ? [turmaId] : allTurmaIds;
-
-    if (targetTurmaIds.length === 0) {
-      return { globalAverage: null, riskTotal: 0, classes: [] };
+    // Validação de Contexto: O professor deve atender a turma solicitada
+    if (!allTurmaIds.includes(turmaId)) {
+       throw new Error('Acesso negado: Professor não leciona nesta turma.');
     }
 
-    const objectTurmaIds = targetTurmaIds.map(id => new mongoose.Types.ObjectId(id));
+    const objectTurmaIds = [new mongoose.Types.ObjectId(turmaId)];
 
     const stats = await NotaModel.aggregate([
       { $match: { tenantId, turmaId: { $in: objectTurmaIds } } },

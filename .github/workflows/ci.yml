@@ -52,5 +52,8 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Seed Database
+        run: pnpm --filter @academiaflow/api seed
+
       - name: Validate Seed Integrity
         run: pnpm validate-seed

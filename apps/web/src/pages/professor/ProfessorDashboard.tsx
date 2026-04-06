@@ -36,21 +36,21 @@ const ProfessorDashboard: React.FC = () => {
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [disciplines]);
 
-  const fetchData = async (turmaId?: string) => {
+  const fetchData = React.useCallback(async (turmaId?: string) => {
     setLoading(true);
     try {
       // 1. Fetch disciplines first if we don't have them
       if (disciplines.length === 0) {
         const disciplinesRes = await api.get('/professor/disciplinas');
         if (disciplinesRes.data.success) {
-          const discData = disciplinesRes.data.data;
+          const discData: Discipline[] = disciplinesRes.data.data;
           setDisciplines(discData);
           
           // If no turmaId provided, try to pick the first one from newly loaded disciplines
           if (!turmaId) {
-             const map = new Map();
-             discData.forEach((d: any) => {
-               d.turmaIds?.forEach((t: any) => {
+             const map = new Map<string, string>();
+             discData.forEach((d: Discipline) => {
+               d.turmaIds?.forEach((t: { _id: string; name: string }) => {
                  if (!map.has(t._id)) map.set(t._id, t.name);
                });
              });
@@ -74,11 +74,11 @@ const ProfessorDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [disciplines]);
 
   useEffect(() => {
     fetchData(selectedTurmaId);
-  }, [selectedTurmaId]);
+  }, [selectedTurmaId, fetchData]);
 
   const handleTurmaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedTurmaId(e.target.value);

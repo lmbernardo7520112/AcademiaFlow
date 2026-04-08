@@ -17,6 +17,7 @@ import GradeManagement from './pages/professor/GradeManagement';
 import ProfessorAI from './pages/professor/ProfessorAI';
 import TurmaAnalyticsPage from './pages/dashboard/TurmaAnalyticsPage';
 import BoletimIndividualPage from './pages/dashboard/BoletimIndividualPage';
+import BoletimLotePage from './pages/dashboard/BoletimLotePage';
 import DashboardLayout from './components/layout/DashboardLayout';
 
 function App() {
@@ -37,7 +38,6 @@ function App() {
               <Route path="/professor/turma/:turmaId" element={<TurmaAnalyticsPage />} />
               <Route path="/professor/notas/:turmaId/:disciplinaId" element={<GradeManagement />} />
               <Route path="/professor/ai" element={<ProfessorAI />} />
-              <Route path="/dashboard/alunos/:alunoId/boletim" element={<BoletimIndividualPage />} />
             </Route>
           </Route>
 
@@ -49,7 +49,14 @@ function App() {
               <Route path="/secretaria/turma/:turmaId" element={<TurmaAnalyticsPage />} />
               <Route path="/secretaria/alunos" element={<AlunosPage />} />
               <Route path="/secretaria/disciplinas" element={<DisciplinasPage />} />
+            </Route>
+          </Route>
+
+          {/* Compartilhado (Boletim) */}
+          <Route element={<ProtectedRoute allowedRoles={['professor', 'secretaria', 'admin', 'administrador']} />}>
+            <Route element={<DashboardLayout />}>
               <Route path="/dashboard/alunos/:alunoId/boletim" element={<BoletimIndividualPage />} />
+              <Route path="/dashboard/turmas/:turmaId/boletins" element={<BoletimLotePage />} />
             </Route>
           </Route>
 

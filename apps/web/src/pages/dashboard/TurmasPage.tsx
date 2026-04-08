@@ -3,7 +3,7 @@ import { api } from '../../services/api.js';
 import DashboardLayout from '../../components/layout/DashboardLayout.js';
 import DataTable from '../../components/ui/DataTable.js';
 import Modal from '../../components/ui/Modal.js';
-import { Plus, Edit2, Download, BarChart2 } from 'lucide-react';
+import { Plus, Edit2, Download, BarChart2, Printer } from 'lucide-react';
 import { reportsService } from '../../services/reports.service.js';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/dashboard.css';
@@ -143,7 +143,8 @@ export default function TurmasPage() {
       render: (row: Turma) => (
         <div style={{ display: 'flex', gap: '0.4rem' }}>
           <button className="btn-outline-small" onClick={() => navigate(`/secretaria/turma/${row._id}`)} title="Dashboard Analítico"><BarChart2 size={14} color="#3b82f6" /></button>
-          <button className="btn-outline-small" onClick={() => handleExport(row._id, row.name)} title="Exportar Boletins"><Download size={14} color="#10b981" /></button>
+          <button className="btn-outline-small" onClick={() => navigate(`/dashboard/turmas/${row._id}/boletins`)} title="Imprimir Lote PDF"><Printer size={14} color="#8b5cf6" /></button>
+          <button className="btn-outline-small" onClick={() => handleExport(row._id, row.name)} title="Exportar Boletins Excel"><Download size={14} color="#10b981" /></button>
           <button className="btn-outline-small" onClick={() => handleEdit(row)} title="Editar"><Edit2 size={14} /></button>
         </div>
       )

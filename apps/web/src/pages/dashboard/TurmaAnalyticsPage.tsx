@@ -20,9 +20,10 @@ const TurmaAnalyticsPage: React.FC = () => {
     try {
       const res = await reportsService.getDashboardTurma(turmaId);
       setData(res);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erro ao carregar analytics da turma', error);
-      const status = error.response?.status;
+      const err = error as { response?: { status?: number } };
+      const status = err.response?.status;
       if (status === 403) {
         setErrorMsg('Acesso negado: privilégios insuficientes para visualizar esta turma.');
       } else if (status === 404) {

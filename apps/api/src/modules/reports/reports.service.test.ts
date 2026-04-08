@@ -14,13 +14,17 @@ describe('ReportsService - B2 Dashboard Analítico', () => {
   let disciplinaId: string;
 
   beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    await mongoose.connect(mongoServer.getUri());
+    if (mongoose.connection.readyState === 0) {
+      mongoServer = await MongoMemoryServer.create();
+      await mongoose.connect(mongoServer.getUri());
+    }
   });
 
   afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
+    if (mongoServer) {
+      await mongoose.disconnect();
+      await mongoServer.stop();
+    }
   });
 
   beforeEach(async () => {

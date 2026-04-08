@@ -96,9 +96,10 @@ describe('ReportsService - B2 Dashboard Analítico', () => {
     try {
       await reportsService.getDashboardTurma(otherTenantId, turmaId);
       expect.fail('Deveria ter lançado erro');
-    } catch (error: any) {
-      expect(error.message).toBe('Turma não encontrada ou inativa');
-      expect(error.statusCode).toBe(404);
+    } catch (error: unknown) {
+      const err = error as Error & { statusCode?: number };
+      expect(err.message).toBe('Turma não encontrada ou inativa');
+      expect(err.statusCode).toBe(404);
     }
   });
 

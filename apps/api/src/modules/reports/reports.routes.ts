@@ -97,7 +97,7 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
         const metrics = await reportsService.getDashboardTurma(tenantId, turmaId);
         reply.send({ success: true, data: metrics });
       } catch (error: Error | unknown) {
-        const statusCode = (error as any).statusCode || 500;
+        const statusCode = typeof error === 'object' && error !== null && 'statusCode' in error ? Number(error.statusCode) : 500;
         reply.code(statusCode).send({
           success: false,
           message: error instanceof Error ? error.message : 'Erro ao buscar dashboard da turma',

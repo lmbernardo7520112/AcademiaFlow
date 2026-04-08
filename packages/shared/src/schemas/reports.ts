@@ -14,6 +14,18 @@ export const reportCardAtRiskSchema = z.object({
   average: z.number(),
 });
 
+/**
+ * Strict bimestral slot DTO.
+ * - periodo: explicit 1-4 identifier (not array index)
+ * - valor: number | null (null = absence, 0 = mathematical zero)
+ * - label: human-readable label from shared bimester constants
+ */
+export const bimestreSlotSchema = z.object({
+  periodo: z.number().int().min(1).max(4),
+  valor: z.number().nullable(),
+  label: z.string(),
+});
+
 export const turmaDashboardSchema = z.object({
   turmaId: z.string(),
   turmaName: z.string(),
@@ -25,6 +37,8 @@ export const turmaDashboardSchema = z.object({
     })
   ),
   studentsAtRisk: z.array(reportCardAtRiskSchema).max(10),
+  /** Strict 4-slot bimestral performance array. Always 4 elements, ordered 1→4. */
+  performanceBimestral: z.array(bimestreSlotSchema).length(4),
 });
 
 export const professorAnalyticsSchema = z.object({

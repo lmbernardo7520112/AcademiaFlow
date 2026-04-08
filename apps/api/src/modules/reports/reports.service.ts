@@ -3,6 +3,8 @@ import { TurmaModel } from '../../models/Turma.js';
 import { DisciplinaModel } from '../../models/Disciplina.js';
 import { NotaModel } from '../../models/Nota.js';
 import mongoose from 'mongoose';
+import { normalizeBimestralSlots, isBimesterPeriodo } from '@academiaflow/shared';
+import type { BimesterPeriodo } from '@academiaflow/shared';
 
 export class ReportsService {
   async getDashboardMetrics(tenantId: string) {
@@ -156,6 +158,24 @@ export class ReportsService {
       }
     ]);
 
+    // 4. Bimestral Performance — strict 4-slot DTO (Phase 2)
+    const bimestralAgg = await NotaModel.aggregate([
+      { $match: { tenantId, turmaId: new mongoose.Types.ObjectId(turmaId) } },
+      { $group: { _id: '$bimester', avg: { $avg: '$value' } } },
+      { $sort: { _id: 1 } }
+    ]);
+
+    const bimestralMap: Partial<Record<BimesterPeriodo, number | null>> = {};
+    for (const entry of bimestralAgg) {
+      const p = entry._id as number;
+      if (isBimesterPeriodo(p)) {
+        bimestralMap[p] = entry.avg !== null
+          ? parseFloat(entry.avg.toFixed(2))
+          : null;
+      }
+    }
+    const performanceBimestral = normalizeBimestralSlots(bimestralMap);
+
     // 4. Approval Rates
     const genericTaxas = await this.getTaxasAprovacaoPorTurma(tenantId, turma.year);
     const specificTaxa = genericTaxas.find(t => t.turmaId === turmaId);
@@ -172,6 +192,7 @@ export class ReportsService {
       },
       distribution,
       studentsAtRisk: riskAggregation,
+      performanceBimestral,
     };
   }
 

@@ -15,3 +15,4 @@ export * from './schemas/grade-calculations.js';
 export * from './schemas/ai.js';
 export * from './schemas/validacao-pedagogica.js';
 export * from './schemas/reports.js';
+export * from './schemas/bimester.js';

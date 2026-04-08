@@ -13,8 +13,10 @@
     "clean": "rm -rf dist",
     "seed:ci": "tsx src/scripts/reset-db.ts --mode ci",
     "seed:demo": "tsx src/scripts/reset-db.ts --mode demo",
+    "seed": "pnpm run seed:ci",
     "validate-seed:ci": "tsx src/scripts/validate-seed.ts --mode ci",
-    "validate-seed:demo": "tsx src/scripts/validate-seed.ts --mode demo"
+    "validate-seed:demo": "tsx src/scripts/validate-seed.ts --mode demo",
+    "validate-seed": "pnpm run validate-seed:ci"
   },
   "dependencies": {
     "@academiaflow/shared": "workspace:*",

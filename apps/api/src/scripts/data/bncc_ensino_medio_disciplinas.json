@@ -1,0 +1,74 @@
+[
+  {
+    "nome": "Língua Portuguesa",
+    "slug": "lingua_portuguesa",
+    "area": "Linguagens",
+    "cargaHoraria": 400
+  },
+  {
+    "nome": "Arte",
+    "slug": "arte",
+    "area": "Linguagens",
+    "cargaHoraria": 80
+  },
+  {
+    "nome": "Educação Física",
+    "slug": "educacao_fisica",
+    "area": "Linguagens",
+    "cargaHoraria": 80
+  },
+  {
+    "nome": "Língua Inglesa",
+    "slug": "lingua_inglesa",
+    "area": "Linguagens",
+    "cargaHoraria": 120
+  },
+  {
+    "nome": "Matemática",
+    "slug": "matematica",
+    "area": "Matemática",
+    "cargaHoraria": 400
+  },
+  {
+    "nome": "Física",
+    "slug": "fisica",
+    "area": "Ciências da Natureza",
+    "cargaHoraria": 120
+  },
+  {
+    "nome": "Química",
+    "slug": "quimica",
+    "area": "Ciências da Natureza",
+    "cargaHoraria": 120
+  },
+  {
+    "nome": "Biologia",
+    "slug": "biologia",
+    "area": "Ciências da Natureza",
+    "cargaHoraria": 120
+  },
+  {
+    "nome": "História",
+    "slug": "historia",
+    "area": "Ciências Humanas e Sociais Aplicadas",
+    "cargaHoraria": 120
+  },
+  {
+    "nome": "Geografia",
+    "slug": "geografia",
+    "area": "Ciências Humanas e Sociais Aplicadas",
+    "cargaHoraria": 120
+  },
+  {
+    "nome": "Filosofia",
+    "slug": "filosofia",
+    "area": "Ciências Humanas e Sociais Aplicadas",
+    "cargaHoraria": 80
+  },
+  {
+    "nome": "Sociologia",
+    "slug": "sociologia",
+    "area": "Ciências Humanas e Sociais Aplicadas",
+    "cargaHoraria": 80
+  }
+]

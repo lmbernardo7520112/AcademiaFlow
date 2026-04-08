@@ -34,7 +34,7 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
   typedFastify.get(
     '/turmas/taxas',
     {
-      preHandler: [fastify.authorize(['admin', 'secretaria'])],
+      preHandler: [fastify.authorize(['admin', 'administrador', 'secretaria'])],
       schema: {
         querystring: z.object({
           year: z.coerce.number().int().default(() => new Date().getFullYear()),
@@ -64,7 +64,7 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
   typedFastify.get(
     '/turmas/:turmaId/dashboard',
     {
-      preHandler: [fastify.authorize(['admin', 'secretaria', 'professor'])],
+      preHandler: [fastify.authorize(['admin', 'administrador', 'secretaria', 'professor'])],
       schema: {
         params: z.object({
           turmaId: z.string(),
@@ -97,7 +97,8 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
         const metrics = await reportsService.getDashboardTurma(tenantId, turmaId);
         reply.send({ success: true, data: metrics });
       } catch (error: Error | unknown) {
-        reply.code(500).send({
+        const statusCode = (error as any).statusCode || 500;
+        reply.code(statusCode).send({
           success: false,
           message: error instanceof Error ? error.message : 'Erro ao buscar dashboard da turma',
         });
@@ -139,7 +140,7 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
   typedFastify.get(
     '/turmas/:turmaId/boletins/export',
     {
-      preHandler: [fastify.authorize(['admin', 'secretaria'])],
+      preHandler: [fastify.authorize(['admin', 'administrador', 'secretaria'])],
       schema: {
         params: z.object({ turmaId: z.string() }),
         querystring: z.object({
@@ -169,7 +170,7 @@ export const reportsRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInsta
   typedFastify.get(
     '/notas/boletim/aluno/:alunoId',
     {
-      preHandler: [fastify.authorize(['admin', 'secretaria', 'professor'])],
+      preHandler: [fastify.authorize(['admin', 'administrador', 'secretaria', 'professor'])],
       schema: {
         params: z.object({ alunoId: z.string() }),
         querystring: z.object({

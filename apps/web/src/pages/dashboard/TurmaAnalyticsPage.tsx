@@ -11,15 +11,25 @@ const TurmaAnalyticsPage: React.FC = () => {
   const [data, setData] = useState<TurmaDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!turmaId) return;
     setLoading(true);
+    setErrorMsg(null);
     try {
       const res = await reportsService.getDashboardTurma(turmaId);
       setData(res);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao carregar analytics da turma', error);
+      const status = error.response?.status;
+      if (status === 403) {
+        setErrorMsg('Acesso negado: privilégios insuficientes para visualizar esta turma.');
+      } else if (status === 404) {
+        setErrorMsg('Turma não encontrada ou inativa.');
+      } else {
+        setErrorMsg('Erro interno ao buscar relatórios. Tente novamente mais tarde.');
+      }
     } finally {
       setLoading(false);
     }
@@ -30,7 +40,8 @@ const TurmaAnalyticsPage: React.FC = () => {
   }, [fetchData]);
 
   if (loading) return <div className="loading-overlay">Analisando dados pedagógicos...</div>;
-  if (!data) return <div className="p-8 text-white">Turma não encontrada ou sem dados analíticos.</div>;
+  if (errorMsg) return <div className="p-8 text-red-400 font-semibold">{errorMsg}</div>;
+  if (!data) return <div className="p-8 text-white">Turma sem dados analíticos publicados.</div>;
 
   return (
     <DashboardLayout>

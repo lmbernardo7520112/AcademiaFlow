@@ -92,7 +92,11 @@ export class ReportsService {
 
   async getDashboardTurma(tenantId: string, turmaId: string) {
     const turma = await TurmaModel.findOne({ _id: turmaId, tenantId, isActive: true });
-    if (!turma) throw new Error('Turma não encontrada ou inativa');
+    if (!turma) {
+      const err = new Error('Turma não encontrada ou inativa');
+      (err as any).statusCode = 404;
+      throw err;
+    }
 
     // 1. KPI Aggregation (Avg, Total Students)
     const stats = await NotaModel.aggregate([

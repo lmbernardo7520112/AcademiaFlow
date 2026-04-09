@@ -1,0 +1,647 @@
+{
+  "turmas": [
+    {
+      "nome_turma": "1º ANO A",
+      "alunos": [
+        {
+          "numero": "01",
+          "nome": "Alicia Natália Alves de Sousa"
+        },
+        {
+          "numero": "02",
+          "nome": "Carlos Eduardo de Freitas Silvino"
+        },
+        {
+          "numero": "03",
+          "nome": "Cicera Tayna Gomes Rocha"
+        },
+        {
+          "numero": "04",
+          "nome": "Elias Alves Barbosa"
+        },
+        {
+          "numero": "05",
+          "nome": "Geovanna da Silva Freira"
+        },
+        {
+          "numero": "06",
+          "nome": "Ingrid walescka Moreira do Nascimento"
+        },
+        {
+          "numero": "07",
+          "nome": "Jonathan Caio Gonçalves de Lima"
+        },
+        {
+          "numero": "08",
+          "nome": "Jordânia Lima da Costa"
+        },
+        {
+          "numero": "09",
+          "nome": "Keven Lucas Leite de Sousa"
+        },
+        {
+          "numero": "10",
+          "nome": "Leandro Junio Lima da Costa"
+        },
+        {
+          "numero": "11",
+          "nome": "Lendryus Lima da Costa"
+        },
+        {
+          "numero": "12",
+          "nome": "Leticia Monteiro Costa da Cruz"
+        },
+        {
+          "numero": "13",
+          "nome": "Lorenna Gentil Peixoto"
+        },
+        {
+          "numero": "14",
+          "nome": "Lousysy Sophia de FreitasGomes"
+        },
+        {
+          "numero": "15",
+          "nome": "Marina Luiza Santos Vasconcelos"
+        },
+        {
+          "numero": "16",
+          "nome": "Mirella Ferreira de França"
+        },
+        {
+          "numero": "17",
+          "nome": "Rafaela Marques Imbiriba dos Santos"
+        },
+        {
+          "numero": "18",
+          "nome": "Rafael Martins da Silva"
+        },
+        {
+          "numero": "19",
+          "nome": "Samuel Gleybson"
+        },
+        {
+          "numero": "20",
+          "nome": "Pedro Henrique Rocha da Silva"
+        },
+        {
+          "numero": "21",
+          "nome": "Wendel Ray Pereira Garcia"
+        },
+        {
+          "numero": "22",
+          "nome": "Klara Gabriela Macedo"
+        }
+      ]
+    },
+    {
+      "nome_turma": "1º ANO B",
+      "alunos": [
+        {
+          "numero": "01",
+          "nome": "Cauã Henrique Pereira da Silva"
+        },
+        {
+          "numero": "02",
+          "nome": "Davy Fernando Tavares Pinheiro Jacob"
+        },
+        {
+          "numero": "03",
+          "nome": "Diogo dos Anjos Rodrigues"
+        },
+        {
+          "numero": "04",
+          "nome": "Enzo Gabriel Gomes Miguel dos Santos"
+        },
+        {
+          "numero": "05",
+          "nome": "Ezequiel Tavares Nascimento Torres"
+        },
+        {
+          "numero": "06",
+          "nome": "Gabriel Avelino Ferreira"
+        },
+        {
+          "numero": "07",
+          "nome": "Gabriela Souto da Trindade"
+        },
+        {
+          "numero": "08",
+          "nome": "Guilherme de Lucena Queiroz"
+        },
+        {
+          "numero": "09",
+          "nome": "Hevelyn Diniz Fernandes"
+        },
+        {
+          "numero": "10",
+          "nome": "Igor Juno da Silva Oliveira"
+        },
+        {
+          "numero": "11",
+          "nome": "Isaac Sales Barbosa"
+        },
+        {
+          "numero": "12",
+          "nome": "José Henrike Oliveira Domingues"
+        },
+        {
+          "numero": "13",
+          "nome": "Joyce Kelly Bernado Correia"
+        },
+        {
+          "numero": "14",
+          "nome": "Karoliny Vitoria Freire da Silva Nascimento"
+        },
+        {
+          "numero": "15",
+          "nome": "Kaunysson Borges Gonzaga"
+        },
+        {
+          "numero": "16",
+          "nome": "Lara Nunes Oliveira"
+        },
+        {
+          "numero": "17",
+          "nome": "Lyllian Maria Santana Luciano"
+        },
+        {
+          "numero": "18",
+          "nome": "Maria Eduarda de Souza"
+        },
+        {
+          "numero": "19",
+          "nome": "Maria Eduarda Carneiro de Oliveira"
+        },
+        {
+          "numero": "20",
+          "nome": "Nicole Stefany Alves Souto Silva"
+        },
+        {
+          "numero": "21",
+          "nome": "Rhuan Carlos de Araújo Sousa"
+        },
+        {
+          "numero": "22",
+          "nome": "Pedro Henrique Ricardo Moura do Nascimento"
+        },
+        {
+          "numero": "23",
+          "nome": "Victor Antonino Figueiredo da Silva"
+        },
+        {
+          "numero": "24",
+          "nome": "Victor Emanuel Macêdo Fidelis"
+        },
+        {
+          "numero": "25",
+          "nome": "Yasmin Lohane Muller Coelho"
+        }
+      ]
+    },
+    {
+      "nome_turma": "1º ANO C",
+      "alunos": [
+        {
+          "numero": "01",
+          "nome": "Adryan Sudario Sousa"
+        },
+        {
+          "numero": "02",
+          "nome": "Arthur Kauã Ferreira Barbosa"
+        },
+        {
+          "numero": "03",
+          "nome": "Angeliny Pessoa dos Santos"
+        },
+        {
+          "numero": "04",
+          "nome": "Bianca Nicolly Pereira Martins"
+        },
+        {
+          "numero": "05",
+          "nome": "Davi de Sousa Alves"
+        },
+        {
+          "numero": "06",
+          "nome": "Gabryelle Nayara Pereira de Sousa"
+        },
+        {
+          "numero": "07",
+          "nome": "José Carlos de Freitas Souza"
+        },
+        {
+          "numero": "08",
+          "nome": "Julia de Souza Santos do Rego"
+        },
+        {
+          "numero": "09",
+          "nome": "Kauã Leite Jorge Vieira da Costa"
+        },
+        {
+          "numero": "10",
+          "nome": "Laura Maria Monteiro Tavares"
+        },
+        {
+          "numero": "11",
+          "nome": "Leandro da Silva Fonseca Filho"
+        },
+        {
+          "numero": "12",
+          "nome": "Louhanna Micaelly Silva de Araújo"
+        },
+        {
+          "numero": "13",
+          "nome": "Lucyemille Fernandes dos Sasntos"
+        },
+        {
+          "numero": "14",
+          "nome": "Maria Eduarda Oliveira Nunes / NOME SOCIAL: Liam Oliveira Nunes"
+        },
+        {
+          "numero": "15",
+          "nome": "Maria Tainá Marculino dos Santos"
+        },
+        {
+          "numero": "16",
+          "nome": "Marianny Vitória da Silva Gomes"
+        },
+        {
+          "numero": "17",
+          "nome": "Maycon Leandro Nunes dos Santos"
+        },
+        {
+          "numero": "18",
+          "nome": "Nicole Vitória Belarmino da Silva"
+        },
+        {
+          "numero": "19",
+          "nome": "Perola Vittoria Oliveira Lima da Silva"
+        },
+        {
+          "numero": "20",
+          "nome": "Iana Havenna Alves Lisboa"
+        },
+        {
+          "numero": "21",
+          "nome": "Gustavo Junior Rodrigues Viana"
+        },
+        {
+          "numero": "22",
+          "nome": "Samuel Vinicius Felinto dos Santos"
+        }
+      ]
+    },
+    {
+      "nome_turma": "2º ANO A",
+      "alunos": [
+        {
+          "numero": "1",
+          "nome": "Agátha Fernanda Maciel de Souza"
+        },
+        {
+          "numero": "2",
+          "nome": "Alex Bandeira Costa Júnior"
+        },
+        {
+          "numero": "3",
+          "nome": "Ana Gabrielly Silva dos Santos"
+        },
+        {
+          "numero": "4",
+          "nome": "Anna Beatriz Alves Souto Silva"
+        },
+        {
+          "numero": "5",
+          "nome": "Arthur Vitor Alves de Sousa"
+        },
+        {
+          "numero": "6",
+          "nome": "Emily Luiza Silva de Jesus"
+        },
+        {
+          "numero": "7",
+          "nome": "Enzo Henrique de Souza"
+        },
+        {
+          "numero": "8",
+          "nome": "Fábio Victor Aquino Avelino"
+        },
+        {
+          "numero": "9",
+          "nome": "Gabriella Alves Souto Silva"
+        },
+        {
+          "numero": "10",
+          "nome": "Gabriel Yrlley Silva Carvalho de Oliveira"
+        },
+        {
+          "numero": "11",
+          "nome": "Guilherme Gomes Ponzi"
+        },
+        {
+          "numero": "12",
+          "nome": "Igor Henrique Fernandes da Silva"
+        },
+        {
+          "numero": "13",
+          "nome": "Ivanildo Paulo dos Santos Neto"
+        },
+        {
+          "numero": "14",
+          "nome": "Kaio Eduardo Santos Silva"
+        },
+        {
+          "numero": "15",
+          "nome": "Kauan Víctor da Silva Ferreira"
+        },
+        {
+          "numero": "16",
+          "nome": "Lanilson Pereira do Oriente Lino"
+        },
+        {
+          "numero": "17",
+          "nome": "Leandro Alcântara Santos Silva"
+        },
+        {
+          "numero": "18",
+          "nome": "Marcos Marinho José de Moraes Pimenta"
+        },
+        {
+          "numero": "19",
+          "nome": "Mariana Paula Nunes dos Santos"
+        },
+        {
+          "numero": "20",
+          "nome": "Matheus Henrique Silva de Lima Santos"
+        },
+        {
+          "numero": "21",
+          "nome": "Mikael da Silva Cunha"
+        },
+        {
+          "numero": "22",
+          "nome": "Pedro Henrique Pereira Cunha"
+        },
+        {
+          "numero": "23",
+          "nome": "Pyetro Phelipe Mota de Souza"
+        },
+        {
+          "numero": "24",
+          "nome": "Talisson Fabrício Brito dos Santos"
+        },
+        {
+          "numero": "25",
+          "nome": "Viviane Rosa da Silva Tavares"
+        }
+      ]
+    },
+    {
+      "nome_turma": "2º ANO B",
+      "alunos": [
+        {
+          "numero": "1",
+          "nome": "Ana Beatriz Pereira de Souza"
+        },
+        {
+          "numero": "2",
+          "nome": "Ana Mirelly Fernandes de Lima"
+        },
+        {
+          "numero": "3",
+          "nome": "Caio Lucas dos Santos"
+        },
+        {
+          "numero": "4",
+          "nome": "Davi Barbosa Oliveira"
+        },
+        {
+          "numero": "5",
+          "nome": "Ezequiel Alexandre Araújo da Silva"
+        },
+        {
+          "numero": "6",
+          "nome": "Gabriel Henrique da Silva Santana"
+        },
+        {
+          "numero": "7",
+          "nome": "Giovanny Macêdo Fidelis dos Santos"
+        },
+        {
+          "numero": "8",
+          "nome": "Guilherme de Oliveira Andrade"
+        },
+        {
+          "numero": "9",
+          "nome": "Ingrid Jamile Alves Oliveira"
+        },
+        {
+          "numero": "10",
+          "nome": "José Hélio Vieira da Costa Segundo"
+        },
+        {
+          "numero": "11",
+          "nome": "Kariny Leandra Silva Nascimento"
+        },
+        {
+          "numero": "12",
+          "nome": "Katllyn Vitória Felismino dos Santos"
+        },
+        {
+          "numero": "13",
+          "nome": "Leonan Igor Martins Cavalcante"
+        },
+        {
+          "numero": "14",
+          "nome": "Leon Vítor da Silva Sousa Santos"
+        },
+        {
+          "numero": "15",
+          "nome": "Maria Flor Limeira Gomes"
+        },
+        {
+          "numero": "16",
+          "nome": "Mariana Sabrina Tavares da Silva"
+        },
+        {
+          "numero": "17",
+          "nome": "Maria Willyanna Santos da Silva"
+        },
+        {
+          "numero": "18",
+          "nome": "Natanael Monteiro Souza"
+        },
+        {
+          "numero": "19",
+          "nome": "Rafael Alcântara Santos Silva"
+        },
+        {
+          "numero": "20",
+          "nome": "Rayssa Maria Pereira Medeiros"
+        },
+        {
+          "numero": "21",
+          "nome": "Rebeka Loueny Soares de Souza"
+        },
+        {
+          "numero": "22",
+          "nome": "Rodrigo Santos Freire"
+        },
+        {
+          "numero": "23",
+          "nome": "Yasmin Caxias de Morais"
+        },
+        {
+          "numero": "24",
+          "nome": "Yure Gabriel Barbosa Lima"
+        }
+      ]
+    },
+    {
+      "nome_turma": "3º ANO A",
+      "alunos": [
+        {
+          "numero": "01",
+          "nome": "Ana Luiza Xavier Dos Santos Alves"
+        },
+        {
+          "numero": "02",
+          "nome": "Anna Júlia Pereira dos Santos"
+        },
+        {
+          "numero": "03",
+          "nome": "Anthony Gabriel da Costa Trigueiro"
+        },
+        {
+          "numero": "04",
+          "nome": "Brenda Silva Cavalcanti"
+        },
+        {
+          "numero": "05",
+          "nome": "Caio Murilo Clemente da Silva"
+        },
+        {
+          "numero": "06",
+          "nome": "Camilly Fernandes Félix Da Silva"
+        },
+        {
+          "numero": "07",
+          "nome": "Crislayne da Silva Alexandre"
+        },
+        {
+          "numero": "08",
+          "nome": "Flavio Henrick da Silva Ide"
+        },
+        {
+          "numero": "09",
+          "nome": "Geovana Mirela Dantas de Almeida"
+        },
+        {
+          "numero": "10",
+          "nome": "Jhon Kevin Silva e Santos"
+        },
+        {
+          "numero": "11",
+          "nome": "João Rodrigues da Costa Neto"
+        },
+        {
+          "numero": "12",
+          "nome": "Lucas Franco dos Santos"
+        },
+        {
+          "numero": "13",
+          "nome": "Maria Janaina Amorim De Alcântara"
+        },
+        {
+          "numero": "14",
+          "nome": "Maria Leticia Alves da Silva"
+        },
+        {
+          "numero": "15",
+          "nome": "Maria Vitória de Araújo Batista"
+        },
+        {
+          "numero": "16",
+          "nome": "Mirosmar Ferreira Gomes"
+        },
+        {
+          "numero": "17",
+          "nome": "Sarah Ranna Da Silva Loureço"
+        }
+      ]
+    },
+    {
+      "nome_turma": "3º ANO B",
+      "alunos": [
+        {
+          "numero": "01",
+          "nome": "Ana Beatriz Leal Q. P. De Souza"
+        },
+        {
+          "numero": "02",
+          "nome": "Analia Maria Ribeiro de Lima"
+        },
+        {
+          "numero": "03",
+          "nome": "Angela Leite Viegas De Andrade"
+        },
+        {
+          "numero": "04",
+          "nome": "Evelym Tainá Pereira de Araújo"
+        },
+        {
+          "numero": "05",
+          "nome": "Francielen Silva Santos"
+        },
+        {
+          "numero": "06",
+          "nome": "Geovanna Ellen Sabino de Araújo"
+        },
+        {
+          "numero": "07",
+          "nome": "Geovanna Lívia M. De L. Da Silveira"
+        },
+        {
+          "numero": "08",
+          "nome": "João Victor Nóbrega dos Santos"
+        },
+        {
+          "numero": "09",
+          "nome": "Julie Stefanelli Pereira de Luna"
+        },
+        {
+          "numero": "10",
+          "nome": "Kalyu Fernandes Henrique"
+        },
+        {
+          "numero": "11",
+          "nome": "Kauê Ricardo De Souza Braga"
+        },
+        {
+          "numero": "12",
+          "nome": "Lethícia Melo Cavalcante"
+        },
+        {
+          "numero": "13",
+          "nome": "Lucas Miguel Benevides"
+        },
+        {
+          "numero": "14",
+          "nome": "Rafael Henrique Alcântara De Souza"
+        },
+        {
+          "numero": "15",
+          "nome": "Tierre Alves Silva"
+        },
+        {
+          "numero": "16",
+          "nome": "Victoria de Miranda H. Gomes"
+        },
+        {
+          "numero": "17",
+          "nome": "Wallyson Gabriel Soares de Morais"
+        }
+      ]
+    }
+  ]
+}

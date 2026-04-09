@@ -11,6 +11,23 @@ import { MockLLMProvider } from './providers/MockLLMProvider.js';
 import { z } from 'zod';
 import { iaPedagogicoService } from './ia_pedagogico.service.js';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
+import type { FastifyReply } from 'fastify';
+import { AIProviderError } from './errors.js';
+
+const sendAIErrorResponse = (reply: FastifyReply, error: unknown, defaultMessage: string) => {
+  if (error instanceof AIProviderError) {
+    return reply.code(error.statusCode).send({
+      success: false,
+      message: error.message,
+      errorType: error.name,
+    });
+  }
+  const customStatus = error instanceof Error && 'statusCode' in error ? Number((error as Record<string, unknown>).statusCode) : 500;
+  return reply.code(customStatus || 500).send({
+    success: false,
+    message: error instanceof Error ? error.message : defaultMessage,
+  });
+};
 
 export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) => {
   const typedFastify = fastify.withTypeProvider<ZodTypeProvider>();
@@ -39,11 +56,8 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
         const payload = request.body;
         const generatedActivity = await aiService.generateActivity(tenantId, payload);
         reply.code(200).send({ success: true, data: generatedActivity });
-      } catch (error: Error | unknown) {
-        reply.code(400).send({
-          success: false,
-          message: error instanceof Error ? error.message : 'Erro ao tentar acionar o motor de inteligência artificial',
-        });
+      } catch (error: unknown) {
+        sendAIErrorResponse(reply, error, 'Erro interno ao tentar acionar a geração guiada');
       }
     }
   );
@@ -68,15 +82,15 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
         const { bimester, year, disciplinaId } = request.body;
         const analysis = await iaPedagogicoService.generatePerformanceAnalysis(tenantId, bimester, year, disciplinaId);
         reply.send({ success: true, data: analysis });
-      } catch (error: Error | unknown) {
+      } catch (error: unknown) {
         console.error('\n--- ERRO IA PEDAGOGICAL ANALYSIS ---');
         console.error(error instanceof Error ? error.message : 'Erro genérico');
-        console.error(error instanceof Error ? error.stack : 'Sem stack');
-        reply.code(500).send({ 
-          success: false, 
-          message: error instanceof Error ? error.message : 'Erro interno na análise IA',
-          debug: error instanceof Error ? error.stack : undefined
-        });
+        if (error instanceof AIProviderError) {
+          console.error(`Tipo: ${error.name} | Status: ${error.statusCode}`);
+        } else if (error instanceof Error) {
+          console.error(`Stack: ${error.stack?.substring(0, 200)}`);
+        }
+        sendAIErrorResponse(reply, error, 'Erro interno na análise IA');
       }
     }
   );
@@ -96,7 +110,7 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
         const result = await iaPedagogicoService.generateRecoveryExercises(tenantId, bimester, year, disciplinaId);
         reply.send({ success: true, data: result });
       } catch (error: unknown) {
-        reply.code(500).send({ success: false, message: error instanceof Error ? error.message : 'Erro interno na geração IA' });
+        sendAIErrorResponse(reply, error, 'Erro interno na geração IA');
       }
     }
   );
@@ -118,11 +132,8 @@ export const aiRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstance) 
 
         const result = await iaPedagogicoService.listHistory(tenantId, filters, userId, role);
         reply.send({ success: true, ...result });
-      } catch (error: Error | unknown) {
-        reply.code(400).send({
-          success: false,
-          message: error instanceof Error ? error.message : 'Erro ao listar histórico de IA',
-        });
+      } catch (error: unknown) {
+        sendAIErrorResponse(reply, error, 'Erro ao listar histórico de IA');
       }
     }
   );

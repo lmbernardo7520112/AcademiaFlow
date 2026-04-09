@@ -108,7 +108,7 @@ export class ReportsService {
       }
     ]);
 
-    const averageGrade = stats.length > 0 ? parseFloat(stats[0].avg.toFixed(2)) : null;
+    const averageGrade = stats.length > 0 && stats[0].avg != null ? parseFloat(stats[0].avg.toFixed(2)) : null;
     const totalStudents = await AlunoModel.countDocuments({ tenantId, turmaId, isActive: true });
 
     // 2. Distribution (Histogram)
@@ -153,7 +153,7 @@ export class ReportsService {
       { $unwind: '$aluno' },
       {
         $project: {
-          _id: 1,
+          _id: { $toString: '$_id' },
           name: '$aluno.name',
           average: { $round: ['$avg', 2] }
         }
@@ -171,7 +171,7 @@ export class ReportsService {
     for (const entry of bimestralAgg) {
       const p = entry._id as number;
       if (isBimesterPeriodo(p)) {
-        bimestralMap[p] = entry.avg !== null
+        bimestralMap[p] = entry.avg != null
           ? parseFloat(entry.avg.toFixed(2))
           : null;
       }

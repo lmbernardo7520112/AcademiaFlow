@@ -92,7 +92,38 @@ describe('ReportsService - B2 Dashboard Analítico', () => {
     expect(dashboard.studentsAtRisk).toHaveLength(1);
     expect(dashboard.studentsAtRisk[0].name).toBe('Aluno Analítico');
     expect(dashboard.studentsAtRisk[0].average).toBe(4.5);
+    // Assegura que o MongoDB ID foi convertido para string no payload para bater com o formato Zod
+    expect(typeof dashboard.studentsAtRisk[0]._id).toBe('string');
     expect(dashboard.performanceBimestral[0].valor).toBe(4.5);
+  });
+
+  it('deve processar de forma segura notas sem valor numérico (value: null)', async () => {
+    const aluno = await AlunoModel.create({
+      tenantId,
+      turmaId,
+      name: 'Aluno Com Null',
+      matricula: 'NUL-123',
+      dataNascimento: new Date()
+    });
+
+    // Insere uma nota sem valor (representando registro sem submissão final)
+    await NotaModel.create({
+      tenantId,
+      turmaId,
+      alunoId: aluno._id,
+      disciplinaId,
+      bimester: 1,
+      year: 2026,
+      value: null
+    });
+
+    // Esta chamada falharia antes da correção com TypeError (reading 'toFixed' of null)
+    const dashboard = await reportsService.getDashboardTurma(tenantId, turmaId);
+    
+    // A média geral deve vir null já que não há nota numéricas para somar
+    expect(dashboard.metrics.averageGrade).toBeNull();
+    // A performance bimestral deve vir null
+    expect(dashboard.performanceBimestral[0].valor).toBeNull();
   });
 
   it('deve lançar erro 404 explícito para turma inexistente ou em outro tenant', async () => {

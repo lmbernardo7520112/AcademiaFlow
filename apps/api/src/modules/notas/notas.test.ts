@@ -239,7 +239,8 @@ describe('Notas Module Integration', () => {
     // Verify boletim BEFORE PF
     const resPre = await app.inject({ method: 'GET', url: `/api/notas/boletim/${turmaId}/${disciplinaId}?year=${year}`, headers: { Authorization: `Bearer ${token}` } });
     expect(resPre.statusCode).toBe(200);
-    let boletim = resPre.json().data.find((b: any) => b.alunoId === alunoId);
+    type BoletimResponse = { alunoId: string; mg: number | null; situacao: string; notas: { pf: number | null }; mf: number | null };
+    let boletim = resPre.json().data.find((b: BoletimResponse) => b.alunoId === alunoId);
     expect(boletim.mg).toBe(4.0);
     expect(boletim.situacao).toBe('Recuperação');
     expect(boletim.notas.pf).toBeNull();
@@ -251,7 +252,7 @@ describe('Notas Module Integration', () => {
     // Verify boletim AFTER PF
     const resPost = await app.inject({ method: 'GET', url: `/api/notas/boletim/${turmaId}/${disciplinaId}?year=${year}`, headers: { Authorization: `Bearer ${token}` } });
     expect(resPost.statusCode).toBe(200);
-    boletim = resPost.json().data.find((b: any) => b.alunoId === alunoId);
+    boletim = resPost.json().data.find((b: BoletimResponse) => b.alunoId === alunoId);
     
     expect(boletim.notas.pf).toBe(8.0);
     expect(boletim.mf).toBe(6.0);

@@ -124,10 +124,22 @@ export class ReportsService {
       }
     ]);
 
-    const rangeLabels: Record<number, string> = { 0: '0-4', 4: '4-6', 6: '6-8', 8: '8-10' };
-    const distribution = distributionRaw.map(d => ({
-      range: rangeLabels[d._id as number] || 'Indefinido',
-      count: d.count
+    // Zero-fill determinístico: garante sempre 4 faixas canônicas, mesmo que o
+    // MongoDB $bucket omita faixas sem notas. count=0 para faixas vazias.
+    const HISTOGRAM_RANGES = [
+      { boundary: 0, label: '0-4' },
+      { boundary: 4, label: '4-6' },
+      { boundary: 6, label: '6-8' },
+      { boundary: 8, label: '8-10' },
+    ] as const;
+    const rawCountMap = new Map<number, number>(
+      distributionRaw
+        .filter(d => typeof d._id === 'number')
+        .map(d => [d._id as number, d.count as number])
+    );
+    const distribution = HISTOGRAM_RANGES.map(r => ({
+      range: r.label,
+      count: rawCountMap.get(r.boundary) ?? 0,
     }));
 
     // 3. Students At Risk (Média < 6)

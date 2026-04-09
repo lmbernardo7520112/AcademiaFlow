@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api.js';
-import DashboardLayout from '../../components/layout/DashboardLayout.js';
 import DataTable from '../../components/ui/DataTable.js';
 import Modal from '../../components/ui/Modal.js';
 import { Plus, Edit2, BookOpen } from 'lucide-react';
@@ -157,7 +156,7 @@ export default function DisciplinasPage() {
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="dashboard-header fade-in">
         <h1 className="text-gradient">Gestão Curricular</h1>
         <p className="text-secondary">Administração de disciplinas, docentes e alocação de turmas.</p>
@@ -244,6 +243,6 @@ export default function DisciplinasPage() {
           </div>
         </form>
       </Modal>
-    </DashboardLayout>
+    </>
   );
 }

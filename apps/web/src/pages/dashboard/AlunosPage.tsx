@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { api } from '../../services/api.js';
-import DashboardLayout from '../../components/layout/DashboardLayout.js';
 import DataTable from '../../components/ui/DataTable.js';
 import Modal from '../../components/ui/Modal.js';
 import { Plus, Edit2, FileText, ChevronLeft } from 'lucide-react';
@@ -163,7 +162,7 @@ export default function AlunosPage() {
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="dashboard-header fade-in">
         <h1 className="text-gradient">Gestão de Alunos</h1>
         <p className="text-secondary">Ponto de centralização discente e paridade funcional.</p>
@@ -252,6 +251,6 @@ export default function AlunosPage() {
           </div>
         </form>
       </Modal>
-    </DashboardLayout>
+    </>
   );
 }

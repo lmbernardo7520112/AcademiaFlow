@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Cpu, Send, LineChart as ChartIcon } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import '../../styles/dashboard.css';
@@ -90,7 +89,7 @@ export default function ProfessorAIPage() {
   })).reverse();
 
   return (
-    <DashboardLayout>
+    <>
       <div className="dashboard-header fade-in">
         <h1 className="text-gradient" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <Cpu size={32} /> AI Reactor
@@ -199,6 +198,6 @@ export default function ProfessorAIPage() {
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 }

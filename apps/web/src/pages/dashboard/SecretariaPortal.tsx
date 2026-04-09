@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Users, GraduationCap, ArrowUpRight, BookOpen as BookOpenIcon } from 'lucide-react';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import '../../styles/dashboard.css';
 import { api } from '../../services/api';
 
@@ -53,7 +52,7 @@ export default function SecretariaPortal() {
   }, []);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="dashboard-header fade-in">
         <h1 className="text-gradient">Command Center</h1>
         <p className="text-secondary">Visão Estratégica da Instituição de Ensino</p>
@@ -151,6 +150,6 @@ export default function SecretariaPortal() {
           </table>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { reportsService } from '../../services/reports.service.js';
 import { TurmaPerformanceChart } from '../../components/dashboard/TurmaPerformanceChart.js';
-import DashboardLayout from '../../components/layout/DashboardLayout.js';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import type { TurmaDashboard } from '@academiaflow/shared';
 
@@ -45,7 +44,7 @@ const TurmaAnalyticsPage: React.FC = () => {
   if (!data) return <div className="p-8 text-white">Turma sem dados analíticos publicados.</div>;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="mb-8 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button 
@@ -69,7 +68,7 @@ const TurmaAnalyticsPage: React.FC = () => {
       </div>
 
       <TurmaPerformanceChart data={data} />
-    </DashboardLayout>
+    </>
   );
 };
 

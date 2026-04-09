@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import DashboardLayout from '../../components/layout/DashboardLayout';
 import { Save } from 'lucide-react';
 import '../../styles/dashboard.css';
 
@@ -95,7 +94,7 @@ export default function NotasPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="dashboard-header fade-in">
         <h1 className="text-gradient">Lançamento de Notas</h1>
         <p className="text-secondary">Processamento em lote ágil (Bulk Actions) para resultados de bimestres.</p>
@@ -180,6 +179,6 @@ export default function NotasPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

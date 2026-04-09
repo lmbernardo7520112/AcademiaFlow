@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api.js';
-import DashboardLayout from '../../components/layout/DashboardLayout.js';
 import DataTable from '../../components/ui/DataTable.js';
 import Modal from '../../components/ui/Modal.js';
 import { Plus, Edit2, Download, BarChart2, Printer } from 'lucide-react';
@@ -152,7 +151,7 @@ export default function TurmasPage() {
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="dashboard-header fade-in">
         <h1 className="text-gradient">Gestão de Turmas</h1>
         <p className="text-secondary">Administração de núcleos de aprendizagem B2B.</p>
@@ -200,6 +199,6 @@ export default function TurmasPage() {
           </div>
         </form>
       </Modal>
-    </DashboardLayout>
+    </>
   );
 }

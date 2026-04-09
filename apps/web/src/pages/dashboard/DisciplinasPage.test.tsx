@@ -12,11 +12,6 @@ vi.mock('../../services/api', () => ({
   },
 }));
 
-// Mock do layout que pode ter problemas de renderização em testes simples (ex: lucide-react)
-vi.mock('../../components/layout/DashboardLayout', () => ({
-  default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}));
-
 // Tipagem para o mock do DataTable
 interface Column {
   key: string;

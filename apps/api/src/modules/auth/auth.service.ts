@@ -61,17 +61,22 @@ export class AuthService {
     return user;
   }
 
-  async listUsers(tenantId: string, page = 1, limit = 20) {
+  async listUsers(tenantId: string, page = 1, limit = 20, role?: string) {
     const skip = (page - 1) * limit;
     
     // Projeção segura: Nunca retornar senhas ou tokens em listagens
-    const users = await UserModel.find({ tenantId, isActive: true })
+    const query: Record<string, string | boolean> = { tenantId, isActive: true };
+    if (role) {
+      query.role = role;
+    }
+
+    const users = await UserModel.find(query)
       .select('-password -refreshToken')
       .sort({ name: 1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await UserModel.countDocuments({ tenantId, isActive: true });
+    const total = await UserModel.countDocuments(query);
 
     return {
       data: users,

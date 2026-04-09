@@ -85,7 +85,7 @@ describe('DisciplinasPage', () => {
   it('deve renderizar a lista de disciplinas e mostrar turmas vinculadas (1:N)', async () => {
     vi.mocked(api.get).mockImplementation((url) => {
       if (url === '/disciplinas') return Promise.resolve({ data: { success: true, data: mockDisciplinas } });
-      if (url === '/users/professores') return Promise.resolve({ data: { success: true, data: mockProfessores } });
+      if (url === '/auth/users?role=professor') return Promise.resolve({ data: { success: true, data: mockProfessores } });
       if (url === '/turmas') return Promise.resolve({ data: { success: true, data: mockTurmas } });
       return Promise.reject(new Error('URL não encontrada'));
     });
@@ -110,6 +110,28 @@ describe('DisciplinasPage', () => {
     expect(screen.getByText('Português')).toBeInTheDocument();
     const dashes = screen.getAllByText('-');
     expect(dashes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('deve renderizar as disciplinas mesmo se a rota de professores falhar (Resiliência de Promise.allSettled)', async () => {
+    vi.mocked(api.get).mockImplementation((url) => {
+      // Simula /disciplinas funcionando, mas /auth/users falhando
+      if (url === '/disciplinas') return Promise.resolve({ data: { success: true, data: mockDisciplinas } });
+      if (url === '/auth/users?role=professor') return Promise.reject(new Error('Internal Server Error 500'));
+      if (url === '/turmas') return Promise.resolve({ data: { success: true, data: mockTurmas } });
+      return Promise.reject(new Error('URL não encontrada'));
+    });
+
+    render(
+      <BrowserRouter>
+        <DisciplinasPage />
+      </BrowserRouter>
+    );
+
+    // Deve renderizar a disciplina mesmo sem os professores
+    await waitFor(() => {
+      expect(screen.getByText('Matemática')).toBeInTheDocument();
+      expect(screen.getByText('MAT-001')).toBeInTheDocument();
+    });
   });
 
   it('deve abrir o modal para nova carga disciplinar', async () => {

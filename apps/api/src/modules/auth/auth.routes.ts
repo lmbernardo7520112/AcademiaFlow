@@ -136,8 +136,8 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
       try {
         // [TENANT ISOLATION] Retorna apenas usuários do tenant autenticado
         const tenantId = request.user.tenantId;
-        const { page, limit } = request.query as { page?: number, limit?: number };
-        const result = await authService.listUsers(tenantId, page, limit);
+        const { page, limit, role } = request.query as { page?: number, limit?: number, role?: string };
+        const result = await authService.listUsers(tenantId, page, limit, role);
         reply.send({
           success: true,
           ...result

@@ -42,15 +42,23 @@ export default function DisciplinasPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [discRes, profRes, turmasRes] = await Promise.all([
+      const results = await Promise.allSettled([
         api.get('/disciplinas'),
-        api.get('/users/professores'), // Ajustar se rota for diferente
+        api.get('/auth/users?role=professor'), // Fixed: Route does not exist, use auth/users query
         api.get('/turmas')
       ]);
       
-      if (discRes.data.success) setDisciplinas(discRes.data.data);
-      if (profRes.data.success) setProfessores(profRes.data.data);
-      if (turmasRes.data.success) setTurmas(turmasRes.data.data);
+      const [discRes, profRes, turmasRes] = results;
+
+      if (discRes.status === 'fulfilled' && discRes.value.data.success) {
+        setDisciplinas(discRes.value.data.data);
+      }
+      if (profRes.status === 'fulfilled' && profRes.value.data.success) {
+        setProfessores(profRes.value.data.data);
+      }
+      if (turmasRes.status === 'fulfilled' && turmasRes.value.data.success) {
+        setTurmas(turmasRes.value.data.data);
+      }
     } catch (error) {
       console.error('Erro ao buscar dados', error);
     } finally {

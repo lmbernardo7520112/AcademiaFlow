@@ -21,12 +21,15 @@ const HISTOGRAM_COLORS = ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'];
 
 /** Empty-state reutilizável para painéis sem dados */
 const ChartEmptyState: React.FC<{ message: string; hint?: string }> = ({ message, hint }) => (
-  <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-8">
-    <div className="p-3 bg-white/5 rounded-full">
-      <Inbox size={28} className="text-gray-500" />
+  <div 
+    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '250px', gap: '0.75rem', textAlign: 'center', padding: '2rem 1rem' }}
+    data-testid="chart-empty-state"
+  >
+    <div style={{ padding: '0.75rem', backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: '9999px', display: 'flex' }}>
+      <Inbox size={28} color="#6b7280" />
     </div>
-    <p className="text-sm font-medium text-gray-400">{message}</p>
-    {hint && <p className="text-xs text-gray-600 max-w-xs">{hint}</p>}
+    <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#9ca3af', margin: 0 }}>{message}</p>
+    {hint && <p style={{ fontSize: '0.75rem', color: '#4b5563', maxWidth: '320px', margin: 0 }}>{hint}</p>}
   </div>
 );
 
@@ -45,9 +48,9 @@ export const TurmaPerformanceChart: React.FC<Props> = ({ data }) => {
   const isDistributionEmpty = distribution.every(d => d.count === 0);
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
         <GlassCard className="p-4 flex items-center space-x-4">
           <div className="p-3 bg-blue-500/20 rounded-full text-blue-400">
             <GraduationCap size={24} />
@@ -89,14 +92,14 @@ export const TurmaPerformanceChart: React.FC<Props> = ({ data }) => {
         </GlassCard>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
         {/* Bimestral Performance Chart (Phase 2) */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6">
             <BarChart2 size={18} className="text-blue-400" />
             <h4 className="text-lg font-semibold text-white">Evolução Bimestral</h4>
           </div>
-          <div className="h-[300px]">
+          <div style={{ height: '300px', width: '100%', minHeight: '300px', position: 'relative' }} data-testid="chart-wrapper">
             {isBimestralAllNull ? (
               <ChartEmptyState
                 message="Nenhuma avaliação registrada ainda."
@@ -146,7 +149,7 @@ export const TurmaPerformanceChart: React.FC<Props> = ({ data }) => {
         {/* Histogram */}
         <GlassCard className="p-6">
           <h4 className="text-lg font-semibold text-white mb-6">Distribuição de Notas</h4>
-          <div className="h-[300px]">
+          <div style={{ height: '300px', width: '100%', minHeight: '300px', position: 'relative' }} data-testid="chart-wrapper">
             {isDistributionEmpty ? (
               <ChartEmptyState
                 message="Nenhuma nota lançada nesta turma."

@@ -180,4 +180,25 @@ describe('TurmaPerformanceChart — D1 Empty-State & Rendering', () => {
     expect(screen.getByText('3.5')).toBeInTheDocument();
     expect(screen.getByText('2.8')).toBeInTheDocument();
   });
+  it('D1-UI-07: garante que o container do gráfico possui altura explícita (evitação do bug das classes Tailwind em falta)', () => {
+    const data: TurmaDashboard = {
+      turmaId: 'turma-1',
+      turmaName: 'Turma Teste',
+      metrics: baseMetrics,
+      performanceBimestral: [makeSlot(1, 7.0), makeSlot(2, null), makeSlot(3, null), makeSlot(4, null)],
+      distribution: makeDistribution([1, 2, 0, 0]),
+      studentsAtRisk: [],
+    };
+
+    render(<TurmaPerformanceChart data={data} />);
+
+    // Deve haver 2 wrappers de gráficos (Bimestral e Histograma)
+    const chartWrappers = screen.getAllByTestId('chart-wrapper');
+    expect(chartWrappers).toHaveLength(2);
+
+    // Ambos devem possuir height explícito para garantir a renderização da ResponsiveContainer
+    chartWrappers.forEach((wrapper) => {
+      expect(wrapper).toHaveStyle({ height: '300px' });
+    });
+  });
 });

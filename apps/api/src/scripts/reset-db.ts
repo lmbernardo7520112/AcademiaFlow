@@ -144,9 +144,13 @@ async function runSeedDemo(tenantId: string, defaultPassword: string, currentYea
     tenantId, name: d.nome, codigo: `BNC-${(i + 1).toString().padStart(3, '0')}`, professorId: profDocs[i]!._id, turmaIds: turmas.map(t => t._id), cargaHoraria: d.cargaHoraria
   })));
 
-  // Create 152 Alunos & 7296 Notas
+  // Create 152 Alunos & 7296+ Notas (base B1-B4 + PF for eligible students)
   const lcg = new LCG(123456789);
-  const notasBatch = [];
+  const notasBatch: Array<{
+    tenantId: string; alunoId: mongoose.Types.ObjectId; disciplinaId: mongoose.Types.ObjectId;
+    turmaId: mongoose.Types.ObjectId; year: number; bimester: number; value: number | null;
+  }> = [];
+  let pfCount = 0;
 
   for (let tIdx = 0; tIdx < legacyData.turmas.length; tIdx++) {
     const legacyT = legacyData.turmas[tIdx]!;
@@ -168,6 +172,9 @@ async function runSeedDemo(tenantId: string, defaultPassword: string, currentYea
       else if (rand < 0.4) isRisk = true; // 20% risk
 
       for (const disc of disciplines) {
+        // Track bimester values for PF eligibility calculation
+        const bimesterValues: (number | null)[] = [];
+
         for (let b = 1; b <= 4; b++) {
           let notaNull = false;
           let notaVal = 7;
@@ -175,36 +182,57 @@ async function runSeedDemo(tenantId: string, defaultPassword: string, currentYea
           if (isHigh) {
             notaVal = 8.5 + (lcg.next() * 1.5);
           } else if (isRisk) {
-            notaVal = 7.5 - (b * 1.5); // declining 
+            // Adjusted declining curve: produces MG ~4.5-5.5 (recovery range)
+            // B1=5.5, B2=5.0, B3=4.5, B4=4.0 → avg=4.75 → Recuperação
+            notaVal = 6.0 - (b * 0.5) + (lcg.next() * 1.0);
           } else {
             notaVal = 6.0 + (lcg.next() * 2.0);
           }
 
-          // Force some nulls for testing strict graph periods if needed, 
-          // but demo should have 7296 *filled* evaluation records? Plaining specified:
-          // *152 * 12 * 4 = 7296 Avaliações determinísticas*
-          // Null translates to record exists but value: null or omitted? 
-          // The planner specifically states value: null for absence.
-          // Let's make the 4th bimester sometimes null to simulate incomplete year
+          // Clamp to valid [0, 10] range
+          notaVal = Math.max(0, Math.min(10, notaVal));
+
+          // 4th bimester sometimes null to simulate incomplete year
           if (b === 4 && lcg.next() < 0.1) {
             notaNull = true;
           }
 
+          const finalValue = notaNull ? null : parseFloat(notaVal.toFixed(1));
+          bimesterValues.push(finalValue);
+
           notasBatch.push({
-            tenantId, alunoId: aluno._id, disciplinaId: disc._id, turmaId: tDoc._id, year: currentYear, bimester: b, value: notaNull ? null : parseFloat(notaVal.toFixed(1))
+            tenantId, alunoId: aluno._id, disciplinaId: disc._id, turmaId: tDoc._id, year: currentYear, bimester: b, value: finalValue
           });
+        }
+
+        // PF Parity: calculate NF/MG and generate PF for recovery-eligible students
+        // This replicates the legacy seed behavior where students with MG in [4.0, 6.0)
+        // received a PF (bimester=5) entry. PF is a manually-entered exam grade,
+        // NOT a calculated value — the seed generates it deterministically for demo purposes.
+        const validGrades = bimesterValues.filter((v): v is number => v !== null);
+        if (validGrades.length > 0) {
+          const mg = validGrades.reduce((a, b) => a + b, 0) / validGrades.length;
+          if (mg >= 4.0 && mg < 6.0) {
+            // Generate PF value: recovery exam typically between 5.0-9.0
+            const pfValue = parseFloat((5.0 + lcg.next() * 4.0).toFixed(1));
+            notasBatch.push({
+              tenantId, alunoId: aluno._id, disciplinaId: disc._id, turmaId: tDoc._id,
+              year: currentYear, bimester: 5, value: pfValue
+            });
+            pfCount++;
+          }
         }
       }
     }
   }
 
-  // Insert exactly 7296 notes into DB
+  // Insert all notes (7296 base + PF notes) into DB
   const chunkSize = 1000;
   for (let i = 0; i < notasBatch.length; i += chunkSize) {
     await NotaModel.insertMany(notasBatch.slice(i, i + chunkSize));
   }
 
-  console.log('✅ Demo Seed Completed: 12 BNCC Professors, 7 Turmas, 152 Alunos, 7296 Notas');
+  console.log(`✅ Demo Seed Completed: 12 BNCC Professors, 7 Turmas, 152 Alunos, ${notasBatch.length} Notas (${7296} base + ${pfCount} PF)`);
 }
 
 async function resetDB() {

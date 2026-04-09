@@ -51,11 +51,20 @@ async function validateDemo() {
   console.assert(professores === 12, `❌ Exatamente 12 professores (BNCC) necessários. Encontrados: ${professores}`);
   if (professores !== 12) throw new Error('Falha no Invariante Demo: Professores');
 
-  const notas = await NotaModel.countDocuments({});
-  console.assert(notas === 7296, `❌ Exatamente 7.296 notas/avaliações (152*12*4) necessárias. Encontradas: ${notas}`);
-  if (notas !== 7296) throw new Error('Falha no Invariante Demo: Notas');
+  // Base notes: B1-B4 (152 alunos * 12 disciplinas * 4 bimestres = 7296)
+  const notasBase = await NotaModel.countDocuments({ bimester: { $lte: 4 } });
+  console.assert(notasBase === 7296, `❌ Exatamente 7.296 notas base B1-B4 (152*12*4) necessárias. Encontradas: ${notasBase}`);
+  if (notasBase !== 7296) throw new Error('Falha no Invariante Demo: Notas Base');
 
-  console.log('✅ Demo Invariants PASSED (152 Alunos, 7 Turmas, 12 Professores, 7296 Notas)');
+  // PF notes: bimester=5 for recovery-eligible students (MG ∈ [4.0, 6.0))
+  const notasPF = await NotaModel.countDocuments({ bimester: 5 });
+  console.assert(notasPF > 0, `❌ Ao menos 1 nota PF (bimester=5) esperada para paridade legado. Encontradas: ${notasPF}`);
+  if (notasPF === 0) throw new Error('Falha no Invariante Demo: PF Parity (zero PF notes)');
+
+  const notasTotal = await NotaModel.countDocuments({});
+  console.assert(notasTotal === notasBase + notasPF, `❌ Total de notas inconsistente. Esperado: ${notasBase + notasPF}, Encontrado: ${notasTotal}`);
+
+  console.log(`✅ Demo Invariants PASSED (152 Alunos, 7 Turmas, 12 Professores, ${notasTotal} Notas [${notasBase} base + ${notasPF} PF])`);
 }
 
 async function validate() {

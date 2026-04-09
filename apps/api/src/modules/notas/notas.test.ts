@@ -226,6 +226,38 @@ describe('Notas Module Integration', () => {
     expect(getRes.statusCode).toBe(404);
   });
 
+  it('GET /api/notas/boletim/:turmaId/:disciplinaId should return PF accurately when bimester=5 exists (D2 Parity)', async () => {
+    const { token, turmaId, disciplinaId, alunoId } = await setupData();
+    const year = 2028; // avoid conflicts
+
+    // Create B1, B2, B3, B4 -> MG = 4.0 (Recuperação)
+    await app.inject({ method: 'POST', url: '/api/notas', headers: { Authorization: `Bearer ${token}` }, payload: { alunoId, disciplinaId, turmaId, year, bimester: 1, value: 4.0 } });
+    await app.inject({ method: 'POST', url: '/api/notas', headers: { Authorization: `Bearer ${token}` }, payload: { alunoId, disciplinaId, turmaId, year, bimester: 2, value: 4.0 } });
+    await app.inject({ method: 'POST', url: '/api/notas', headers: { Authorization: `Bearer ${token}` }, payload: { alunoId, disciplinaId, turmaId, year, bimester: 3, value: 4.0 } });
+    await app.inject({ method: 'POST', url: '/api/notas', headers: { Authorization: `Bearer ${token}` }, payload: { alunoId, disciplinaId, turmaId, year, bimester: 4, value: 4.0 } });
+
+    // Verify boletim BEFORE PF
+    const resPre = await app.inject({ method: 'GET', url: `/api/notas/boletim/${turmaId}/${disciplinaId}?year=${year}`, headers: { Authorization: `Bearer ${token}` } });
+    expect(resPre.statusCode).toBe(200);
+    let boletim = resPre.json().data.find((b: any) => b.alunoId === alunoId);
+    expect(boletim.mg).toBe(4.0);
+    expect(boletim.situacao).toBe('Recuperação');
+    expect(boletim.notas.pf).toBeNull();
+    expect(boletim.mf).toBeNull();
+
+    // Insert PF (bimester = 5) with value = 8.0 -> MF = (4+8)/2 = 6.0 Aprovado
+    await app.inject({ method: 'POST', url: '/api/notas', headers: { Authorization: `Bearer ${token}` }, payload: { alunoId, disciplinaId, turmaId, year, bimester: 5, value: 8.0 } });
+
+    // Verify boletim AFTER PF
+    const resPost = await app.inject({ method: 'GET', url: `/api/notas/boletim/${turmaId}/${disciplinaId}?year=${year}`, headers: { Authorization: `Bearer ${token}` } });
+    expect(resPost.statusCode).toBe(200);
+    boletim = resPost.json().data.find((b: any) => b.alunoId === alunoId);
+    
+    expect(boletim.notas.pf).toBe(8.0);
+    expect(boletim.mf).toBe(6.0);
+    expect(boletim.situacao).toBe('Aprovado');
+  });
+
   afterAll(async () => {
     if (app) {
       await app.close();

@@ -1,7 +1,9 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import type { Schema } from '@google/genai';
-import type { AnyZodObject } from 'zod';
+import type { AnyZodObject, ZodError } from 'zod';
 import type { ILLMProvider } from './ILLMProvider.js';
+import { extractJsonFromString } from '../utils/json-extractor.js';
+import { AISchemaValidationError, AITimeoutError, AIRateLimitError, AIProviderError } from '../errors.js';
 
 export class GeminiProvider implements ILLMProvider {
   readonly providerName = 'gemini';
@@ -55,48 +57,69 @@ export class GeminiProvider implements ILLMProvider {
   }
 
   async generateStructuredData<T>(prompt: string, schema: AnyZodObject): Promise<T> {
-    const response = await this.ai.models.generateContent({
-      model: this.MODEL_NAME,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: this.buildGeminiSchemaValidation(),
-        // Configuração de temperatura focada para exatidão e formato pedagógico adequado
-        temperature: 0.2, 
-      },
-    });
-
-    const textPayload = response.text;
-    if (!textPayload) {
-      throw new Error('A API remota (Google Gemini) retornou uma resposta vazia.');
-    }
-
-    // O JSON.parse transforma a string em objeto e o zodSchema valida imediatamente!
-    let parsed: unknown;
     try {
-        parsed = JSON.parse(textPayload);
-    } catch {
-        throw new Error('A API do GenAI não retornou um JSON válido que possa sofre parse.');
+      const response = await this.ai.models.generateContent({
+        model: this.MODEL_NAME,
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: this.buildGeminiSchemaValidation(),
+          temperature: 0.2, 
+        },
+      });
+
+      const textPayload = response.text;
+      if (!textPayload) {
+        throw new AIProviderError('A API remota (Google Gemini) retornou uma resposta vazia estrutural.');
+      }
+
+      const parsed = extractJsonFromString(textPayload);
+      const validatedData = schema.parse(parsed);
+
+      return validatedData as T;
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'ZodError') {
+        throw new AISchemaValidationError(`Dados omitidos estruturalmente pela IA: ${(error as ZodError).issues.map(i => i.path.join('.')).join(', ')}`);
+      }
+      this.handleProviderError(error);
+      throw error;
     }
-    
-    const validatedData = schema.parse(parsed);
-    return validatedData as T;
+  }
+
+  private handleProviderError(error: unknown) {
+    if (error instanceof Error) {
+      const msg = error.message.toLowerCase();
+      if (msg.includes('429') || msg.includes('too many requests') || msg.includes('quota')) {
+        throw new AIRateLimitError();
+      }
+      if (msg.includes('timeout') || msg.includes('deadline')) {
+        throw new AITimeoutError();
+      }
+      if (msg.includes('503') || msg.includes('502')) {
+        throw new AIProviderError('O serviço LLM externo está indisponível.');
+      }
+    }
   }
 
   async generateText(prompt: string): Promise<string> {
-    const response = await this.ai.models.generateContent({
-      model: this.MODEL_NAME,
-      contents: prompt,
-      config: {
-        temperature: 0.7, // Higher temperature for more creative/analytical output
-      },
-    });
+    try {
+      const response = await this.ai.models.generateContent({
+        model: this.MODEL_NAME,
+        contents: prompt,
+        config: {
+          temperature: 0.7,
+        },
+      });
 
-    const textPayload = response.text;
-    if (!textPayload) {
-      throw new Error('A API remota (Google Gemini) retornou uma resposta vazia.');
+      const textPayload = response.text;
+      if (!textPayload) {
+        throw new AIProviderError('A API remota (Google Gemini) retornou uma resposta de texto vazia.');
+      }
+
+      return textPayload;
+    } catch (error: unknown) {
+      this.handleProviderError(error);
+      throw error;
     }
-
-    return textPayload;
   }
 }

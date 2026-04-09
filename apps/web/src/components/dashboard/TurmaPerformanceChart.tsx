@@ -10,7 +10,7 @@ import {
   Cell
 } from 'recharts';
 import GlassCard from '../ui/GlassCard.js';
-import { AlertCircle, TrendingUp, Users, GraduationCap, BarChart2 } from 'lucide-react';
+import { AlertCircle, TrendingUp, Users, GraduationCap, BarChart2, Inbox } from 'lucide-react';
 import type { TurmaDashboard } from '@academiaflow/shared';
 
 interface Props {
@@ -18,6 +18,17 @@ interface Props {
 }
 
 const HISTOGRAM_COLORS = ['#ef4444', '#f59e0b', '#3b82f6', '#10b981'];
+
+/** Empty-state reutilizável para painéis sem dados */
+const ChartEmptyState: React.FC<{ message: string; hint?: string }> = ({ message, hint }) => (
+  <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-8">
+    <div className="p-3 bg-white/5 rounded-full">
+      <Inbox size={28} className="text-gray-500" />
+    </div>
+    <p className="text-sm font-medium text-gray-400">{message}</p>
+    {hint && <p className="text-xs text-gray-600 max-w-xs">{hint}</p>}
+  </div>
+);
 
 export const TurmaPerformanceChart: React.FC<Props> = ({ data }) => {
   const { metrics, distribution, studentsAtRisk, performanceBimestral } = data;
@@ -28,6 +39,10 @@ export const TurmaPerformanceChart: React.FC<Props> = ({ data }) => {
     periodo: slot.periodo,
     media: slot.valor,
   }));
+
+  // Empty-state guards
+  const isBimestralAllNull = performanceBimestral.every(slot => slot.valor === null);
+  const isDistributionEmpty = distribution.every(d => d.count === 0);
 
   return (
     <div className="space-y-6">
@@ -82,42 +97,49 @@ export const TurmaPerformanceChart: React.FC<Props> = ({ data }) => {
             <h4 className="text-lg font-semibold text-white">Evolução Bimestral</h4>
           </div>
           <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={bimestralChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="#9ca3af" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis 
-                  stroke="#9ca3af" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  domain={[0, 10]}
-                />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#fff' }}
-                  itemStyle={{ color: '#fff' }}
-                  formatter={(value: number | string | (number | string)[]) => {
-                    if (value === null || value === undefined) return ['Sem dados', 'Média'];
-                    return [Number(value).toFixed(2), 'Média'];
-                  }}
-                />
-                <Bar dataKey="media" radius={[4, 4, 0, 0]}>
-                  {bimestralChartData.map((entry) => (
-                    <Cell 
-                      key={`bim-cell-${entry.periodo}`} 
-                      fill={entry.media === null ? '#4b5563' : entry.media < 6 ? '#ef4444' : '#3b82f6'}
-                      opacity={entry.media === null ? 0.3 : 1}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {isBimestralAllNull ? (
+              <ChartEmptyState
+                message="Nenhuma avaliação registrada ainda."
+                hint="As médias por bimestre serão exibidas conforme as notas forem lançadas."
+              />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={bimestralChartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#9ca3af" 
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="#9ca3af" 
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    domain={[0, 10]}
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#fff' }}
+                    itemStyle={{ color: '#fff' }}
+                    formatter={(value: number | string | (number | string)[]) => {
+                      if (value === null || value === undefined) return ['Sem dados', 'Média'];
+                      return [Number(value).toFixed(2), 'Média'];
+                    }}
+                  />
+                  <Bar dataKey="media" radius={[4, 4, 0, 0]}>
+                    {bimestralChartData.map((entry) => (
+                      <Cell 
+                        key={`bim-cell-${entry.periodo}`} 
+                        fill={entry.media === null ? '#4b5563' : entry.media < 6 ? '#ef4444' : '#3b82f6'}
+                        opacity={entry.media === null ? 0.3 : 1}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </GlassCard>
 
@@ -125,33 +147,40 @@ export const TurmaPerformanceChart: React.FC<Props> = ({ data }) => {
         <GlassCard className="p-6">
           <h4 className="text-lg font-semibold text-white mb-6">Distribuição de Notas</h4>
           <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={distribution}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
-                <XAxis 
-                  dataKey="range" 
-                  stroke="#9ca3af" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis 
-                  stroke="#9ca3af" 
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#fff' }}
-                  itemStyle={{ color: '#fff' }}
-                />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {distribution.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={HISTOGRAM_COLORS[index % HISTOGRAM_COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {isDistributionEmpty ? (
+              <ChartEmptyState
+                message="Nenhuma nota lançada nesta turma."
+                hint="A distribuição por faixa de nota será exibida conforme as avaliações forem registradas."
+              />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={distribution}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                  <XAxis 
+                    dataKey="range" 
+                    stroke="#9ca3af" 
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="#9ca3af" 
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px', color: '#fff' }}
+                    itemStyle={{ color: '#fff' }}
+                  />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                    {distribution.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={HISTOGRAM_COLORS[index % HISTOGRAM_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </GlassCard>
       </div>

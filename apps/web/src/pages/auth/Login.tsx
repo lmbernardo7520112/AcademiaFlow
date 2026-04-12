@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../../styles/auth.css';
 import { useAuth } from '../../contexts/AuthContext';
+import { isSelfServiceEnabled } from '../../config/appMode';
 
 import { api } from '../../services/api';
 
@@ -109,8 +110,12 @@ export default function Login() {
           </form>
 
           <div className="auth-footer">
-            A fundação não possui uma chave C-Level? <br/>
-            <Link to="/auth/register" className="auth-link">Registrar Nova Instituição Escolar</Link>
+            {isSelfServiceEnabled && (
+              <>
+                A fundação não possui uma chave C-Level? <br/>
+                <Link to="/auth/register" className="auth-link">Registrar Nova Instituição Escolar</Link>
+              </>
+            )}
           </div>
         </div>
       </div>

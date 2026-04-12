@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { isSelfServiceEnabled } from './config/appMode';
 
 import LandingPage from './pages/marketing/LandingPage';
 import Login from './pages/auth/Login';
@@ -29,7 +30,9 @@ function App() {
           <Route path="/" element={<RoleRedirect />} />
           <Route path="/welcome" element={<LandingPage />} />
           <Route path="/auth/login" element={<Login />} />
-          <Route path="/auth/register" element={<Register />} />
+          <Route path="/auth/register" element={
+            isSelfServiceEnabled ? <Register /> : <Navigate to="/auth/login" replace />
+          } />
           
           {/* Jornada do Professor */}
           <Route element={<ProtectedRoute allowedRoles={['professor']} />}>

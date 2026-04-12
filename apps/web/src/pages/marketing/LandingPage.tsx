@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { isSelfServiceEnabled } from '../../config/appMode';
 import '../../styles/landing.css';
 
 export default function LandingPage() {
@@ -44,9 +45,11 @@ export default function LandingPage() {
             <button className="btn-glass" onClick={() => navigate('/auth/login')}>
                 Acessar Painel
             </button>
-            <button className="btn-neon" onClick={() => navigate('/auth/register')}>
-                Teste como Diretor
-            </button>
+            {isSelfServiceEnabled && (
+              <button className="btn-neon" onClick={() => navigate('/auth/register')}>
+                  Teste como Diretor
+              </button>
+            )}
             </nav>
         </div>
       </header>
@@ -68,9 +71,15 @@ export default function LandingPage() {
             avançados do GenAI, te entrega instantaneamente planos de ação pedagógica hiper-personalizados.
           </p>
           <div className="cta-group">
-            <button className="btn-neon lg-btn" onClick={() => navigate('/auth/register')}>
-              Implementar na Minha Escola
-            </button>
+            {isSelfServiceEnabled ? (
+              <button className="btn-neon lg-btn" onClick={() => navigate('/auth/register')}>
+                Implementar na Minha Escola
+              </button>
+            ) : (
+              <button className="btn-neon lg-btn" onClick={() => navigate('/auth/login')}>
+                Acessar a Plataforma
+              </button>
+            )}
             <span className="glass-text-hint">Fase 6: Plataforma de Elite.</span>
           </div>
         </div>
@@ -181,9 +190,11 @@ export default function LandingPage() {
              <h2>Escalone sua Estrutura Educacional Hoje</h2>
              <p>Sem chamados. Sem configuração impossível. A sua fundação 100% pronta e tipada para suportar a Educação B2B Moderna.</p>
              <div className="cta-final-buttons">
-                <button className="btn-neon lg-btn scale-up" onClick={() => navigate('/auth/register')}>
-                    Reinventar Minha Escola
-                </button>
+                {isSelfServiceEnabled && (
+                  <button className="btn-neon lg-btn scale-up" onClick={() => navigate('/auth/register')}>
+                      Reinventar Minha Escola
+                  </button>
+                )}
              </div>
          </div>
       </section>

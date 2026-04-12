@@ -52,7 +52,7 @@ async function runSeedCI(tenantId: string, defaultPassword: string, currentYear:
 
   // 1. Users: 1 Admin, 1 Secretaria, 3 Professors
   await UserModel.create([
-    { tenantId, name: 'Admin CI', email: 'admin@escola.ci', password: defaultPassword, role: 'administrador' },
+    { tenantId, name: 'Admin CI', email: 'admin@escola.ci', password: defaultPassword, role: 'admin' },
     { tenantId, name: 'Secretaria CI', email: 'secretaria@escola.ci', password: defaultPassword, role: 'secretaria' }
   ]);
 
@@ -105,7 +105,7 @@ async function runSeedDemo(tenantId: string, defaultPassword: string, currentYea
 
   // Base Admin/Sec
   await UserModel.create([
-    { tenantId, name: 'Administrador AcademiaFlow', email: 'admin@academiaflow.com', password: defaultPassword, role: 'administrador' },
+    { tenantId, name: 'Administrador AcademiaFlow', email: 'admin@academiaflow.com', password: defaultPassword, role: 'admin' },
     { tenantId, name: 'Secretaria AcademiaFlow', email: 'secretaria@academiaflow.com', password: defaultPassword, role: 'secretaria' }
   ]);
 

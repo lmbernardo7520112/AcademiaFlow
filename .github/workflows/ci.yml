@@ -23,6 +23,11 @@ jobs:
 
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE22: true
+      APP_MODE: demo
+      VITE_APP_MODE: demo
+      DATABASE_URL: mongodb://localhost:27017/academiaflow
+      JWT_SECRET: ci_test_jwt_secret_key_32chars_long
+      REFRESH_TOKEN_SECRET: ci_test_refresh_secret_32chars_long
 
     steps:
       - name: Checkout

@@ -8,6 +8,7 @@ const envSchema = z.object({
   REFRESH_TOKEN_SECRET: z.string().min(16),
   JWT_EXPIRES_IN: z.string().default('15m'),
   REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
+  APP_MODE: z.enum(['demo', 'school_production']).default('demo'),
 });
 
 const _env = envSchema.safeParse(process.env);

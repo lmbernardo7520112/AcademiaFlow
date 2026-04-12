@@ -2,6 +2,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { authService } from './auth.service.js';
 import { createUserSchema, loginSchema } from '@academiaflow/shared';
 import { env } from '../../config/env.js';
+import { isSchoolProduction } from '../../config/appMode.js';
 
 export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
@@ -13,6 +14,13 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
       },
     },
     async (request, reply) => {
+      if (isSchoolProduction) {
+        return reply.code(403).send({
+          success: false,
+          message: 'Registro de novas instituições está desabilitado neste ambiente.',
+        });
+      }
+
       try {
         const payload = request.body as import('@academiaflow/shared').CreateUserPayload;
         const user = await authService.register(payload);

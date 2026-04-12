@@ -1,6 +1,7 @@
 import { UserModel } from '../../models/User.js';
 import argon2 from 'argon2';
 import type { CreateUserPayload, LoginPayload } from '@academiaflow/shared';
+import { isSchoolProduction } from '../../config/appMode.js';
 
 import mongoose from 'mongoose';
 
@@ -35,6 +36,12 @@ export class AuthService {
     const isValid = await argon2.verify(user.password, data.password);
     if (!isValid) {
       throw new Error('Credenciais inválidas');
+    }
+
+    // [HARDENING] Auto-migrate 'administrador' → 'admin' in school_production
+    if (isSchoolProduction && user.role === 'administrador') {
+      await UserModel.updateOne({ _id: user._id }, { role: 'admin' });
+      user.role = 'admin';
     }
 
     const userObj = user.toObject();

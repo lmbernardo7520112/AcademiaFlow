@@ -1,0 +1,8 @@
+node_modules
+.git
+.github
+.turbo
+apps/api
+docs
+*.md
+*.tar.gz

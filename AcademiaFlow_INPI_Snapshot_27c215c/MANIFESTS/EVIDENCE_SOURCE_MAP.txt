@@ -1,6 +1,0 @@
-Nome Final | Nome Original | Caminho Original | Hash Original (SHA-256)
---- | --- | --- | ---
-implementation_plan_Estabilizacao_Seed_Database.md | implementation_plan.md | /home/leonardomaximinobernardo/.gemini/antigravity/brain/962cf7d2-f93f-4311-a4d3-9b1177abae6e/implementation_plan.md | 1c085b7e5d786ced061f5a2c2eda199dbf4704868edbd5f744a9790336ddfecc
-walkthrough_Estabilizacao_Pipeline.md | walkthrough.md | /home/leonardomaximinobernardo/.gemini/antigravity/brain/962cf7d2-f93f-4311-a4d3-9b1177abae6e/walkthrough.md | 562190ff9f0eb27280809b1bd10a62b86b8cdf65f264576c4050538a228e0dac
-walkthrough_fase_8completa_academiaflow_v2.md | walkthrough.md | /home/leonardomaximinobernardo/.gemini/antigravity/brain/962cf7d2-f93f-4311-a4d3-9b1177abae6e/walkthrough.md | 562190ff9f0eb27280809b1bd10a62b86b8cdf65f264576c4050538a228e0dac
-CI_Success_Run_54.png | github_actions_success_run_54_1775497753610.png | /home/leonardomaximinobernardo/.gemini/antigravity/brain/962cf7d2-f93f-4311-a4d3-9b1177abae6e/github_actions_success_run_54_1775497753610.png | 730271122b6fe912df4b317d24ad50c2849fbcb3027269d52cf324e628c122d0

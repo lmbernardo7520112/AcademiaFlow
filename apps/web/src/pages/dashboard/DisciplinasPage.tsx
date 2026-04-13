@@ -183,8 +183,10 @@ export default function DisciplinasPage() {
           </button>
         </div>
         
-        <div className="glass-panel" style={{ padding: 0 }}>
-          <DataTable data={disciplinas} columns={columns} loading={loading} emptyText="Aguardando carga de dados da secretaria." />
+        <div className="table-container">
+          <div className="glass-panel" style={{ padding: 0 }}>
+            <DataTable data={disciplinas} columns={columns} loading={loading} emptyText="Aguardando carga de dados da secretaria." />
+          </div>
         </div>
       </div>
 

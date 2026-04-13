@@ -121,33 +121,35 @@ export default function SecretariaPortal() {
         <div className="section-header">
           <h2>Lançamentos Recentes de Notas</h2>
         </div>
-        <div className="glass-panel" style={{ padding: '0' }}>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Aluno</th>
-                <th>Disciplina</th>
-                <th>Data</th>
-                <th>Nota</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={4} style={{ textAlign: 'center', padding: '1rem', color: '#888' }}>Carregando...</td></tr>
-              ) : recentActivity.length === 0 ? (
-                <tr><td colSpan={4} style={{ textAlign: 'center', padding: '1rem', color: '#888' }}>Nenhum lançamento recente.</td></tr>
-              ) : (
-                recentActivity.map((activity) => (
-                  <tr key={activity._id}>
-                    <td>{activity.alunoId?.name || 'Desconhecido'}</td>
-                    <td>{activity.disciplinaId?.name || 'Desconhecida'}</td>
-                    <td>{new Date(activity.createdAt).toLocaleDateString()}</td>
-                    <td><strong style={{ color: activity.value >= 6 ? 'var(--color-primary)' : 'var(--color-secondary)' }}>{activity.value.toFixed(1)}</strong></td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="table-container">
+          <div className="glass-panel" style={{ padding: '0' }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Aluno</th>
+                  <th>Disciplina</th>
+                  <th>Data</th>
+                  <th>Nota</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={4} style={{ textAlign: 'center', padding: '1rem', color: '#888' }}>Carregando...</td></tr>
+                ) : recentActivity.length === 0 ? (
+                  <tr><td colSpan={4} style={{ textAlign: 'center', padding: '1rem', color: '#888' }}>Nenhum lançamento recente.</td></tr>
+                ) : (
+                  recentActivity.map((activity) => (
+                    <tr key={activity._id}>
+                      <td>{activity.alunoId?.name || 'Desconhecido'}</td>
+                      <td>{activity.disciplinaId?.name || 'Desconhecida'}</td>
+                      <td>{new Date(activity.createdAt).toLocaleDateString()}</td>
+                      <td><strong style={{ color: activity.value >= 6 ? 'hsl(var(--clr-cyan))' : 'hsl(var(--clr-alert))' }}>{activity.value.toFixed(1)}</strong></td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </>

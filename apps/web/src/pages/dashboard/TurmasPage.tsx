@@ -165,8 +165,10 @@ export default function TurmasPage() {
           </button>
         </div>
         
-        <div className="glass-panel" style={{ padding: 0 }}>
-          <DataTable data={turmas} columns={columns} loading={loading} emptyText="Nenhuma turma cadastrada." />
+        <div className="table-container">
+          <div className="glass-panel" style={{ padding: 0 }}>
+            <DataTable data={turmas} columns={columns} loading={loading} emptyText="Nenhuma turma cadastrada." />
+          </div>
         </div>
       </div>
 

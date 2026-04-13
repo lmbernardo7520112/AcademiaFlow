@@ -85,6 +85,29 @@ describe('LandingPage — school_production mode', () => {
 
     expect(screen.queryByText('Reinventar Minha Escola')).not.toBeInTheDocument();
   });
+
+  it('hides marketing showcase sections when APP_MODE=school_production', async () => {
+    vi.doMock('../../config/appMode', () => ({
+      isSelfServiceEnabled: false,
+      isSchoolProduction: true,
+    }));
+
+    const { default: LandingPageModule } = await import('./LandingPage');
+
+    render(
+      <MemoryRouter>
+        <LandingPageModule />
+      </MemoryRouter>
+    );
+
+    // Seções de Showcase (IA e Governança)
+    expect(screen.queryByText('O Professor não digita planos. Ele aprova.')).not.toBeInTheDocument();
+    expect(screen.queryByText('A Secretaria e a Soberania dos Dados Institucionais.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Escalone sua Estrutura Educacional Hoje')).not.toBeInTheDocument();
+    
+    // Hero Visual (Terminal Mockup)
+    expect(screen.queryByText('AI Engine: Processando Matrícula HP-1980')).not.toBeInTheDocument();
+  });
 });
 
 describe('LandingPage — demo mode', () => {

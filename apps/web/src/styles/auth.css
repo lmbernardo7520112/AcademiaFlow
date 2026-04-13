@@ -173,10 +173,26 @@
     flex-direction: column;
   }
   .auth-info-panel {
-    display: none; /* Ocullta a filosofia C-Level no mobile para focar na conversão */
+    display: none; /* Oculta a filosofia C-Level no mobile para focar na conversão */
   }
   .auth-form-panel {
     padding: var(--space-lg);
     border-left: none;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .auth-form-panel {
+    padding: var(--space-md);
+  }
+  .auth-box h2 {
+    font-size: 1.5rem;
+  }
+  .auth-box p {
+    margin-bottom: 1.5rem;
+  }
+  .input-glass {
+    padding: 0.75rem 1rem;
   }
 }

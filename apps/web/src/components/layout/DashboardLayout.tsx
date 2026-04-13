@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LayoutDashboard, Users, BookOpen, UserSquare2, LogOut, FileText, Cpu } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, UserSquare2, LogOut, FileText, Cpu, Menu, X } from 'lucide-react';
 import '../../styles/dashboard.css';
 
 interface DashboardLayoutProps {
@@ -12,6 +12,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   const handleLogout = () => {
     logout();
@@ -36,13 +40,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="dashboard-layout">
+      {/* MOBILE OVERLAY */}
+      {isMobileMenuOpen && (
+        <div className="sidebar-overlay" onClick={closeMobileMenu}></div>
+      )}
+
       {/* SIDEBAR */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-brand">
             <div className="flow-dot"></div>
             <h2>AcademiaFlow</h2>
           </div>
+          <button className="mobile-close-btn" onClick={closeMobileMenu} aria-label="Fechar menu">
+            <X size={24} />
+          </button>
         </div>
 
         <nav className="sidebar-nav">
@@ -53,7 +65,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <div
                 key={item.path}
                 className={`nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => navigate(item.path)}
+                onClick={() => {
+                  navigate(item.path);
+                  closeMobileMenu();
+                }}
               >
                 <Icon size={18} />
                 {item.label}
@@ -73,6 +88,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* CORE WORKSPACE */}
       <main className="main-wrapper">
         <header className="topbar">
+          <button className="mobile-menu-toggle" onClick={toggleMobileMenu} aria-label="Abrir menu">
+            <Menu size={24} />
+          </button>
+          
           <div className="user-profile">
             <div className="user-details">
               <div className="user-name">{displayUser.name}</div>

@@ -205,7 +205,7 @@ export const TurmaPerformanceChart: React.FC<Props> = ({ data }) => {
                   <span className="text-sm font-medium text-gray-200">{student.name}</span>
                 </div>
                 <span className="text-sm font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded">
-                  {student.average.toFixed(1)}
+                  {student.average != null ? student.average.toFixed(1) : '--'}
                 </span>
               </div>
             ))

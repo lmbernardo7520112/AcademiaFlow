@@ -97,7 +97,7 @@ const SecretariaDashboard: React.FC = () => {
         ))}
       </div>
 
-      <div className="dashboard-layout-rows fade-in" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1.5rem' }}>
+      <div className="dashboard-layout-rows fade-in" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
          <div className="glass-panel">
             <h3 style={{ marginBottom: '1.5rem' }}>Atividade Recente (Notas)</h3>
             {metrics.recentActivity.length === 0 ? (

@@ -1,7 +1,14 @@
 import axios from 'axios';
 
-// Usamos a URL configurada no .env ou localhost:3000 (porta padrão do Fastify)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+/**
+ * API base URL resolution:
+ * 1. In development: VITE_API_URL from .env (typically http://localhost:3000/api via vite proxy)
+ * 2. In production/appliance: VITE_API_URL should be set to "/api" at build time
+ * 3. Fallback: "/api" (relative — works behind any reverse proxy)
+ *
+ * NEVER fall back to http://localhost:3000 — that breaks LAN, tunnel, and any non-localhost access.
+ */
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export const api = axios.create({
   baseURL: API_URL,

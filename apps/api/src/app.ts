@@ -28,11 +28,21 @@ export async function buildApp() {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
-  // CORS
+  // CORS — Appliance-safe configuration
+  // In appliance mode, requests come through Nginx reverse proxy (same origin),
+  // so we accept the origin dynamically. In dev, we allow localhost.
   await app.register(cors, {
-    origin: process.env.NODE_ENV === 'production'
-      ? ['https://academiaflow.vercel.app']
-      : [/^http:\/\/localhost:\d+$/],
+    origin: (origin, cb) => {
+      // Allow requests with no origin (same-origin, curl, server-to-server)
+      if (!origin) return cb(null, true);
+      // In development, allow any localhost
+      if (process.env.NODE_ENV !== 'production') {
+        if (/^http:\/\/localhost:\d+$/.test(origin)) return cb(null, true);
+      }
+      // In production, allow any origin (appliance is behind Nginx on same network)
+      // For cloud deployments, restrict this to specific domains
+      return cb(null, true);
+    },
     credentials: true,
   });
 

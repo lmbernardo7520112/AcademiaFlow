@@ -101,7 +101,7 @@ async function runSeedCI(tenantId: string, defaultPassword: string, currentYear:
 }
 
 async function runSeedDemo(tenantId: string, defaultPassword: string, currentYear: number) {
-  console.log('🚀 Running in Demo Mode (BNCC Parity, 152 Alunos, 12 Professors, 7296 Notes)');
+  console.log('🚀 Running in Demo Mode (BNCC Parity, Dynamic Alunos/Turmas)');
 
   // Base Admin/Sec
   await UserModel.create([
@@ -144,7 +144,7 @@ async function runSeedDemo(tenantId: string, defaultPassword: string, currentYea
     tenantId, name: d.nome, codigo: `BNC-${(i + 1).toString().padStart(3, '0')}`, professorId: profDocs[i]!._id, turmaIds: turmas.map(t => t._id), cargaHoraria: d.cargaHoraria
   })));
 
-  // Create 152 Alunos & 7296+ Notas (base B1-B4 + PF for eligible students)
+  // Create Alunos & Notas (base B1-B4 + PF for eligible students)
   const lcg = new LCG(123456789);
   const notasBatch: Array<{
     tenantId: string; alunoId: mongoose.Types.ObjectId; disciplinaId: mongoose.Types.ObjectId;
@@ -232,7 +232,8 @@ async function runSeedDemo(tenantId: string, defaultPassword: string, currentYea
     await NotaModel.insertMany(notasBatch.slice(i, i + chunkSize));
   }
 
-  console.log(`✅ Demo Seed Completed: 12 BNCC Professors, 7 Turmas, 152 Alunos, ${notasBatch.length} Notas (${7296} base + ${pfCount} PF)`);
+  const numAlunos = turmas.reduce((acc, t, idx) => acc + legacyData.turmas[idx]!.alunos.length, 0);
+  console.log(`✅ Demo Seed Completed: 12 BNCC Professors, ${turmas.length} Turmas, ${numAlunos} Alunos, ${notasBatch.length} Notas (+ ${pfCount} PF)`);
 }
 
 async function resetDB() {

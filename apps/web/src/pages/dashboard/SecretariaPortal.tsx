@@ -143,7 +143,7 @@ export default function SecretariaPortal() {
                       <td>{activity.alunoId?.name || 'Desconhecido'}</td>
                       <td>{activity.disciplinaId?.name || 'Desconhecida'}</td>
                       <td>{new Date(activity.createdAt).toLocaleDateString()}</td>
-                      <td><strong style={{ color: activity.value >= 6 ? 'hsl(var(--clr-cyan))' : 'hsl(var(--clr-alert))' }}>{activity.value.toFixed(1)}</strong></td>
+                      <td><strong style={{ color: (activity.value ?? 0) >= 6 ? 'hsl(var(--clr-cyan))' : 'hsl(var(--clr-alert))' }}>{activity.value != null ? activity.value.toFixed(1) : '--'}</strong></td>
                     </tr>
                   ))
                 )}

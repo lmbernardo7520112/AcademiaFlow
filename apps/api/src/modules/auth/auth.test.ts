@@ -66,7 +66,7 @@ describe('Auth Module Integration', () => {
 
   it('POST /api/auth/login should authenticate and return token', async () => {
     // Create user directly since register requires JWT admin
-    const user = await createTestUser(app, { role: 'professor', email: 'leo2@academiaflow.com', password: 'strongpassword123' });
+    await createTestUser(app, { role: 'professor', email: 'leo2@academiaflow.com', password: 'strongpassword123' });
 
     const loginResponse = await app.inject({
       method: 'POST',
@@ -85,7 +85,7 @@ describe('Auth Module Integration', () => {
   });
 
   it('GET /api/auth/me should return current user info if authenticated', async () => {
-    const user = await createTestUser(app, { role: 'professor', email: 'leo3@academiaflow.com', password: 'strongpassword123' });
+    await createTestUser(app, { role: 'professor', email: 'leo3@academiaflow.com', password: 'strongpassword123' });
 
     const loginResponse = await app.inject({
       method: 'POST',

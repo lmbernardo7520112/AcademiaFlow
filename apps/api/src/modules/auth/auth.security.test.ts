@@ -17,7 +17,6 @@ import argon2 from 'argon2';
 describe('Security Hardening v1.2.0', () => {
   let app: FastifyInstance;
   const TENANT_A = 'tenant-security-a';
-  const TENANT_B = 'tenant-security-b';
 
   beforeAll(async () => {
     app = await buildApp();

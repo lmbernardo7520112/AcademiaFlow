@@ -22,10 +22,10 @@ const mockData: ProfessorAnalytics = {
   globalAverage: 7.5,
   riskTotal: 3,
   classes: [
-    { name: '1º Ano A', average: 7.2 },
-    { name: '2º Ano B', average: 5.8 },
+    { id: 'c1', name: '1º Ano A', average: 7.2 },
+    { id: 'c2', name: '2º Ano B', average: 5.8 },
   ],
-  context: { turmaName: '1º Ano A' },
+  context: { turmaId: 't1', turmaName: '1º Ano A' },
 };
 
 describe('ProfessorAnalyticsHeader', () => {

@@ -16,6 +16,7 @@ import {
   FileText
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import ModalPortal from '../../components/ui/ModalPortal';
 import '../../styles/dashboard.css';
 
 interface BoletimEntry {
@@ -248,14 +249,14 @@ const GradeManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* IA REACTOR MODAL */}
-      {showAiModal && (
+      {/* IA REACTOR MODAL — rendered via Portal to escape stacking context */}
+      <ModalPortal isOpen={showAiModal} onClose={() => setShowAiModal(false)} labelId="ai-modal-title">
         <div className="modal-overlay fade-in">
           <div className="modal-content glass-panel-premium scale-in" style={{ maxWidth: '800px', width: '90%' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 {aiType === 'ANALYSIS' ? <Brain color="#8b5cf6" /> : <Zap color="#f59e0b" />}
-                <h2 style={{ margin: 0 }}>
+                <h2 id="ai-modal-title" style={{ margin: 0 }}>
                   {aiType === 'ANALYSIS' ? 'Análise Pedagógica IA' : 'Plano de Recuperação IA'}
                 </h2>
               </div>
@@ -306,17 +307,19 @@ const GradeManagement: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      </ModalPortal>
 
-      {aiLoading && (
+      {/* AI Loading Overlay — also via Portal */}
+      <ModalPortal isOpen={aiLoading} onClose={() => {}} labelId="ai-loading-title">
         <div className="loading-overlay-ai fade-in">
+          <h2 id="ai-loading-title" className="sr-only">Processando IA</h2>
           <div className="ai-spinner">
             <div className="spinner-ring"></div>
             <Brain className="animate-pulse" size={32} color="#8b5cf6" />
             <p>IA Reactor processando dados pedagógicos...</p>
           </div>
         </div>
-      )}
+      </ModalPortal>
     </div>
   );
 };

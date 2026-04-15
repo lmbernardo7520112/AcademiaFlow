@@ -57,7 +57,7 @@ export default function LandingPage() {
       {/* ======================================= */}
       {/* SECTION 1: THE HERO (PRIMEIRO IMPACTO)  */}
       {/* ======================================= */}
-      <main className="hero-section hero-container reveal-on-scroll">
+      <main className={`hero-section hero-container reveal-on-scroll${!isSelfServiceEnabled ? ' hero-section--single-column' : ''}`}>
         <div className="hero-content">
           <div className="badge-ai">
             <span className="sparkle">✨</span> Sistema Multi-Tenant Impulsionado por IA

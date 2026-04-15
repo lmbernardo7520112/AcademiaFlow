@@ -121,6 +121,30 @@
   margin-top: var(--space-lg);
 }
 
+/* R1 FIX: Centered single-column layout when hero-visual is absent */
+.hero-section.hero-section--single-column {
+  grid-template-columns: 1fr;
+  text-align: center;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: var(--space-lg);
+}
+
+.hero-section--single-column .badge-ai {
+  align-self: center;
+  margin: 0 auto;
+}
+
+.hero-section--single-column .cta-group {
+  justify-content: center;
+}
+
+.hero-section--single-column .hero-subtitle {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
 .hero-content {
   display: flex;
   flex-direction: column;

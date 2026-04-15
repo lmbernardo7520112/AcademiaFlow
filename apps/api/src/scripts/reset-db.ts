@@ -116,7 +116,7 @@ async function runSeedDemo(tenantId: string, defaultPassword: string, currentYea
 
   // Create exactly 12 professors
   const profDocs = await UserModel.create(bnccArr.map(d => ({
-    tenantId, name: `Prof. ${d.nome}`, email: `professor.${d.slug}@escola.demo.br`, password: defaultPassword, role: 'professor'
+    tenantId, name: `Prof. ${d.nome}`, email: `professor.${d.slug}@academiaflow.com`, password: defaultPassword, role: 'professor'
   })));
 
   // Load Legacy Turmas/Alunos
@@ -134,7 +134,7 @@ async function runSeedDemo(tenantId: string, defaultPassword: string, currentYea
   
   const legacyData: LegacyJSON = JSON.parse(await fs.readFile(legacyPath, 'utf8'));
 
-  // Create 7 Turmas
+  // Create Turmas from JSON (8 turmas in 2026 roster)
   const turmas = await TurmaModel.create(legacyData.turmas.map(t => ({
     tenantId, name: t.nome_turma, year: currentYear, periodo: 'vespertino', isActive: true
   })));

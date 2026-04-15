@@ -1,9 +1,12 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import dbPlugin from './plugins/db.js';
 import jwtPlugin from './plugins/jwt.js';
+import ownershipPlugin from './plugins/ownership.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { turmasRoutes } from './modules/turmas/turmas.routes.js';
 import { alunosRoutes } from './modules/alunos/alunos.routes.js';
@@ -28,6 +31,19 @@ export async function buildApp() {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
+  // ── Security: Helmet ──────────────────────────────────────────
+  // Adds security headers (X-Content-Type-Options, X-Frame-Options, etc.)
+  // CSP disabled because SPA serves from same origin
+  await app.register(helmet, {
+    contentSecurityPolicy: false,
+  });
+
+  // Global rate limit: high ceiling. Route-specific limits in auth.routes.ts
+  await app.register(rateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+  });
+
   // CORS — Appliance-safe configuration
   // In appliance mode, requests come through Nginx reverse proxy (same origin),
   // so we accept the origin dynamically. In dev, we allow localhost.
@@ -39,6 +55,10 @@ export async function buildApp() {
       if (process.env.NODE_ENV !== 'production') {
         if (/^http:\/\/localhost:\d+$/.test(origin)) return cb(null, true);
       }
+      // In appliance mode, allow the tunnel domain
+      if (process.env.APP_MODE === 'school_production' || process.env.VITE_APP_MODE === 'school_production') {
+        if (/\.loca\.lt$/.test(origin)) return cb(null, true);
+      }
       // In production, allow any origin (appliance is behind Nginx on same network)
       // For cloud deployments, restrict this to specific domains
       return cb(null, true);
@@ -49,6 +69,7 @@ export async function buildApp() {
   // DB and Plugins
   await app.register(dbPlugin);
   await app.register(jwtPlugin);
+  await app.register(ownershipPlugin);
 
   // Routes registration
   await app.register(authRoutes, { prefix: '/api/auth' });
@@ -66,7 +87,7 @@ export async function buildApp() {
   });
 
   app.get('/', async () => {
-    return { message: 'AcademiaFlow API v1.0.0' };
+    return { message: 'AcademiaFlow API v1.2.0' };
   });
 
   return app;

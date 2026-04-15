@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildApp } from '../../app.js';
-import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import mongoose from 'mongoose';
+import { createTestUser } from '../../test-helpers.js';
 
 describe('Disciplinas Module Integration', () => {
   let app: FastifyInstance;
@@ -14,36 +15,9 @@ describe('Disciplinas Module Integration', () => {
     }
   });
 
-  // FASE 1: Helper de diagnóstico
-  const expectSuccessStep = (stepName: string, response: LightMyRequestResponse, expectedStatus = 201) => {
-    if (response.statusCode !== expectedStatus) {
-      console.error(`\n--- FALHA NO STEP API: ${stepName} ---`);
-      console.error(`URL: ${response.raw.req?.method} ${response.raw.req?.url}`);
-      console.error(`STATUS: ${response.statusCode} | BODY: ${JSON.stringify(response.json(), null, 2)}`);
-      throw new Error(`Step ${stepName} failed`);
-    }
-    return response.json();
-  };
-
   const setupData = async () => {
-    const timestamp = Date.now();
-    const payloadInfo = {
-      name: 'Admin Disc',
-      email: `admin.disc.${timestamp}@academiaflow.com`,
-      password: 'securepassword123',
-      role: 'admin',
-    };
-    
-    const regRes = await app.inject({ method: 'POST', url: '/api/auth/register', payload: payloadInfo });
-    expectSuccessStep('Register', regRes, 201);
-
-    const loginRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/login',
-      payload: { email: payloadInfo.email, password: payloadInfo.password },
-    });
-    const loginData = expectSuccessStep('Login', loginRes, 200);
-    return { token: loginData.data.token };
+    const user = await createTestUser(app, { role: 'admin' });
+    return { token: user.token };
   };
 
   it('POST /api/disciplinas should create a new disciplina', async () => {

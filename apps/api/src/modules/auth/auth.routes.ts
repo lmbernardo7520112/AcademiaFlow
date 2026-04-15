@@ -9,6 +9,11 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
   fastify.post(
     '/register',
     {
+      onRequest: [fastify.authenticate],
+      preHandler: [fastify.authorize(['admin', 'administrador'])],
+      config: {
+        rateLimit: { max: 3, timeWindow: '1 minute' },
+      },
       schema: {
         body: createUserSchema,
       },
@@ -42,6 +47,9 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
   fastify.post(
     '/login',
     {
+      config: {
+        rateLimit: { max: 5, timeWindow: '1 minute' },
+      },
       schema: {
         body: loginSchema,
       },

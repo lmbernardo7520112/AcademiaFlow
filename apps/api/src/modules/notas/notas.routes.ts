@@ -109,7 +109,9 @@ export const notasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
     }
   );
 
-  fastify.delete('/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.delete('/:id', {
+    preHandler: [fastify.checkOwnership('nota')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const tenantId = request.user.tenantId;
       const { id } = request.params as { id: string };

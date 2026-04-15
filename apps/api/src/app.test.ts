@@ -34,7 +34,7 @@ describe('API Health', () => {
 
     expect(response.statusCode).toBe(200);
     const body = response.json();
-    expect(body.message).toBe('AcademiaFlow API v1.0.0');
+    expect(body.message).toBe('AcademiaFlow API v1.2.0');
   });
 
   it('GET /unknown should return 404', async () => {

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildApp } from '../../app.js';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import mongoose from 'mongoose';
+import { createTestUser } from '../../test-helpers.js';
 
 describe('Notas Module Integration', () => {
   let app: FastifyInstance;
@@ -34,24 +35,9 @@ describe('Notas Module Integration', () => {
   const setupData = async () => {
     const timestamp = Date.now();
     
-    // 1. Register Admin
-    const payloadInfo = {
-      name: 'Admin Notas',
-      email: `admin.notas.${timestamp}@academiaflow.com`,
-      password: 'securepassword123',
-      role: 'admin',
-    };
-    const regRes = await app.inject({ method: 'POST', url: '/api/auth/register', payload: payloadInfo });
-    expectSuccessStep('Register Admin', regRes, 201);
-
-    // 2. Login
-    const loginRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/login',
-      payload: { email: payloadInfo.email, password: payloadInfo.password },
-    });
-    const loginData = expectSuccessStep('Login Admin', loginRes, 200);
-    const token = loginData.data.token;
+    // 1. Create Admin user directly (register requires JWT now)
+    const user = await createTestUser(app, { role: 'admin' });
+    const token = user.token;
 
     // 3. Create Turma
     const turmaRes = await app.inject({

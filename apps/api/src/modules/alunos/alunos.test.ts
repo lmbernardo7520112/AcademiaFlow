@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildApp } from '../../app.js';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import mongoose from 'mongoose';
+import { createTestUser } from '../../test-helpers.js';
 
 describe('Alunos Module Integration', () => {
   let app: FastifyInstance;
@@ -25,20 +26,8 @@ describe('Alunos Module Integration', () => {
   };
 
   const setupData = async () => {
-    const timestamp = Date.now();
-    const payloadInfo = {
-      name: 'Admin Alunos',
-      email: `admin.alunos.${timestamp}@academiaflow.com`,
-      password: 'securepassword123',
-      role: 'admin',
-    };
-    
-    // Auth Chain
-    const regRes = await app.inject({ method: 'POST', url: '/api/auth/register', payload: payloadInfo });
-    expectSuccessStep('Register Admin', regRes, 201);
-    const loginRes = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { email: payloadInfo.email, password: payloadInfo.password } });
-    const loginData = expectSuccessStep('Login Admin', loginRes, 200);
-    const token = loginData.data.token;
+    const user = await createTestUser(app, { role: 'admin' });
+    const token = user.token;
 
     // Turma dependency
     const turmaRes = await app.inject({ method: 'POST', url: '/api/turmas', headers: { Authorization: `Bearer ${token}` }, payload: { name: 'Turma Alunos', year: 2026 } });

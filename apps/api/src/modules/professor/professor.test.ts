@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildApp } from '../../app.js';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import mongoose from 'mongoose';
-import { UserModel } from '../../models/User.js';
+import { createTestUser } from '../../test-helpers.js';
 
 describe('Professor Module Integration', () => {
   let app: FastifyInstance;
@@ -24,43 +24,16 @@ describe('Professor Module Integration', () => {
   };
 
   const setupProfessor = async () => {
-    const timestamp = Date.now();
-    const payload = {
-      name: 'Prof Test',
-      email: `prof.${timestamp}@test.com`,
-      password: 'password123',
-      role: 'professor'
-    };
-    
-    const regRes = await app.inject({ method: 'POST', url: '/api/auth/register', payload });
-    expectSuccessStep('Register Prof', regRes, 201);
-    const loginRes = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { email: payload.email, password: payload.password } });
-    const loginData = expectSuccessStep('Login Prof', loginRes, 200);
-    
-    // Create Turma and Discipline as Admin (Professors cannot create)
-    const token = loginData.data.token;
-    const userId = loginData.data.user._id;
-    const tenantId = loginData.data.user.tenantId;
+    // Create shared tenantId so professor and admin belong to same tenant
+    const tenantId = new mongoose.Types.ObjectId().toString();
 
-    const adminPayload = {
-      name: 'Admin Setup',
-      email: `admin.setup.${timestamp}@test.com`,
-      password: 'password123',
-      role: 'admin'
-    };
-    const adminRegRes = await app.inject({ method: 'POST', url: '/api/auth/register', payload: adminPayload });
-    const adminId = adminRegRes.json().data._id;
-    
-    // ALINHAMENTO DE TENANT: Obrigatório para que o admin consiga criar recursos para o professor
-    await UserModel.findByIdAndUpdate(adminId, { tenantId });
-    
-    const adminLoginRes = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { email: adminPayload.email, password: adminPayload.password } });
-    const adminToken = expectSuccessStep('Login Admin', adminLoginRes, 200).data.token;
+    const prof = await createTestUser(app, { role: 'professor', tenantId });
+    const admin = await createTestUser(app, { role: 'admin', tenantId });
 
     const turmaRes = await app.inject({
       method: 'POST',
       url: '/api/turmas',
-      headers: { Authorization: `Bearer ${adminToken}` },
+      headers: { Authorization: `Bearer ${admin.token}` },
       payload: { name: 'Turma Prof', year: 2026 }
     });
     const turmaId = expectSuccessStep('Create Turma', turmaRes, 201).data._id;
@@ -68,11 +41,11 @@ describe('Professor Module Integration', () => {
     await app.inject({
       method: 'POST',
       url: '/api/disciplinas',
-      headers: { Authorization: `Bearer ${adminToken}` },
-      payload: { name: 'Disciplina Prof', codigo: `MAT-${Math.floor(Math.random() * 899) + 100}`, turmaIds: [turmaId], professorId: userId }
+      headers: { Authorization: `Bearer ${admin.token}` },
+      payload: { name: 'Disciplina Prof', codigo: `MAT-${Math.floor(Math.random() * 899) + 100}`, turmaIds: [turmaId], professorId: String(prof._id) }
     });
 
-    return { token, userId, tenantId, turmaId };
+    return { token: prof.token, userId: String(prof._id), tenantId, turmaId };
   };
 
 

@@ -3,6 +3,7 @@ import { buildApp } from '../../app.js';
 import type { FastifyInstance } from 'fastify';
 import { UserModel } from '../../models/User.js';
 import argon2 from 'argon2';
+import { createTestUser } from '../../test-helpers.js';
 
 describe('Auth Guards — school_production mode', () => {
   let app: FastifyInstance;
@@ -21,14 +22,7 @@ describe('Auth Guards — school_production mode', () => {
   });
 
   describe('POST /api/auth/register — self-provisioning guard', () => {
-    it('should return 403 when APP_MODE=school_production', async () => {
-      // Dynamically import and mock the appMode module
-      const appMode = await import('../../config/appMode.js');
-      const originalIsSchoolProduction = appMode.isSchoolProduction;
-
-      // Override the exported value
-      Object.defineProperty(appMode, 'isSchoolProduction', { value: true, writable: true });
-
+    it('should return 401 without JWT (register now requires authentication)', async () => {
       const response = await app.inject({
         method: 'POST',
         url: '/api/auth/register',
@@ -39,24 +33,23 @@ describe('Auth Guards — school_production mode', () => {
         },
       });
 
-      // Restore
-      Object.defineProperty(appMode, 'isSchoolProduction', { value: originalIsSchoolProduction, writable: true });
-
-      expect(response.statusCode).toBe(403);
+      // Without JWT, the route returns 401 before the appMode check
+      expect(response.statusCode).toBe(401);
       const body = response.json();
       expect(body.success).toBe(false);
-      expect(body.message).toContain('desabilitado');
     });
 
-    it('should return 201 when APP_MODE=demo', async () => {
+    it('should return 201 when admin token is provided and APP_MODE=demo', async () => {
       const appMode = await import('../../config/appMode.js');
       const originalIsSchoolProduction = appMode.isSchoolProduction;
-
       Object.defineProperty(appMode, 'isSchoolProduction', { value: false, writable: true });
+
+      const admin = await createTestUser(app, { role: 'admin' });
 
       const response = await app.inject({
         method: 'POST',
         url: '/api/auth/register',
+        headers: { Authorization: `Bearer ${admin.token}` },
         payload: {
           name: 'Demo User',
           email: 'demo@test.com',

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildApp } from '../../app.js';
 import type { FastifyInstance } from 'fastify';
+import { createTestUser } from '../../test-helpers.js';
 
 describe('Reports Module Integration', () => {
   let app: FastifyInstance;
@@ -10,19 +11,8 @@ describe('Reports Module Integration', () => {
   });
 
   const getAuthToken = async () => {
-    const payload = {
-      name: 'Admin Reports',
-      email: `admin.reports.${Date.now()}@academiaflow.com`,
-      password: 'securepassword123',
-      role: 'admin',
-    };
-    await app.inject({ method: 'POST', url: '/api/auth/register', payload });
-    const login = await app.inject({
-      method: 'POST',
-      url: '/api/auth/login',
-      payload: { email: payload.email, password: payload.password },
-    });
-    return login.json().data.token;
+    const user = await createTestUser(app, { role: 'admin' });
+    return user.token;
   };
 
   it('GET /api/reports/dashboard should return system metrics', async () => {

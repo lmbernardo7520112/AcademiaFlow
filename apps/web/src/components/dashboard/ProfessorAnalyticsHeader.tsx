@@ -20,46 +20,46 @@ export const ProfessorAnalyticsHeader: React.FC<Props> = ({ data }) => {
   const { globalAverage, riskTotal, classes, context } = data;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-      {/* Global Highlights */}
-      <div className="space-y-4">
-        <GlassCard className="p-4 flex items-center space-x-4 border-l-4 border-blue-500">
-          <div className="p-3 bg-blue-500/20 rounded-full text-blue-400">
+    <div className="professor-analytics-grid">
+      {/* Stat Cards Sidebar */}
+      <div className="analytics-sidebar">
+        <GlassCard className="analytics-stat-card analytics-stat-blue">
+          <div className="analytics-stat-icon blue">
             <BookOpen size={24} />
           </div>
           <div>
-            <p className="text-xs text-gray-400 uppercase tracking-wider">
+            <p className="analytics-stat-label">
               {context ? `Média da Turma: ${context.turmaName}` : 'Média Global'}
             </p>
-            <h3 className="text-2xl font-bold text-white">{globalAverage || '--'}</h3>
+            <h3 className="analytics-stat-value">{globalAverage || '--'}</h3>
           </div>
         </GlassCard>
 
-        <GlassCard className="p-4 flex items-center space-x-4 border-l-4 border-red-500">
-          <div className="p-3 bg-red-500/20 rounded-full text-red-400">
+        <GlassCard className="analytics-stat-card analytics-stat-red">
+          <div className="analytics-stat-icon red">
             <AlertCircle size={24} />
           </div>
           <div>
-            <p className="text-xs text-gray-400 uppercase tracking-wider">Alunos em Faixa de Risco</p>
-            <h3 className="text-2xl font-bold text-white">{riskTotal}</h3>
+            <p className="analytics-stat-label">Alunos em Faixa de Risco</p>
+            <h3 className="analytics-stat-value">{riskTotal}</h3>
           </div>
         </GlassCard>
 
-        <GlassCard className="p-4 flex items-center space-x-4 border-l-4 border-purple-500">
-          <div className="p-3 bg-purple-500/20 rounded-full text-purple-400">
+        <GlassCard className="analytics-stat-card analytics-stat-purple">
+          <div className="analytics-stat-icon purple">
             <Users size={24} />
           </div>
           <div>
-            <p className="text-xs text-gray-400 uppercase tracking-wider">Turmas Ativas</p>
-            <h3 className="text-2xl font-bold text-white">{classes.length}</h3>
+            <p className="analytics-stat-label">Turmas Ativas</p>
+            <h3 className="analytics-stat-value">{classes.length}</h3>
           </div>
         </GlassCard>
       </div>
 
       {/* Class Comparison Chart */}
-      <GlassCard className="lg:col-span-2 p-6">
-        <h4 className="text-sm font-semibold text-gray-400 uppercase mb-4">Desempenho por Turma</h4>
-        <div className="h-[200px]">
+      <GlassCard className="analytics-chart-card">
+        <h4 className="chart-title">Desempenho por Turma</h4>
+        <div className="chart-container">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={classes}>
               <XAxis 

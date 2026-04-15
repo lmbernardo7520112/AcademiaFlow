@@ -166,3 +166,81 @@ describe('LandingPage — demo mode', () => {
     expect(screen.getByText('Reinventar Minha Escola')).toBeInTheDocument();
   });
 });
+
+describe('LandingPage — R1 structural layout fix', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('applies hero-section--single-column class when isSelfServiceEnabled=false', async () => {
+    vi.doMock('../../config/appMode', () => ({
+      isSelfServiceEnabled: false,
+      isSchoolProduction: true,
+    }));
+
+    const { default: LandingPageModule } = await import('./LandingPage');
+
+    const { container } = render(
+      <MemoryRouter>
+        <LandingPageModule />
+      </MemoryRouter>
+    );
+
+    const heroSection = container.querySelector('.hero-section');
+    expect(heroSection).toBeInTheDocument();
+    expect(heroSection?.classList.contains('hero-section--single-column')).toBe(true);
+  });
+
+  it('does NOT apply hero-section--single-column class when isSelfServiceEnabled=true', async () => {
+    vi.doMock('../../config/appMode', () => ({
+      isSelfServiceEnabled: true,
+      isSchoolProduction: false,
+    }));
+
+    const { default: LandingPageModule } = await import('./LandingPage');
+
+    const { container } = render(
+      <MemoryRouter>
+        <LandingPageModule />
+      </MemoryRouter>
+    );
+
+    const heroSection = container.querySelector('.hero-section');
+    expect(heroSection).toBeInTheDocument();
+    expect(heroSection?.classList.contains('hero-section--single-column')).toBe(false);
+  });
+
+  it('hero-visual is present in DOM when isSelfServiceEnabled=true (demo mode)', async () => {
+    vi.doMock('../../config/appMode', () => ({
+      isSelfServiceEnabled: true,
+      isSchoolProduction: false,
+    }));
+
+    const { default: LandingPageModule } = await import('./LandingPage');
+
+    const { container } = render(
+      <MemoryRouter>
+        <LandingPageModule />
+      </MemoryRouter>
+    );
+
+    expect(container.querySelector('.hero-visual')).toBeInTheDocument();
+  });
+
+  it('hero-visual is absent from DOM when isSchoolProduction=true', async () => {
+    vi.doMock('../../config/appMode', () => ({
+      isSelfServiceEnabled: false,
+      isSchoolProduction: true,
+    }));
+
+    const { default: LandingPageModule } = await import('./LandingPage');
+
+    const { container } = render(
+      <MemoryRouter>
+        <LandingPageModule />
+      </MemoryRouter>
+    );
+
+    expect(container.querySelector('.hero-visual')).not.toBeInTheDocument();
+  });
+});

@@ -232,7 +232,7 @@ async function runSeedDemo(tenantId: string, defaultPassword: string, currentYea
     await NotaModel.insertMany(notasBatch.slice(i, i + chunkSize));
   }
 
-  const numAlunos = turmas.reduce((acc, t, idx) => acc + legacyData.turmas[idx]!.alunos.length, 0);
+  const numAlunos = turmas.reduce((acc, _t, idx) => acc + legacyData.turmas[idx]!.alunos.length, 0);
   console.log(`✅ Demo Seed Completed: 12 BNCC Professors, ${turmas.length} Turmas, ${numAlunos} Alunos, ${notasBatch.length} Notas (+ ${pfCount} PF)`);
 }
 

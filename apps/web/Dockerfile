@@ -1,7 +1,7 @@
 # ==============================================================
 # AcademiaFlow Web — Multi-stage Production Build
 # Context: monorepo root (../../)
-# Build:   docker build -f apps/web/Dockerfile -t academiaflow_web:v1.0.2 .
+# Build:   docker build -f apps/web/Dockerfile -t academiaflow_web:appliance-v1.2.0 .
 # ==============================================================
 
 # Stage 1: Install + Build
@@ -39,6 +39,7 @@ RUN pnpm --filter @academiaflow/web build
 FROM nginx:alpine
 
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

@@ -1,7 +1,7 @@
 # ==============================================================
 # AcademiaFlow API — Multi-stage Production Build
 # Context: monorepo root (../../)
-# Build:   docker build -f apps/api/Dockerfile -t academiaflow_api:appliance-v1.0.0 .
+# Build:   docker build -f apps/api/Dockerfile -t academiaflow_api:appliance-v1.2.0 .
 # ==============================================================
 
 # Stage 1: Install + Build
@@ -43,6 +43,9 @@ COPY apps/api/package.json apps/api/
 
 # Install production dependencies only
 RUN pnpm install --frozen-lockfile --prod
+
+# Install tsx globally for seed script execution (devDep, not in --prod)
+RUN npm install -g tsx
 
 # Copy built artifacts
 COPY --from=builder /app/packages/shared/dist packages/shared/dist

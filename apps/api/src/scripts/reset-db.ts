@@ -247,6 +247,7 @@ async function resetDB() {
 
   const args = process.argv.slice(2);
   const force = args.includes('--force');
+  const checkEmpty = args.includes('--check-empty');
   let mode = args.find(a => a.startsWith('--mode='))?.split('=')[1];
   if (!mode && args.includes('--mode')) {
     mode = args[args.indexOf('--mode') + 1];
@@ -257,13 +258,25 @@ async function resetDB() {
     mode = 'ci';
   }
 
-  if (!isDev && !force) {
+  if (!isDev && !force && !checkEmpty) {
     console.error('❌ SEED ABORTED: Non-dev env.');
     process.exit(1);
   }
 
   try {
     await mongoose.connect(uri);
+
+    // Idempotent check: if --check-empty is set and DB has data, skip silently
+    if (checkEmpty) {
+      const userCount = await UserModel.countDocuments();
+      if (userCount > 0) {
+        console.log(`[SKIP] Database already populated (${userCount} users). Seed aborted safely.`);
+        await mongoose.disconnect();
+        process.exit(0);
+      }
+      console.log('[INIT] Database is empty. Proceeding with seed...');
+    }
+
     console.log('🧹 Teardown: Clearing all core collections...');
     await Promise.all([
       UserModel.deleteMany({}), TurmaModel.deleteMany({}), DisciplinaModel.deleteMany({}), AlunoModel.deleteMany({}), NotaModel.deleteMany({})

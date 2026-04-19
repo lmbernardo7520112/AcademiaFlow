@@ -15,6 +15,7 @@ import { notasRoutes } from './modules/notas/notas.routes.js';
 import { reportsRoutes } from './modules/reports/reports.routes.js';
 import { aiRoutes } from './modules/ai/ai.routes.js';
 import { professorRoutes } from './modules/professor/professor.routes.js';
+import { buscaAtivaRoutes } from './modules/busca-ativa/busca-ativa.routes.js';
 
 export async function buildApp() {
   const app = Fastify({
@@ -80,6 +81,7 @@ export async function buildApp() {
   await app.register(reportsRoutes, { prefix: '/api/reports' });
   await app.register(aiRoutes, { prefix: '/api/ai' });
   await app.register(professorRoutes, { prefix: '/api/professor' });
+  await app.register(buscaAtivaRoutes, { prefix: '/api/busca-ativa' });
 
   // Basic health checks
   app.get('/api/ping', async () => {

@@ -257,7 +257,9 @@ export const buscaAtivaRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIn
     }
   );
 
-  // ─── #9 POST /cases/:id/attachments (stub — needs @fastify/multipart) ─────
+  // ─── #9 POST /cases/:id/attachments ────────────────────────────────────────
+  // Accepts multipart/form-data with one file (max 5MB) and optional description.
+  // Validates MIME type, computes SHA-256, persists to disk, appends to case.
 
   typedFastify.post(
     '/cases/:id/attachments',
@@ -265,16 +267,40 @@ export const buscaAtivaRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIn
       preHandler: [fastify.authorize(['admin', 'secretaria'])],
       schema: { params: z.object({ id: z.string() }) },
     },
-    async (_request, reply) => {
-      // Stub: @fastify/multipart integration will be added after spike
-      reply.code(501).send({
-        success: false,
-        message: 'Upload de anexos será implementado após spike de @fastify/multipart.',
-      });
+    async (request, reply) => {
+      try {
+        const data = await request.file();
+        if (!data) {
+          return reply.code(400).send({ success: false, message: 'Nenhum arquivo enviado.' });
+        }
+
+        const fileBuffer = await data.toBuffer();
+        const description = (data.fields['description'] as { value?: string } | undefined)?.value;
+
+        const result = await buscaAtivaService.uploadAttachment(
+          request.user.tenantId,
+          request.user.id,
+          request.params.id,
+          fileBuffer,
+          data.filename,
+          data.mimetype,
+          description,
+        );
+        reply.code(result.status).send({ success: result.status < 400, ...result.data });
+      } catch (error: unknown) {
+        fastify.log.error(error, 'Attachment upload error');
+        const msg = error instanceof Error ? error.message : 'Erro ao fazer upload do anexo';
+        // @fastify/multipart throws a specific error code for size limit
+        const code = (error as { code?: string }).code === 'FST_FILES_LIMIT' ||
+                     (error as { code?: string }).code === 'FST_REQ_FILE_TOO_LARGE' ? 413 : 500;
+        reply.code(code).send({ success: false, message: msg });
+      }
     }
   );
 
   // ─── #10 GET /cases/:caseId/attachments/:attachId/download ─────────────────
+  // Returns raw file buffer with correct Content-Type and Content-Disposition.
+  // No @fastify/static needed — reads from disk and sends via reply.send(buffer).
 
   typedFastify.get(
     '/cases/:caseId/attachments/:attachId/download',
@@ -287,12 +313,19 @@ export const buscaAtivaRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIn
         }),
       },
     },
-    async (_request, reply) => {
-      // Stub: secure download will be implemented with upload
-      reply.code(501).send({
-        success: false,
-        message: 'Download de anexos será implementado após spike de @fastify/multipart.',
-      });
+    async (request, reply) => {
+      const result = await buscaAtivaService.downloadAttachment(
+        request.user.tenantId,
+        request.params.caseId,
+        request.params.attachId,
+      );
+      if (result.status !== 200 || !Buffer.isBuffer(result.data)) {
+        return reply.code(result.status).send({ success: false, ...(result.data as object) });
+      }
+      reply
+        .header('Content-Type', result.meta!.mimeType)
+        .header('Content-Disposition', `attachment; filename="${result.meta!.originalName}"`)
+        .send(result.data);
     }
   );
 

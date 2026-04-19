@@ -1,8 +1,7 @@
-/**
- * @module busca-ativa.service
- * Business logic for the Busca Ativa feature.
- * All database operations and domain rules centralized here.
- */
+import { createHash } from 'crypto';
+import { promises as fsp } from 'fs';
+import path from 'path';
+import { randomUUID } from 'crypto';
 import { AbsenceImportModel } from '../../models/AbsenceImport.js';
 import { CasoBuscaAtivaModel } from '../../models/CasoBuscaAtiva.js';
 import { AlunoModel } from '../../models/Aluno.js';
@@ -516,4 +515,119 @@ export const buscaAtivaService = {
   correctContact,
   addTimelineEntry,
   getDossie,
+  uploadAttachment,
+  downloadAttachment,
 };
+
+// ─── Attachment Helpers ───────────────────────────────────────────────────────
+
+const ALLOWED_MIME = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
+function sanitizeFilename(name: string): string {
+  // Keep only alphanumeric, dots, underscores and hyphens; collapse sequences
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 200);
+}
+
+export async function uploadAttachment(
+  tenantId: string,
+  userId: string,
+  caseId: string,
+  fileBuffer: Buffer,
+  originalName: string,
+  mimeType: string,
+  description?: string,
+): Promise<{ status: number; data: Record<string, unknown> }> {
+  if (!ALLOWED_MIME.has(mimeType)) {
+    return {
+      status: 422,
+      data: {
+        message: `Tipo de arquivo não permitido: ${mimeType}. Aceitos: PDF, JPEG, PNG, WEBP.`,
+      },
+    };
+  }
+
+  const kaso = await CasoBuscaAtivaModel.findOne({ _id: caseId, tenantId });
+  if (!kaso) return { status: 404, data: { message: 'Caso não encontrado.' } };
+
+  const sha256 = createHash('sha256').update(fileBuffer).digest('hex');
+  const safeName = sanitizeFilename(originalName);
+  const filename = `${randomUUID()}-${safeName}`;
+  const dir = path.join(process.cwd(), 'uploads', 'busca-ativa', caseId);
+  const storagePath = path.join(dir, filename);
+
+  await fsp.mkdir(dir, { recursive: true });
+  await fsp.writeFile(storagePath, fileBuffer);
+
+  kaso.attachments.push({
+    filename,
+    originalName: safeName,
+    mimeType,
+    size: fileBuffer.length,
+    sha256,
+    storagePath,
+    description: description ?? null,
+    uploadedBy: userId,
+  } as never);
+
+  kaso.timeline.push({
+    action: 'ATTACHMENT_UPLOADED',
+    attachmentId: (kaso.attachments[kaso.attachments.length - 1] as { _id: unknown })._id,
+    notes: description ?? null,
+    createdBy: userId,
+  } as never);
+
+  await kaso.save();
+
+  const att = kaso.attachments[kaso.attachments.length - 1] as {
+    _id: unknown; filename: string; originalName: string; mimeType: string;
+    size: number; sha256: string; uploadedAt?: Date; description?: string | null;
+  };
+
+  return {
+    status: 201,
+    data: {
+      attachmentId: att._id,
+      filename: att.filename,
+      originalName: att.originalName,
+      mimeType: att.mimeType,
+      size: att.size,
+      sha256: att.sha256,
+      uploadedAt: att.uploadedAt,
+    },
+  };
+}
+
+export async function downloadAttachment(
+  tenantId: string,
+  caseId: string,
+  attachId: string,
+): Promise<{ status: number; data: Record<string, unknown> | Buffer; meta?: { mimeType: string; originalName: string } }> {
+  const kaso = await CasoBuscaAtivaModel.findOne({ _id: caseId, tenantId });
+  if (!kaso) return { status: 404, data: { message: 'Caso não encontrado.' } };
+
+  const att = (kaso.attachments as Array<{
+    _id: { toString(): string };
+    storagePath: string;
+    mimeType: string;
+    originalName: string;
+  }>).find(a => a._id.toString() === attachId);
+
+  if (!att) return { status: 404, data: { message: 'Anexo não encontrado.' } };
+
+  try {
+    const buffer = await fsp.readFile(att.storagePath);
+    return {
+      status: 200,
+      data: buffer,
+      meta: { mimeType: att.mimeType, originalName: att.originalName },
+    };
+  } catch {
+    return { status: 404, data: { message: 'Arquivo físico não encontrado no servidor.' } };
+  }
+}
+

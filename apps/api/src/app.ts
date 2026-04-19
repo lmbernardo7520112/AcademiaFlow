@@ -7,6 +7,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import dbPlugin from './plugins/db.js';
 import jwtPlugin from './plugins/jwt.js';
 import ownershipPlugin from './plugins/ownership.js';
+import multipartPlugin from './plugins/multipart.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { turmasRoutes } from './modules/turmas/turmas.routes.js';
 import { alunosRoutes } from './modules/alunos/alunos.routes.js';
@@ -71,6 +72,7 @@ export async function buildApp() {
   await app.register(dbPlugin);
   await app.register(jwtPlugin);
   await app.register(ownershipPlugin);
+  await app.register(multipartPlugin);
 
   // Routes registration
   await app.register(authRoutes, { prefix: '/api/auth' });

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { api } from '../../services/api.js';
-import DashboardLayout from '../../components/layout/DashboardLayout.js';
 import DataTable from '../../components/ui/DataTable.js';
 import Modal from '../../components/ui/Modal.js';
 import { Plus, Edit2, BookOpen } from 'lucide-react';
@@ -43,15 +42,23 @@ export default function DisciplinasPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [discRes, profRes, turmasRes] = await Promise.all([
+      const results = await Promise.allSettled([
         api.get('/disciplinas'),
-        api.get('/users/professores'), // Ajustar se rota for diferente
+        api.get('/auth/users?role=professor'), // Fixed: Route does not exist, use auth/users query
         api.get('/turmas')
       ]);
       
-      if (discRes.data.success) setDisciplinas(discRes.data.data);
-      if (profRes.data.success) setProfessores(profRes.data.data);
-      if (turmasRes.data.success) setTurmas(turmasRes.data.data);
+      const [discRes, profRes, turmasRes] = results;
+
+      if (discRes.status === 'fulfilled' && discRes.value.data.success) {
+        setDisciplinas(discRes.value.data.data);
+      }
+      if (profRes.status === 'fulfilled' && profRes.value.data.success) {
+        setProfessores(profRes.value.data.data);
+      }
+      if (turmasRes.status === 'fulfilled' && turmasRes.value.data.success) {
+        setTurmas(turmasRes.value.data.data);
+      }
     } catch (error) {
       console.error('Erro ao buscar dados', error);
     } finally {
@@ -128,9 +135,9 @@ export default function DisciplinasPage() {
       title: 'Turmas Vinculadas', 
       render: (row: Disciplina) => (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
-          {row.turmaIds?.length > 0 ? row.turmaIds.map(t => (
-            <span key={t._id} className="status-pill" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', borderColor: 'transparent' }}>
-              {t.name}
+          {Array.isArray(row.turmaIds) && row.turmaIds.length > 0 ? row.turmaIds.map(t => (
+            <span key={t?._id || Math.random().toString()} className="status-pill" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem', backgroundColor: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', borderColor: 'transparent' }}>
+              {t?.name || 'Inexistente'}
             </span>
           )) : <span className="text-secondary">-</span>}
         </div>
@@ -157,7 +164,7 @@ export default function DisciplinasPage() {
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="dashboard-header fade-in">
         <h1 className="text-gradient">Gestão Curricular</h1>
         <p className="text-secondary">Administração de disciplinas, docentes e alocação de turmas.</p>
@@ -176,8 +183,10 @@ export default function DisciplinasPage() {
           </button>
         </div>
         
-        <div className="glass-panel" style={{ padding: 0 }}>
-          <DataTable data={disciplinas} columns={columns} loading={loading} emptyText="Aguardando carga de dados da secretaria." />
+        <div className="table-container">
+          <div className="glass-panel" style={{ padding: 0 }}>
+            <DataTable data={disciplinas} columns={columns} loading={loading} emptyText="Aguardando carga de dados da secretaria." />
+          </div>
         </div>
       </div>
 
@@ -186,18 +195,18 @@ export default function DisciplinasPage() {
           
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem' }}>
             <div className="input-group">
-              <label>Código (Paridade)</label>
-              <input required value={codigo} onChange={(e) => setCodigo(e.target.value.toUpperCase())} placeholder="Ex: MAT-001" />
+              <label htmlFor="codigo">Código (Paridade)</label>
+              <input id="codigo" required value={codigo} onChange={(e) => setCodigo(e.target.value.toUpperCase())} placeholder="Ex: MAT-001" />
             </div>
             <div className="input-group">
-              <label>Nome da Disciplina</label>
-              <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Biologia Molecular" />
+              <label htmlFor="name">Nome da Disciplina</label>
+              <input id="name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Biologia Molecular" />
             </div>
           </div>
 
           <div className="input-group">
-            <label>Docente Responsável</label>
-            <select value={professorId} onChange={(e) => setProfessorId(e.target.value)}>
+            <label htmlFor="professorId">Docente Responsável</label>
+            <select id="professorId" value={professorId} onChange={(e) => setProfessorId(e.target.value)}>
               <option value="">Nenhum/Aguardando Atribuição</option>
               {professores.map(p => (
                 <option key={p._id} value={p._id}>{p.name}</option>
@@ -244,6 +253,6 @@ export default function DisciplinasPage() {
           </div>
         </form>
       </Modal>
-    </DashboardLayout>
+    </>
   );
 }

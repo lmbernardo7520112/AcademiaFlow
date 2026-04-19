@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'fix/**', 'release/**']
   pull_request:
-    branches: [main]
+    branches: [main, 'fix/**', 'release/**']
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -23,6 +23,11 @@ jobs:
 
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE22: true
+      APP_MODE: demo
+      VITE_APP_MODE: demo
+      DATABASE_URL: mongodb://localhost:27017/academiaflow
+      JWT_SECRET: ci_test_jwt_secret_key_32chars_long
+      REFRESH_TOKEN_SECRET: ci_test_refresh_secret_32chars_long
 
     steps:
       - name: Checkout
@@ -46,8 +51,23 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Test
+      - name: Test (includes Security Tests)
         run: pnpm test
 
       - name: Build
         run: pnpm build
+
+      - name: Seed Database
+        run: pnpm --filter @academiaflow/api seed
+        env:
+          DATABASE_URL: mongodb://localhost:27017/academiaflow
+
+      - name: Validate Seed Integrity
+        run: pnpm validate-seed
+        env:
+          DATABASE_URL: mongodb://localhost:27017/academiaflow
+
+      - name: Docker Build Validation (API)
+        run: |
+          docker build -t academiaflow-api:ci-check -f apps/api/Dockerfile .
+        continue-on-error: true

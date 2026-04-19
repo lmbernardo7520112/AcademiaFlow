@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../../styles/auth.css';
 import { api } from '../../services/api';
+import { isSchoolProduction } from '../../config/appMode';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -10,6 +11,13 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // [HARDENING] Redirect to login in school_production mode
+  useEffect(() => {
+    if (isSchoolProduction) {
+      navigate('/auth/login', { replace: true });
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

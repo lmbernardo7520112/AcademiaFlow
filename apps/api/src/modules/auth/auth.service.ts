@@ -1,6 +1,7 @@
 import { UserModel } from '../../models/User.js';
 import argon2 from 'argon2';
 import type { CreateUserPayload, LoginPayload } from '@academiaflow/shared';
+import { isSchoolProduction } from '../../config/appMode.js';
 
 import mongoose from 'mongoose';
 
@@ -37,6 +38,12 @@ export class AuthService {
       throw new Error('Credenciais inválidas');
     }
 
+    // [HARDENING] Auto-migrate 'administrador' → 'admin' in school_production
+    if (isSchoolProduction && user.role === 'administrador') {
+      await UserModel.updateOne({ _id: user._id }, { role: 'admin' });
+      user.role = 'admin';
+    }
+
     const userObj = user.toObject();
     delete (userObj as { password?: string }).password;
     delete (userObj as { refreshToken?: string }).refreshToken;
@@ -61,17 +68,22 @@ export class AuthService {
     return user;
   }
 
-  async listUsers(tenantId: string, page = 1, limit = 20) {
+  async listUsers(tenantId: string, page = 1, limit = 20, role?: string) {
     const skip = (page - 1) * limit;
     
     // Projeção segura: Nunca retornar senhas ou tokens em listagens
-    const users = await UserModel.find({ tenantId, isActive: true })
+    const query: Record<string, string | boolean> = { tenantId, isActive: true };
+    if (role) {
+      query.role = role;
+    }
+
+    const users = await UserModel.find(query)
       .select('-password -refreshToken')
       .sort({ name: 1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await UserModel.countDocuments({ tenantId, isActive: true });
+    const total = await UserModel.countDocuments(query);
 
     return {
       data: users,

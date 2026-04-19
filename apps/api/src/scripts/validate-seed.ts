@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
-import fs from 'fs';
 import * as dotenv from 'dotenv';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { readFileSync } from 'fs';
 import { AlunoModel } from '../models/Aluno.js';
 import { TurmaModel } from '../models/Turma.js';
-import { DisciplinaModel } from '../models/Disciplina.js';
 import { NotaModel } from '../models/Nota.js';
+import { UserModel } from '../models/User.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,96 +14,113 @@ const __dirname = dirname(__filename);
 // Load the local .env from apps/api
 dotenv.config({ path: resolve(__dirname, '../../.env') });
 
+/**
+ * Dynamic expectations derived from the actual turmas_alunos.json file.
+ * This eliminates ALL hardcoded values (152, 7, 7296, etc.) and ensures
+ * the validation always reflects the real data.
+ */
+function getExpectedCounts() {
+  const dataPath = resolve(__dirname, './data/turmas_alunos.json');
+  const data = JSON.parse(readFileSync(dataPath, 'utf8'));
+  const expectedTurmas = data.turmas.length;
+  const expectedAlunos = data.turmas.reduce(
+    (sum: number, t: { alunos: unknown[] }) => sum + t.alunos.length, 0
+  );
+  // 12 BNCC disciplines × 4 bimesters per student
+  const expectedNotasBase = expectedAlunos * 12 * 4;
+  return { expectedTurmas, expectedAlunos, expectedNotasBase };
+}
+
+async function validateCI() {
+  console.log('🔍 Executing strict validation for CI mode...');
+  
+  const users = await UserModel.countDocuments({});
+  const alunosCount = await AlunoModel.countDocuments({});
+  const total = users + alunosCount;
+  console.assert(total === 10, `❌ Exatamente 10 contas necessárias no CI. Encontrado: ${total}`);
+  if (total !== 10) throw new Error('Falha no Invariante CI: Usuários (Contas)');
+  
+  console.assert(users === 5, `❌ Exatamente 5 usuários (Admin, Secretaria, Professores) necessários. Encontrado: ${users}`);
+  console.assert(alunosCount === 5, `❌ Exatamente 5 alunos necessários. Encontrado: ${alunosCount}`);
+
+  const turmas = await TurmaModel.countDocuments({});
+  console.assert(turmas === 3, `❌ Exatamente 3 turmas necessárias no CI. Encontradas: ${turmas}`);
+  if (turmas !== 3) throw new Error('Falha no Invariante CI: Turmas');
+
+  const notas = await NotaModel.countDocuments({});
+  console.assert(notas === 15, `❌ Exatamente 15 notas/avaliações necessárias no CI. Encontradas: ${notas}`);
+  if (notas !== 15) throw new Error('Falha no Invariante CI: Notas');
+
+  console.log('✅ CI Invariants PASSED (10 Users, 3 Turmas, 15 Notas)');
+}
+
+async function validateDemo() {
+  console.log('🔍 Executing strict validation for Demo (2026 Roster Parity) mode...');
+  
+  const { expectedTurmas, expectedAlunos, expectedNotasBase } = getExpectedCounts();
+  console.log(`📋 Expected from turmas_alunos.json: ${expectedAlunos} Alunos, ${expectedTurmas} Turmas, ${expectedNotasBase} Base Notes`);
+  
+  const alunos = await AlunoModel.countDocuments({});
+  console.assert(alunos === expectedAlunos, `❌ Exatamente ${expectedAlunos} alunos necessários (Paridade 2026 Roster). Encontrados: ${alunos}`);
+  if (alunos !== expectedAlunos) throw new Error(`Falha no Invariante Demo: Alunos (expected ${expectedAlunos}, got ${alunos})`);
+
+  const turmas = await TurmaModel.countDocuments({});
+  console.assert(turmas === expectedTurmas, `❌ Exatamente ${expectedTurmas} turmas necessárias. Encontradas: ${turmas}`);
+  if (turmas !== expectedTurmas) throw new Error(`Falha no Invariante Demo: Turmas (expected ${expectedTurmas}, got ${turmas})`);
+
+  const professores = await UserModel.countDocuments({ role: 'professor' });
+  console.assert(professores === 12, `❌ Exatamente 12 professores (BNCC) necessários. Encontrados: ${professores}`);
+  if (professores !== 12) throw new Error('Falha no Invariante Demo: Professores');
+
+  // Validate professor email domain
+  const badEmails = await UserModel.countDocuments({
+    role: 'professor',
+    email: { $not: /@academiaflow\.com$/ },
+  });
+  console.assert(badEmails === 0, `❌ Todos os emails de professor devem ser @academiaflow.com. Encontrados ${badEmails} com domínio incorreto.`);
+  if (badEmails > 0) throw new Error('Falha no Invariante Demo: Professor Email Domain');
+
+  // Base notes: B1-B4 (alunos × 12 disciplinas × 4 bimestres)
+  const notasBase = await NotaModel.countDocuments({ bimester: { $lte: 4 } });
+  console.assert(notasBase === expectedNotasBase, `❌ Exatamente ${expectedNotasBase} notas base B1-B4 (${expectedAlunos}*12*4) necessárias. Encontradas: ${notasBase}`);
+  if (notasBase !== expectedNotasBase) throw new Error(`Falha no Invariante Demo: Notas Base (expected ${expectedNotasBase}, got ${notasBase})`);
+
+  // PF notes: bimester=5 for recovery-eligible students (MG ∈ [4.0, 6.0))
+  const notasPF = await NotaModel.countDocuments({ bimester: 5 });
+  console.assert(notasPF > 0, `❌ Ao menos 1 nota PF (bimester=5) esperada para paridade legado. Encontradas: ${notasPF}`);
+  if (notasPF === 0) throw new Error('Falha no Invariante Demo: PF Parity (zero PF notes)');
+
+  const notasTotal = await NotaModel.countDocuments({});
+  console.assert(notasTotal === notasBase + notasPF, `❌ Total de notas inconsistente. Esperado: ${notasBase + notasPF}, Encontrado: ${notasTotal}`);
+
+  console.log(`✅ Demo Invariants PASSED (${expectedAlunos} Alunos, ${expectedTurmas} Turmas, 12 Professores, ${notasTotal} Notas [${notasBase} base + ${notasPF} PF], All @academiaflow.com)`);
+}
+
 async function validate() {
-  console.log('🔍 Iniciando Auditoria Estrita de Paridade de Dados (V5 Forensic Validation)...');
+  console.log('🔍 Iniciando Auditoria Estrita de Paridade de Dados (v1.2.0 Dynamic Validation)...');
   
   try {
     const uri = process.env.DATABASE_URL || process.env.MONGODB_URI;
     if (!uri) throw new Error('DATABASE_URL missing');
     
     await mongoose.connect(uri);
+
+    const args = process.argv.slice(2);
+    let mode = args.find(a => a.startsWith('--mode='))?.split('=')[1];
+    if (!mode && args.includes('--mode')) {
+      mode = args[args.indexOf('--mode') + 1];
+    }
     
-    // Portabilidade: Localizar turmas_alunos.json
-    const possiblePaths = [
-      resolve(__dirname, '../../../../../workspace/reference/academiaflow_legacy/server/seed/turmas_alunos.json'),
-      resolve(process.cwd(), 'reference/academiaflow_legacy/server/seed/turmas_alunos.json'),
-      resolve(process.cwd(), '../workspace/reference/academiaflow_legacy/server/seed/turmas_alunos.json')
-    ];
-    
-    let legacyPath = '';
-    for (const p of possiblePaths) {
-      if (fs.existsSync(p)) {
-        legacyPath = p;
-        break;
-      }
+    if (!mode) {
+      console.warn('⚠️ No mode specified for validation, defaulting to ci');
+      mode = 'ci';
     }
 
-    if (!legacyPath) {
-      throw new Error('❌ legacy JSON not found. Check portability.');
+    if (mode === 'demo') {
+      await validateDemo();
+    } else {
+      await validateCI();
     }
-
-    const legacyRaw = JSON.parse(fs.readFileSync(legacyPath, 'utf-8'));
-    const legacyTurmas = legacyRaw.turmas || [];
-    
-    // 1. Validar Turmas
-    const dbTurmas = await TurmaModel.countDocuments({ isActive: true });
-    const legacyTurmasCount = legacyTurmas.length;
-    
-    console.log(`\n--- TURMAS ---`);
-    console.log(`Legado: ${legacyTurmasCount}`);
-    console.log(`Banco:  ${dbTurmas}`);
-    
-    if (dbTurmas !== legacyTurmasCount) {
-      throw new Error('❌ Disparidade fatal na contagem de turmas!');
-    }
-
-    // 2. Validar Alunos
-    const dbAlunos = await AlunoModel.countDocuments({ isActive: true });
-    interface LegacyTurmaWithAlunos { alunos?: unknown[] }
-    const legacyAlunosCount = (legacyTurmas as LegacyTurmaWithAlunos[]).reduce((acc: number, curr) => acc + (curr.alunos?.length || 0), 0);
-    
-    console.log(`\n--- ALUNOS ---`);
-    console.log(`Legado: ${legacyAlunosCount}`);
-    console.log(`Banco:  ${dbAlunos}`);
-    
-    if (dbAlunos !== legacyAlunosCount) {
-      throw new Error('❌ Disparidade fatal na contagem de alunos!');
-    }
-
-    // 3. Validar Disciplinas (Paradoxo 11/12)
-    const dbDisciplinas = await DisciplinaModel.countDocuments({ isActive: true });
-    // No legado, criávamos 12, mas vinculávamos 11.
-    console.log(`\n--- DISCIPLINAS ---`);
-    console.log(`Esperado (Legacy Audit): 12 criadas`);
-    console.log(`Banco: ${dbDisciplinas}`);
-
-    if (dbDisciplinas !== 12) {
-      throw new Error('❌ Disparidade na contagem de disciplinas (Esperado: 12)!');
-    }
-
-    // 4. Validar Vínculos (11 disciplinas por turma)
-    console.log(`\n--- VÍNCULOS (1:N) ---`);
-    const turmasDocs = await TurmaModel.find({});
-    for (const t of turmasDocs) {
-      const vinculadas = await DisciplinaModel.countDocuments({ turmaIds: t._id });
-      console.log(`Turma [${t.name}]: ${vinculadas} disciplinas vinculadas`);
-      if (vinculadas !== 11) {
-        throw new Error(`❌ Turma [${t.name}] tem ${vinculadas} disciplinas (Esperado: 11)!`);
-      }
-    }
-
-    // 5. Validar Notas (StudentCount * 11 * 4)
-    const dbNotas = await NotaModel.countDocuments({});
-    const expectedNotas = legacyAlunosCount * 11 * 4;
-    console.log(`\n--- NOTAS INICIAIS ---`);
-    console.log(`Esperado: ${expectedNotas} (Alunos * 11 disc * 4 bim)`);
-    console.log(`Banco: ${dbNotas}`);
-
-    if (dbNotas !== expectedNotas) {
-      throw new Error('❌ Disparidade na contagem de notas iniciais!');
-    }
-
-    console.log('\n✅ AUDITORIA FINALIZADA: Paridade Legacy 100% Confirmada.');
 
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';

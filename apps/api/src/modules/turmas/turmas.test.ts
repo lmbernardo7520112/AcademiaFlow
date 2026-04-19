@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildApp } from '../../app.js';
-import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import mongoose from 'mongoose';
+import { createTestUser } from '../../test-helpers.js';
 
 describe('Turmas Module Integration', () => {
   let app: FastifyInstance;
@@ -14,31 +15,9 @@ describe('Turmas Module Integration', () => {
     }
   });
 
-  // FASE 1: Helper de diagnóstico
-  const expectSuccessStep = (stepName: string, response: LightMyRequestResponse, expectedStatus = 201) => {
-    if (response.statusCode !== expectedStatus) {
-      console.error(`\n--- FALHA NO STEP API: ${stepName} ---`);
-      console.error(`URL: ${response.raw.req?.method} ${response.raw.req?.url}`);
-      console.error(`STATUS: ${response.statusCode} | BODY: ${JSON.stringify(response.json(), null, 2)}`);
-      throw new Error(`Step ${stepName} failed`);
-    }
-    return response.json();
-  };
-
   const getAuthToken = async () => {
-    const timestamp = Date.now();
-    const payload = {
-      name: 'Admin Turmas',
-      email: `admin.${timestamp}@academiaflow.com`,
-      password: 'securepassword123',
-      role: 'admin',
-    };
-    const regRes = await app.inject({ method: 'POST', url: '/api/auth/register', payload });
-    expectSuccessStep('Register Admin', regRes, 201);
-    
-    const loginRes = await app.inject({ method: 'POST', url: '/api/auth/login', payload: { email: payload.email, password: payload.password } });
-    const loginData = expectSuccessStep('Login Admin', loginRes, 200);
-    return loginData.data.token;
+    const user = await createTestUser(app, { role: 'admin' });
+    return user.token;
   };
 
   it('POST /api/turmas should create a new turma', async () => {

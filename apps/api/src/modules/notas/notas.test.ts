@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildApp } from '../../app.js';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import mongoose from 'mongoose';
+import { createTestUser } from '../../test-helpers.js';
 
 describe('Notas Module Integration', () => {
   let app: FastifyInstance;
@@ -34,24 +35,9 @@ describe('Notas Module Integration', () => {
   const setupData = async () => {
     const timestamp = Date.now();
     
-    // 1. Register Admin
-    const payloadInfo = {
-      name: 'Admin Notas',
-      email: `admin.notas.${timestamp}@academiaflow.com`,
-      password: 'securepassword123',
-      role: 'admin',
-    };
-    const regRes = await app.inject({ method: 'POST', url: '/api/auth/register', payload: payloadInfo });
-    expectSuccessStep('Register Admin', regRes, 201);
-
-    // 2. Login
-    const loginRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/login',
-      payload: { email: payloadInfo.email, password: payloadInfo.password },
-    });
-    const loginData = expectSuccessStep('Login Admin', loginRes, 200);
-    const token = loginData.data.token;
+    // 1. Create Admin user directly (register requires JWT now)
+    const user = await createTestUser(app, { role: 'admin' });
+    const token = user.token;
 
     // 3. Create Turma
     const turmaRes = await app.inject({
@@ -224,6 +210,39 @@ describe('Notas Module Integration', () => {
 
     const getRes = await app.inject({ method: 'GET', url: `/api/notas/${nId}`, headers: { Authorization: `Bearer ${token}` } });
     expect(getRes.statusCode).toBe(404);
+  });
+
+  it('GET /api/notas/boletim/:turmaId/:disciplinaId should return PF accurately when bimester=5 exists (D2 Parity)', async () => {
+    const { token, turmaId, disciplinaId, alunoId } = await setupData();
+    const year = 2028; // avoid conflicts
+
+    // Create B1, B2, B3, B4 -> MG = 4.0 (Recuperação)
+    await app.inject({ method: 'POST', url: '/api/notas', headers: { Authorization: `Bearer ${token}` }, payload: { alunoId, disciplinaId, turmaId, year, bimester: 1, value: 4.0 } });
+    await app.inject({ method: 'POST', url: '/api/notas', headers: { Authorization: `Bearer ${token}` }, payload: { alunoId, disciplinaId, turmaId, year, bimester: 2, value: 4.0 } });
+    await app.inject({ method: 'POST', url: '/api/notas', headers: { Authorization: `Bearer ${token}` }, payload: { alunoId, disciplinaId, turmaId, year, bimester: 3, value: 4.0 } });
+    await app.inject({ method: 'POST', url: '/api/notas', headers: { Authorization: `Bearer ${token}` }, payload: { alunoId, disciplinaId, turmaId, year, bimester: 4, value: 4.0 } });
+
+    // Verify boletim BEFORE PF
+    const resPre = await app.inject({ method: 'GET', url: `/api/notas/boletim/${turmaId}/${disciplinaId}?year=${year}`, headers: { Authorization: `Bearer ${token}` } });
+    expect(resPre.statusCode).toBe(200);
+    type BoletimResponse = { alunoId: string; mg: number | null; situacao: string; notas: { pf: number | null }; mf: number | null };
+    let boletim = resPre.json().data.find((b: BoletimResponse) => b.alunoId === alunoId);
+    expect(boletim.mg).toBe(4.0);
+    expect(boletim.situacao).toBe('Recuperação');
+    expect(boletim.notas.pf).toBeNull();
+    expect(boletim.mf).toBeNull();
+
+    // Insert PF (bimester = 5) with value = 8.0 -> MF = (4+8)/2 = 6.0 Aprovado
+    await app.inject({ method: 'POST', url: '/api/notas', headers: { Authorization: `Bearer ${token}` }, payload: { alunoId, disciplinaId, turmaId, year, bimester: 5, value: 8.0 } });
+
+    // Verify boletim AFTER PF
+    const resPost = await app.inject({ method: 'GET', url: `/api/notas/boletim/${turmaId}/${disciplinaId}?year=${year}`, headers: { Authorization: `Bearer ${token}` } });
+    expect(resPost.statusCode).toBe(200);
+    boletim = resPost.json().data.find((b: BoletimResponse) => b.alunoId === alunoId);
+    
+    expect(boletim.notas.pf).toBe(8.0);
+    expect(boletim.mf).toBe(6.0);
+    expect(boletim.situacao).toBe('Aprovado');
   });
 
   afterAll(async () => {

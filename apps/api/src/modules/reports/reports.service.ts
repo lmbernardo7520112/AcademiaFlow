@@ -3,6 +3,8 @@ import { TurmaModel } from '../../models/Turma.js';
 import { DisciplinaModel } from '../../models/Disciplina.js';
 import { NotaModel } from '../../models/Nota.js';
 import mongoose from 'mongoose';
+import { normalizeBimestralSlots, isBimesterPeriodo } from '@academiaflow/shared';
+import type { BimesterPeriodo } from '@academiaflow/shared';
 
 export class ReportsService {
   async getDashboardMetrics(tenantId: string) {
@@ -90,7 +92,9 @@ export class ReportsService {
 
   async getDashboardTurma(tenantId: string, turmaId: string) {
     const turma = await TurmaModel.findOne({ _id: turmaId, tenantId, isActive: true });
-    if (!turma) throw new Error('Turma não encontrada ou inativa');
+    if (!turma) {
+      throw Object.assign(new Error('Turma não encontrada ou inativa'), { statusCode: 404 });
+    }
 
     // 1. KPI Aggregation (Avg, Total Students)
     const stats = await NotaModel.aggregate([
@@ -104,7 +108,7 @@ export class ReportsService {
       }
     ]);
 
-    const averageGrade = stats.length > 0 ? parseFloat(stats[0].avg.toFixed(2)) : null;
+    const averageGrade = stats.length > 0 && stats[0].avg != null ? parseFloat(stats[0].avg.toFixed(2)) : null;
     const totalStudents = await AlunoModel.countDocuments({ tenantId, turmaId, isActive: true });
 
     // 2. Distribution (Histogram)
@@ -120,10 +124,22 @@ export class ReportsService {
       }
     ]);
 
-    const rangeLabels: Record<number, string> = { 0: '0-4', 4: '4-6', 6: '6-8', 8: '8-10' };
-    const distribution = distributionRaw.map(d => ({
-      range: rangeLabels[d._id as number] || 'Indefinido',
-      count: d.count
+    // Zero-fill determinístico: garante sempre 4 faixas canônicas, mesmo que o
+    // MongoDB $bucket omita faixas sem notas. count=0 para faixas vazias.
+    const HISTOGRAM_RANGES = [
+      { boundary: 0, label: '0-4' },
+      { boundary: 4, label: '4-6' },
+      { boundary: 6, label: '6-8' },
+      { boundary: 8, label: '8-10' },
+    ] as const;
+    const rawCountMap = new Map<number, number>(
+      distributionRaw
+        .filter(d => typeof d._id === 'number')
+        .map(d => [d._id as number, d.count as number])
+    );
+    const distribution = HISTOGRAM_RANGES.map(r => ({
+      range: r.label,
+      count: rawCountMap.get(r.boundary) ?? 0,
     }));
 
     // 3. Students At Risk (Média < 6)
@@ -149,12 +165,30 @@ export class ReportsService {
       { $unwind: '$aluno' },
       {
         $project: {
-          _id: 1,
+          _id: { $toString: '$_id' },
           name: '$aluno.name',
           average: { $round: ['$avg', 2] }
         }
       }
     ]);
+
+    // 4. Bimestral Performance — strict 4-slot DTO (Phase 2)
+    const bimestralAgg = await NotaModel.aggregate([
+      { $match: { tenantId, turmaId: new mongoose.Types.ObjectId(turmaId) } },
+      { $group: { _id: '$bimester', avg: { $avg: '$value' } } },
+      { $sort: { _id: 1 } }
+    ]);
+
+    const bimestralMap: Partial<Record<BimesterPeriodo, number | null>> = {};
+    for (const entry of bimestralAgg) {
+      const p = entry._id as number;
+      if (isBimesterPeriodo(p)) {
+        bimestralMap[p] = entry.avg != null
+          ? parseFloat(entry.avg.toFixed(2))
+          : null;
+      }
+    }
+    const performanceBimestral = normalizeBimestralSlots(bimestralMap);
 
     // 4. Approval Rates
     const genericTaxas = await this.getTaxasAprovacaoPorTurma(tenantId, turma.year);
@@ -172,32 +206,32 @@ export class ReportsService {
       },
       distribution,
       studentsAtRisk: riskAggregation,
+      performanceBimestral,
     };
   }
 
-  async getProfessorAnalytics(tenantId: string, professorId: string, turmaId?: string) {
+  async getProfessorAnalytics(tenantId: string, professorId: string, turmaId: string) {
     const query: mongoose.FilterQuery<typeof DisciplinaModel> = { tenantId, professorId, isActive: true };
     
     const disciplinas = await DisciplinaModel.find(query);
-    // Agrupa todas as IDs de turmas únicas atendidas pelo professor
+    // Agrupa todas as IDs de turmas únicas atendidas pelo professor para a lista lateral
     const allTurmaIds = [...new Set(disciplinas.map(d => d.turmaIds).flat().map(id => id?.toString()).filter(Boolean))];
 
-    // Se um turmaId foi passado, garantimos que ele está nas turmas atendidas pelo professor
-    const targetTurmaIds = turmaId ? [turmaId] : allTurmaIds;
-
-    if (targetTurmaIds.length === 0) {
-      return { globalAverage: null, riskTotal: 0, classes: [] };
+    // Validação de Contexto: O professor deve atender a turma solicitada
+    // Se não houver turmaId fornecida ou se o professor não tiver acesso, lançamos erro
+    if (!turmaId || !allTurmaIds.includes(turmaId)) {
+       throw new Error('Acesso negado: Professor não leciona nesta turma.');
     }
 
-    const objectTurmaIds = targetTurmaIds.map(id => new mongoose.Types.ObjectId(id));
+    const objectTurmaId = new mongoose.Types.ObjectId(turmaId);
 
     const stats = await NotaModel.aggregate([
-      { $match: { tenantId, turmaId: { $in: objectTurmaIds } } },
+      { $match: { tenantId, turmaId: objectTurmaId } },
       { $group: { _id: null, avg: { $avg: '$value' } } }
     ]);
 
     const riskAggregation = await NotaModel.aggregate([
-      { $match: { tenantId, turmaId: { $in: objectTurmaIds } } },
+      { $match: { tenantId, turmaId: objectTurmaId } },
       { $group: { _id: '$alunoId', avg: { $avg: '$value' } } },
       { $match: { avg: { $lt: 6 } } },
       { $count: 'total' }
@@ -211,27 +245,24 @@ export class ReportsService {
         { $group: { _id: null, avg: { $avg: '$value' } } }
       ]);
       classesPerformance.push({
-        id: id,
+        id,
         name: turma?.name || 'Desconhecida',
         average: avg.length > 0 ? parseFloat(avg[0].avg.toFixed(2)) : null,
         trend: 'stable' as const
       });
     }
 
-    // Contexto selecionado
-    let context = undefined;
-    if (turmaId) {
-      const selectedTurma = await TurmaModel.findById(turmaId);
-      context = {
-        turmaId,
-        turmaName: selectedTurma?.name
-      };
-    }
+    // Contexto selecionado (Garantido pela validação acima)
+    const selectedTurma = await TurmaModel.findById(turmaId);
+    const context = {
+      turmaId,
+      turmaName: selectedTurma?.name || 'Turma Selecionada'
+    };
 
     return {
       context,
       globalAverage: stats.length > 0 ? parseFloat(stats[0].avg.toFixed(2)) : null,
-      riskTotal: riskAggregation.length > 0 ? riskAggregation[0].total : 0,
+      riskTotal: riskAggregation.length > 0 ? (riskAggregation[0].total as number) : 0,
       classes: classesPerformance
     };
   }

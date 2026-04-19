@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { isSelfServiceEnabled } from './config/appMode';
+import ErrorBoundary from './components/ErrorBoundary';
 
 import LandingPage from './pages/marketing/LandingPage';
 import Login from './pages/auth/Login';
@@ -17,10 +19,13 @@ import GradeManagement from './pages/professor/GradeManagement';
 import ProfessorAI from './pages/professor/ProfessorAI';
 import TurmaAnalyticsPage from './pages/dashboard/TurmaAnalyticsPage';
 import BoletimIndividualPage from './pages/dashboard/BoletimIndividualPage';
+import BoletimLotePage from './pages/dashboard/BoletimLotePage';
+import BuscaAtivaPage from './pages/dashboard/busca-ativa/BuscaAtivaPage';
 import DashboardLayout from './components/layout/DashboardLayout';
 
 function App() {
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <BrowserRouter>
         <Routes>
@@ -28,7 +33,9 @@ function App() {
           <Route path="/" element={<RoleRedirect />} />
           <Route path="/welcome" element={<LandingPage />} />
           <Route path="/auth/login" element={<Login />} />
-          <Route path="/auth/register" element={<Register />} />
+          <Route path="/auth/register" element={
+            isSelfServiceEnabled ? <Register /> : <Navigate to="/auth/login" replace />
+          } />
           
           {/* Jornada do Professor */}
           <Route element={<ProtectedRoute allowedRoles={['professor']} />}>
@@ -37,7 +44,6 @@ function App() {
               <Route path="/professor/turma/:turmaId" element={<TurmaAnalyticsPage />} />
               <Route path="/professor/notas/:turmaId/:disciplinaId" element={<GradeManagement />} />
               <Route path="/professor/ai" element={<ProfessorAI />} />
-              <Route path="/dashboard/alunos/:alunoId/boletim" element={<BoletimIndividualPage />} />
             </Route>
           </Route>
 
@@ -49,7 +55,15 @@ function App() {
               <Route path="/secretaria/turma/:turmaId" element={<TurmaAnalyticsPage />} />
               <Route path="/secretaria/alunos" element={<AlunosPage />} />
               <Route path="/secretaria/disciplinas" element={<DisciplinasPage />} />
+              <Route path="/secretaria/busca-ativa" element={<BuscaAtivaPage />} />
+            </Route>
+          </Route>
+
+          {/* Compartilhado (Boletim) */}
+          <Route element={<ProtectedRoute allowedRoles={['professor', 'secretaria', 'admin', 'administrador']} />}>
+            <Route element={<DashboardLayout />}>
               <Route path="/dashboard/alunos/:alunoId/boletim" element={<BoletimIndividualPage />} />
+              <Route path="/dashboard/turmas/:turmaId/boletins" element={<BoletimLotePage />} />
             </Route>
           </Route>
 
@@ -59,6 +73,7 @@ function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </ErrorBoundary>
   )
 }
 

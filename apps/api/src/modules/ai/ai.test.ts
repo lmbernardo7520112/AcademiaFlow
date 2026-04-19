@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildApp } from '../../app.js';
 import type { FastifyInstance, LightMyRequestResponse } from 'fastify';
 import mongoose from 'mongoose';
+import { createTestUser } from '../../test-helpers.js';
 
 describe('AI Engine Module Integration (Mocked Provider)', () => {
   let app: FastifyInstance;
@@ -25,26 +26,9 @@ describe('AI Engine Module Integration (Mocked Provider)', () => {
   };
 
   const setupData = async () => {
-    const timestamp = Date.now();
-    const payloadInfo = {
-      name: 'Admin AI',
-      email: `admin.ai.${timestamp}@academiaflow.com`,
-      password: 'securepassword123',
-      role: 'admin',
-    };
-    
-    // 1. Setup dependências: Admin -> Turma
-    const regRes = await app.inject({ method: 'POST', url: '/api/auth/register', payload: payloadInfo });
-    expectSuccessStep('Register Admin', regRes, 201);
-
-    const loginRes = await app.inject({
-      method: 'POST',
-      url: '/api/auth/login',
-      payload: { email: payloadInfo.email, password: payloadInfo.password },
-    });
-    const loginData = expectSuccessStep('Login Admin', loginRes, 200);
-    const token = loginData.data.token;
-    const userId = loginData.data.user._id;
+    const user = await createTestUser(app, { role: 'admin' });
+    const token = user.token;
+    const userId = String(user._id);
 
     // IA Reactor exige vínculo com Turma: Criando Turma síncronamente
     const turmaRes = await app.inject({

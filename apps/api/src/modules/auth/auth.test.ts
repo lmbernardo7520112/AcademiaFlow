@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { buildApp } from '../../app.js';
 import type { FastifyInstance } from 'fastify';
 import { UserModel } from '../../models/User.js';
+import { createTestUser } from '../../test-helpers.js';
 
 describe('Auth Module Integration', () => {
   let app: FastifyInstance;
@@ -19,7 +20,8 @@ describe('Auth Module Integration', () => {
     await UserModel.deleteMany({});
   });
 
-  it('POST /api/auth/register should create a new user', async () => {
+  it('POST /api/auth/register should create a new user (admin auth required)', async () => {
+    const admin = await createTestUser(app, { role: 'admin' });
     const payload = {
       name: 'Leonardo Bernardo',
       email: 'leo@academiaflow.com',
@@ -29,6 +31,7 @@ describe('Auth Module Integration', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/auth/register',
+      headers: { Authorization: `Bearer ${admin.token}` },
       payload
     });
 
@@ -46,35 +49,31 @@ describe('Auth Module Integration', () => {
   });
 
   it('POST /api/auth/register should fail on duplicate email', async () => {
+    const admin = await createTestUser(app, { role: 'admin' });
     const payload = {
       name: 'Leonardo Bernardo',
       email: 'leo@academiaflow.com',
       password: 'strongpassword123'
     };
 
-    await app.inject({ method: 'POST', url: '/api/auth/register', payload });
+    await app.inject({ method: 'POST', url: '/api/auth/register', headers: { Authorization: `Bearer ${admin.token}` }, payload });
     
     // Try again
-    const response = await app.inject({ method: 'POST', url: '/api/auth/register', payload });
+    const response = await app.inject({ method: 'POST', url: '/api/auth/register', headers: { Authorization: `Bearer ${admin.token}` }, payload });
     expect(response.statusCode).toBe(400);
     expect(response.json().success).toBe(false);
   });
 
   it('POST /api/auth/login should authenticate and return token', async () => {
-    const payload = {
-      name: 'Leonardo Bernardo',
-      email: 'leo@academiaflow.com',
-      password: 'strongpassword123'
-    };
-
-    await app.inject({ method: 'POST', url: '/api/auth/register', payload });
+    // Create user directly since register requires JWT admin
+    await createTestUser(app, { role: 'professor', email: 'leo2@academiaflow.com', password: 'strongpassword123' });
 
     const loginResponse = await app.inject({
       method: 'POST',
       url: '/api/auth/login',
       payload: {
-        email: payload.email,
-        password: payload.password
+        email: 'leo2@academiaflow.com',
+        password: 'strongpassword123'
       }
     });
 
@@ -82,24 +81,18 @@ describe('Auth Module Integration', () => {
     const body = loginResponse.json();
     expect(body.success).toBe(true);
     expect(body.data.token).toBeDefined();
-    expect(body.data.user.email).toBe(payload.email);
+    expect(body.data.user.email).toBe('leo2@academiaflow.com');
   });
 
   it('GET /api/auth/me should return current user info if authenticated', async () => {
-    const payload = {
-      name: 'Leonardo Bernardo',
-      email: 'leo@academiaflow.com',
-      password: 'strongpassword123'
-    };
-
-    await app.inject({ method: 'POST', url: '/api/auth/register', payload });
+    await createTestUser(app, { role: 'professor', email: 'leo3@academiaflow.com', password: 'strongpassword123' });
 
     const loginResponse = await app.inject({
       method: 'POST',
       url: '/api/auth/login',
       payload: {
-        email: payload.email,
-        password: payload.password
+        email: 'leo3@academiaflow.com',
+        password: 'strongpassword123'
       }
     });
 
@@ -115,7 +108,7 @@ describe('Auth Module Integration', () => {
 
     expect(meResponse.statusCode).toBe(200);
     expect(meResponse.json().success).toBe(true);
-    expect(meResponse.json().data.email).toBe(payload.email);
+    expect(meResponse.json().data.email).toBe('leo3@academiaflow.com');
   });
   it('GET /api/auth/me should fail if no token provided', async () => {
     const meResponse = await app.inject({

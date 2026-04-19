@@ -27,35 +27,58 @@ const ProfessorDashboard: React.FC = () => {
 
   // Get unique turmas from disciplines for the selector
   const availableTurmas = useMemo(() => {
-    const map = new Map();
-    disciplines.forEach(d => {
-      d.turmaIds?.forEach(t => {
+    const map = new Map<string, string>();
+    disciplines.forEach((d: Discipline) => {
+      d.turmaIds?.forEach((t: { _id: string; name: string }) => {
         if (!map.has(t._id)) map.set(t._id, t.name);
       });
     });
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+    return Array.from(map.entries()).map(([id, name]: [string, string]) => ({ id, name }));
   }, [disciplines]);
 
-  const fetchData = async (turmaId?: string) => {
-    setLoading(true);
-    try {
-      const [disciplinesRes, analyticsRes] = await Promise.all([
-        api.get('/professor/disciplinas'),
-        reportsService.getProfessorAnalytics(turmaId)
-      ]);
-      
-      if (disciplinesRes.data.success) setDisciplines(disciplinesRes.data.data);
-      setAnalytics(analyticsRes);
-    } catch (error) {
-      console.error('Erro ao carregar dashboard', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchData(selectedTurmaId || undefined);
-  }, [selectedTurmaId]);
+    const fetchData = async (turmaId?: string) => {
+      setLoading(true);
+      try {
+        // 1. Fetch disciplines first if we don't have them
+        if (disciplines.length === 0) {
+          const disciplinesRes = await api.get('/professor/disciplinas');
+          if (disciplinesRes.data.success) {
+            const discData: Discipline[] = disciplinesRes.data.data;
+            setDisciplines(discData);
+            
+            // If no turmaId provided, try to pick the first one from newly loaded disciplines
+            if (!turmaId) {
+               const map = new Map<string, string>();
+               discData.forEach((d: Discipline) => {
+                 d.turmaIds?.forEach((t: { _id: string; name: string }) => {
+                   if (!map.has(t._id)) map.set(t._id, t.name);
+                 });
+               });
+               const firstTurmaId = Array.from(map.keys())[0];
+               if (firstTurmaId) {
+                  setSelectedTurmaId(firstTurmaId);
+                  // The state update will trigger this effect again
+                  return;
+               }
+            }
+          }
+        }
+
+        // 2. Fetch analytics only if we have a turmaId
+        if (turmaId) {
+          const analyticsRes = await reportsService.getProfessorAnalytics(turmaId);
+          setAnalytics(analyticsRes);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dashboard', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData(selectedTurmaId);
+  }, [selectedTurmaId, disciplines]);
 
   const handleTurmaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedTurmaId(e.target.value);

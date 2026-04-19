@@ -24,14 +24,32 @@
 /* SIDEBAR B2B (Mesa de Controle C-Level) */
 .sidebar {
   width: 280px;
-  background: rgba(13, 16, 26, 0.6);
+  background: rgba(13, 16, 26, 0.95);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border-right: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
-  z-index: 10;
+  z-index: 1000;
   padding: var(--space-lg) 0;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-close-btn, .mobile-menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--txt-primary);
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 999;
 }
 
 .sidebar-header {
@@ -480,3 +498,180 @@
 .badge-status.reprovado { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
 .badge-status.cursando { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
 .badge-status.aprovado { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+
+/* REGRAS DE RESPONSIVIDADE (HARDENING) */
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    transform: translateX(-100%);
+    box-shadow: 20px 0 50px rgba(0,0,0,0.5);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .mobile-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+  }
+
+  .mobile-menu-toggle {
+    display: flex;
+    margin-right: auto;
+  }
+
+  .topbar {
+    justify-content: space-between;
+    padding: 0 var(--space-lg);
+  }
+
+  .main-wrapper {
+    overflow-x: hidden;
+  }
+
+  .content-canvas {
+    padding: var(--space-lg);
+  }
+
+  /* Grid Adaptation */
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .portal-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .portal-title h1 {
+    font-size: 1.75rem;
+  }
+
+  .blocks-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    height: 70px;
+  }
+  .user-details {
+    display: none; /* Simplifica o header em telas muito pequenas */
+  }
+  .stat-card-value {
+    font-size: 2rem;
+  }
+}
+
+/* Utilitário para Tabelas Mobile */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-container table {
+  min-width: 600px; /* Garante que a tabela não esmague os dados */
+}
+
+/* ======================================= */
+/* PROFESSOR ANALYTICS (R2 FIX)            */
+/* ======================================= */
+.professor-analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .professor-analytics-grid {
+    grid-template-columns: 1fr 2fr;
+  }
+}
+
+.analytics-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.analytics-stat-card {
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.analytics-stat-blue   { border-left: 4px solid #3b82f6; }
+.analytics-stat-red    { border-left: 4px solid #ef4444; }
+.analytics-stat-purple { border-left: 4px solid #8b5cf6; }
+
+.analytics-stat-icon {
+  padding: 0.75rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.analytics-stat-icon.blue   { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+.analytics-stat-icon.red    { background: rgba(239, 68, 68, 0.2);  color: #f87171; }
+.analytics-stat-icon.purple { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+
+.analytics-stat-label {
+  font-size: 0.75rem;
+  color: var(--txt-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.analytics-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--txt-primary);
+}
+
+.analytics-chart-card {
+  padding: 1.5rem;
+}
+
+.chart-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--txt-secondary);
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.chart-container {
+  width: 100%;
+  height: 200px;
+  min-height: 200px;
+}
+
+/* Screen-reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

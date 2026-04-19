@@ -2,17 +2,30 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { authService } from './auth.service.js';
 import { createUserSchema, loginSchema } from '@academiaflow/shared';
 import { env } from '../../config/env.js';
+import { isSchoolProduction } from '../../config/appMode.js';
 
 export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
 
   fastify.post(
     '/register',
     {
+      onRequest: [fastify.authenticate],
+      preHandler: [fastify.authorize(['admin', 'administrador'])],
+      config: {
+        rateLimit: { max: 3, timeWindow: '1 minute' },
+      },
       schema: {
         body: createUserSchema,
       },
     },
     async (request, reply) => {
+      if (isSchoolProduction) {
+        return reply.code(403).send({
+          success: false,
+          message: 'Registro de novas instituições está desabilitado neste ambiente.',
+        });
+      }
+
       try {
         const payload = request.body as import('@academiaflow/shared').CreateUserPayload;
         const user = await authService.register(payload);
@@ -34,6 +47,9 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
   fastify.post(
     '/login',
     {
+      config: {
+        rateLimit: { max: 5, timeWindow: '1 minute' },
+      },
       schema: {
         body: loginSchema,
       },
@@ -136,8 +152,8 @@ export const authRoutes: FastifyPluginAsyncZod = async (fastify) => {
       try {
         // [TENANT ISOLATION] Retorna apenas usuários do tenant autenticado
         const tenantId = request.user.tenantId;
-        const { page, limit } = request.query as { page?: number, limit?: number };
-        const result = await authService.listUsers(tenantId, page, limit);
+        const { page, limit, role } = request.query as { page?: number, limit?: number, role?: string };
+        const result = await authService.listUsers(tenantId, page, limit, role);
         reply.send({
           success: true,
           ...result

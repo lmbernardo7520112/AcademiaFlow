@@ -4,6 +4,8 @@ import { ValidacaoPedagogicaModel } from '../../models/ValidacaoPedagogica.js';
 import type { AiHistoryFilters } from '@academiaflow/shared';
 import type { FilterQuery } from 'mongoose';
 import type { ILLMProvider } from './providers/ILLMProvider.js';
+import { extractJsonFromString } from './utils/json-extractor.js';
+import { AIProviderError } from './errors.js';
 import { DisciplinaModel } from '../../models/Disciplina.js';
 
 interface PopulatedAluno {
@@ -121,20 +123,14 @@ export class IaPedagogicoService {
 
     const rawResponse = await this.aiProvider.generateText(prompt);
     
-    // Extract JSON with safety checks
-    let jsonStr = rawResponse;
-    if (rawResponse.includes('```json')) {
-      const parts = rawResponse.split('```json');
-      if (parts[1]) {
-        jsonStr = parts[1].split('```')[0] || '';
-      }
-    }
-    
     let exercises = [];
     try {
-      exercises = JSON.parse(jsonStr);
-    } catch {
-      throw new Error('A IA não retornou um formato de exercícios válido. Tente novamente.');
+      exercises = extractJsonFromString(rawResponse) as Array<Record<string, unknown>>;
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        throw err; // Repassa o erro taxonômico limpo do Extractor (ex: UnparseableContentError)
+      }
+      throw new AIProviderError('Erro não identificado no provedor ao ler exercícios.');
     }
 
     // 2. Persist

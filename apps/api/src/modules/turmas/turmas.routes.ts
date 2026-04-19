@@ -38,7 +38,9 @@ export const turmasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstan
     }
   });
 
-  fastify.get('/:id', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/:id', {
+    preHandler: [fastify.checkOwnership('turma')],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const tenantId = request.user.tenantId;
       const { id } = request.params as { id: string };
@@ -55,6 +57,7 @@ export const turmasRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstan
   fastify.put(
     '/:id',
     {
+      preHandler: [fastify.authorize(['admin', 'administrador', 'secretaria'])],
       schema: { body: updateTurmaSchema },
     },
     async (request: FastifyRequest, reply: FastifyReply) => {

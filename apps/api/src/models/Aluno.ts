@@ -44,6 +44,11 @@ const alunoSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    normalizedName: {
+      type: String,
+      index: true,
+      default: null,
+    },
   },
   {
     timestamps: true,
@@ -54,6 +59,15 @@ const alunoSchema = new Schema(
 alunoSchema.pre('save', function (next) {
   if (this.transferido || this.abandono) {
     this.isActive = false;
+  }
+  // Compute normalizedName for deterministic matching (Busca Ativa)
+  if (this.isModified('name') || !this.normalizedName) {
+    this.normalizedName = (this.name as string)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' ');
   }
   next();
 });

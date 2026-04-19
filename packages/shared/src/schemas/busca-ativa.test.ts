@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
   caseStatusSchema,
   timelineActionSchema,
-  contactChannelSchema,
   phoneResultSchema,
   parsedEntrySchema,
   parseWarningSchema,

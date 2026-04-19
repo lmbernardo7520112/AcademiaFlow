@@ -190,7 +190,7 @@ function preprocess(raw: string): string {
     // Remove emojis (common ones in the format)
     .replace(/[\u{1F4C5}\u{2705}\u{2611}\u{1F4CB}\u{1F4DD}]/gu, '')
     // Remove decorative separators (━, ─, ═, etc.)
-    .replace(/^[━─═▬\-]{3,}$/gm, '')
+    .replace(/^[━─═▬-]{3,}$/gm, '')
     // Collapse multiple blank lines
     .replace(/\n{3,}/g, '\n\n')
     // Trim each line

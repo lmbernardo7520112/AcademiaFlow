@@ -3,7 +3,7 @@
  * Frontend API calls for the Busca Ativa feature.
  */
 import { api } from './api';
-import type { ParseResult, AddTimelineEntryPayload, PhoneResult } from '@academiaflow/shared';
+import type { ParseResult, AddTimelineEntryPayload, PhoneResult, CaseStatus } from '@academiaflow/shared';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -42,7 +42,7 @@ export interface BuscaAtivaCase {
     ambiguous_aluno: boolean;
   };
   observations: string[];
-  status: string;
+  status: CaseStatus;
   timeline: Array<{
     _id: string;
     action: string;

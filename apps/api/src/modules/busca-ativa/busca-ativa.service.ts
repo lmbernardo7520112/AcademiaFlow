@@ -14,8 +14,9 @@ import {
 import {
   MANUAL_TIMELINE_ACTIONS,
   CASE_STATUS,
+  validateTransition,
 } from '@academiaflow/shared';
-import type { ParseResult, PhoneResult } from '@academiaflow/shared';
+import type { ParseResult, PhoneResult, CaseStatus, AddTimelineEntryPayload } from '@academiaflow/shared';
 
 // ─── Import ──────────────────────────────────────────────────────────────────
 
@@ -326,7 +327,13 @@ export async function updateCaseStatus(
   const caso = await CasoBuscaAtivaModel.findOne({ _id: caseId, tenantId });
   if (!caso) return null;
 
-  const previousStatus = caso.status;
+  // ── State machine guard ──
+  const previousStatus = caso.status as CaseStatus;
+  const result = validateTransition(previousStatus, newStatus as CaseStatus);
+  if (!result.valid) {
+    throw new Error(result.reason);
+  }
+
   caso.status = newStatus as typeof caso.status;
   caso.timeline.push({
     action: 'STATUS_CHANGED',
@@ -379,7 +386,7 @@ export async function addTimelineEntry(
   tenantId: string,
   userId: string,
   caseId: string,
-  entry: Record<string, unknown>,
+  entry: AddTimelineEntryPayload,
 ) {
   const caso = await CasoBuscaAtivaModel.findOne({ _id: caseId, tenantId });
   if (!caso) return null;
@@ -602,6 +609,9 @@ export async function uploadAttachment(
   };
 }
 
+// ─── Uploads Root (canonical, resolved once) ─────────────────────────────────
+const UPLOADS_ROOT = path.resolve(process.cwd(), 'uploads');
+
 export async function downloadAttachment(
   tenantId: string,
   caseId: string,
@@ -619,8 +629,14 @@ export async function downloadAttachment(
 
   if (!att) return { status: 404, data: { message: 'Anexo não encontrado.' } };
 
+  // ── Path traversal guard ──
+  const resolvedPath = path.resolve(att.storagePath);
+  if (!resolvedPath.startsWith(UPLOADS_ROOT + path.sep)) {
+    return { status: 403, data: { message: 'Acesso negado ao arquivo solicitado.' } };
+  }
+
   try {
-    const buffer = await fsp.readFile(att.storagePath);
+    const buffer = await fsp.readFile(resolvedPath);
     return {
       status: 200,
       data: buffer,

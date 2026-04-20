@@ -183,7 +183,7 @@ export const buscaAtivaRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIn
         }
         reply.send({ success: true, data: caso });
       } catch (error: unknown) {
-        reply.code(400).send({
+        reply.code(422).send({
           success: false,
           message: error instanceof Error ? error.message : 'Erro ao atualizar status',
         });

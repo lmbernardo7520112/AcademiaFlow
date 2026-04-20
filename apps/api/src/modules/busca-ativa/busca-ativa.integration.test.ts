@@ -253,7 +253,7 @@ describe('Busca Ativa Integration Suite', () => {
         headers: jsonAuth(token),
         payload: { status: 'NOVO' },
       });
-      expect(res.statusCode).toBe(400);
+      expect(res.statusCode).toBe(422);
       expect(res.json().message).toContain('terminal');
     });
 
@@ -270,7 +270,7 @@ describe('Busca Ativa Integration Suite', () => {
         headers: jsonAuth(token),
         payload: { status: 'ENCERRADO' },
       });
-      expect(res.statusCode).toBe(400);
+      expect(res.statusCode).toBe(422);
       expect(res.json().message).toContain('não é permitida');
     });
 

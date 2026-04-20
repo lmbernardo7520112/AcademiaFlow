@@ -222,7 +222,7 @@ function extractDate(lines: string[], warnings: ParseWarning[]): Date | null {
 }
 
 /** Regex to detect turma headers like "1ª SÉRIE A", "2ª SÉRIE B", "3ª SÉRIE C" */
-const TURMA_HEADER_RE = /^(\d+)[ªº]?\s*S[EÉ]RIE\s+([A-Z])/i;
+const TURMA_HEADER_RE = /^(\d+)[ªºaAoO]?\s*S[EÉeé]RIE\s+([A-Z])/i;
 
 /** Regex to detect "Sem faltosos" blocks */
 const SEM_FALTOSOS_RE = /sem\s+faltosos/i;

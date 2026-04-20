@@ -25,6 +25,49 @@ export type CaseStatus = (typeof CASE_STATUS)[keyof typeof CASE_STATUS];
 
 export const caseStatusSchema = z.nativeEnum(CASE_STATUS);
 
+// ─── State Machine — Valid Transitions ───────────────────────────────────────
+// Canonical transition map derived from operational UI (CaseCard + ResponseModal)
+// and backend auto-transitions. ENCERRADO and SUPERSEDED are terminal states.
+// DT-08 auto-transitions are NOT included here (blocked by gate).
+
+export const VALID_TRANSITIONS: Readonly<Record<CaseStatus, readonly CaseStatus[]>> = {
+  [CASE_STATUS.NOVO]:                    [CASE_STATUS.PENDENTE, CASE_STATUS.CONTATO_INICIADO, CASE_STATUS.TELEFONE_INVALIDO],
+  [CASE_STATUS.PENDENTE]:                [CASE_STATUS.CONTATO_INICIADO, CASE_STATUS.ENCERRADO],
+  [CASE_STATUS.CONTATO_INICIADO]:        [CASE_STATUS.AGUARDANDO_RESPOSTA, CASE_STATUS.RESPONDIDO, CASE_STATUS.JUSTIFICADO],
+  [CASE_STATUS.AGUARDANDO_RESPOSTA]:     [CASE_STATUS.RESPONDIDO, CASE_STATUS.JUSTIFICADO, CASE_STATUS.SEM_RETORNO, CASE_STATUS.CONTATO_INICIADO],
+  [CASE_STATUS.RESPONDIDO]:              [CASE_STATUS.ENCERRADO],
+  [CASE_STATUS.JUSTIFICADO]:             [CASE_STATUS.ENCERRADO],
+  [CASE_STATUS.SEM_RETORNO]:             [CASE_STATUS.REVISAO_ADMINISTRATIVA, CASE_STATUS.CONTATO_INICIADO, CASE_STATUS.ENCERRADO],
+  [CASE_STATUS.TELEFONE_INVALIDO]:       [CASE_STATUS.CONTATO_INICIADO, CASE_STATUS.ENCERRADO],
+  [CASE_STATUS.REVISAO_ADMINISTRATIVA]:  [CASE_STATUS.ENCERRADO],
+  [CASE_STATUS.ENCERRADO]:               [],
+  [CASE_STATUS.SUPERSEDED]:              [],
+};
+
+/**
+ * Validates whether a status transition is allowed by the state machine.
+ * Returns { valid: true } or { valid: false, reason: string }.
+ */
+export function validateTransition(
+  from: CaseStatus,
+  to: CaseStatus,
+): { valid: true } | { valid: false; reason: string } {
+  const allowed = VALID_TRANSITIONS[from];
+  if (!allowed) {
+    return { valid: false, reason: `Status de origem desconhecido: ${from}` };
+  }
+  if (allowed.length === 0) {
+    return { valid: false, reason: `Status '${from}' é terminal e não permite transições.` };
+  }
+  if (!allowed.includes(to)) {
+    return {
+      valid: false,
+      reason: `Transição '${from}' → '${to}' não é permitida. Transições válidas: ${allowed.join(', ')}.`,
+    };
+  }
+  return { valid: true };
+}
+
 // ─── Timeline Action Enum ────────────────────────────────────────────────────
 
 export const TIMELINE_ACTION = {

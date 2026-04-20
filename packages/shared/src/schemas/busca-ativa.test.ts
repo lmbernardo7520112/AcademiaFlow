@@ -13,7 +13,10 @@ import {
   CASE_STATUS,
   TIMELINE_ACTION,
   MANUAL_TIMELINE_ACTIONS,
+  VALID_TRANSITIONS,
+  validateTransition,
 } from './busca-ativa.js';
+import type { CaseStatus } from './busca-ativa.js';
 
 describe('busca-ativa schemas', () => {
   describe('caseStatusSchema', () => {
@@ -261,6 +264,116 @@ describe('busca-ativa schemas', () => {
       const statuses = Object.values(CASE_STATUS);
       expect(statuses).toHaveLength(11);
       expect(statuses).toContain('SUPERSEDED');
+    });
+  });
+
+  // ─── State Machine Tests ─────────────────────────────────────────────────────
+
+  describe('VALID_TRANSITIONS', () => {
+    it('has an entry for every status', () => {
+      const statuses = Object.values(CASE_STATUS);
+      for (const status of statuses) {
+        expect(VALID_TRANSITIONS).toHaveProperty(status);
+        expect(Array.isArray(VALID_TRANSITIONS[status as CaseStatus])).toBe(true);
+      }
+    });
+
+    it('ENCERRADO is terminal (no outgoing transitions)', () => {
+      expect(VALID_TRANSITIONS[CASE_STATUS.ENCERRADO]).toHaveLength(0);
+    });
+
+    it('SUPERSEDED is terminal (no outgoing transitions)', () => {
+      expect(VALID_TRANSITIONS[CASE_STATUS.SUPERSEDED]).toHaveLength(0);
+    });
+
+    it('every transition target is a valid CaseStatus', () => {
+      const validStatuses = new Set(Object.values(CASE_STATUS));
+      for (const [, targets] of Object.entries(VALID_TRANSITIONS)) {
+        for (const target of targets) {
+          expect(validStatuses.has(target as CaseStatus)).toBe(true);
+        }
+      }
+    });
+  });
+
+  describe('validateTransition', () => {
+    // ── Valid transitions ──
+    const validCases: [string, string][] = [
+      ['NOVO', 'PENDENTE'],
+      ['NOVO', 'CONTATO_INICIADO'],
+      ['NOVO', 'TELEFONE_INVALIDO'],
+      ['PENDENTE', 'CONTATO_INICIADO'],
+      ['PENDENTE', 'ENCERRADO'],
+      ['CONTATO_INICIADO', 'AGUARDANDO_RESPOSTA'],
+      ['CONTATO_INICIADO', 'RESPONDIDO'],
+      ['CONTATO_INICIADO', 'JUSTIFICADO'],
+      ['AGUARDANDO_RESPOSTA', 'RESPONDIDO'],
+      ['AGUARDANDO_RESPOSTA', 'JUSTIFICADO'],
+      ['AGUARDANDO_RESPOSTA', 'SEM_RETORNO'],
+      ['AGUARDANDO_RESPOSTA', 'CONTATO_INICIADO'],
+      ['RESPONDIDO', 'ENCERRADO'],
+      ['JUSTIFICADO', 'ENCERRADO'],
+      ['SEM_RETORNO', 'REVISAO_ADMINISTRATIVA'],
+      ['SEM_RETORNO', 'CONTATO_INICIADO'],
+      ['SEM_RETORNO', 'ENCERRADO'],
+      ['TELEFONE_INVALIDO', 'CONTATO_INICIADO'],
+      ['TELEFONE_INVALIDO', 'ENCERRADO'],
+      ['REVISAO_ADMINISTRATIVA', 'ENCERRADO'],
+    ];
+
+    it.each(validCases)('%s → %s is valid', (from, to) => {
+      const result = validateTransition(
+        from as CaseStatus,
+        to as CaseStatus,
+      );
+      expect(result.valid).toBe(true);
+    });
+
+    // ── Invalid transitions ──
+    const invalidCases: [string, string][] = [
+      ['ENCERRADO', 'NOVO'],
+      ['ENCERRADO', 'PENDENTE'],
+      ['SUPERSEDED', 'NOVO'],
+      ['SUPERSEDED', 'ENCERRADO'],
+      ['NOVO', 'ENCERRADO'],
+      ['NOVO', 'RESPONDIDO'],
+      ['NOVO', 'JUSTIFICADO'],
+      ['RESPONDIDO', 'NOVO'],
+      ['RESPONDIDO', 'AGUARDANDO_RESPOSTA'],
+      ['JUSTIFICADO', 'NOVO'],
+      ['CONTATO_INICIADO', 'NOVO'],
+      ['CONTATO_INICIADO', 'ENCERRADO'],
+      ['AGUARDANDO_RESPOSTA', 'NOVO'],
+      ['AGUARDANDO_RESPOSTA', 'ENCERRADO'],
+    ];
+
+    it.each(invalidCases)('%s → %s is rejected', (from, to) => {
+      const result = validateTransition(
+        from as CaseStatus,
+        to as CaseStatus,
+      );
+      expect(result.valid).toBe(false);
+      if (!result.valid) {
+        expect(result.reason).toBeTruthy();
+        expect(typeof result.reason).toBe('string');
+      }
+    });
+
+    it('terminal states include reason mentioning "terminal"', () => {
+      const result = validateTransition(CASE_STATUS.ENCERRADO, CASE_STATUS.NOVO);
+      expect(result.valid).toBe(false);
+      if (!result.valid) {
+        expect(result.reason).toContain('terminal');
+      }
+    });
+
+    it('invalid transition includes valid alternatives in reason', () => {
+      const result = validateTransition(CASE_STATUS.NOVO, CASE_STATUS.ENCERRADO);
+      expect(result.valid).toBe(false);
+      if (!result.valid) {
+        expect(result.reason).toContain('PENDENTE');
+        expect(result.reason).toContain('CONTATO_INICIADO');
+      }
     });
   });
 });

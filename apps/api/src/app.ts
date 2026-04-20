@@ -49,6 +49,8 @@ export async function buildApp() {
   // CORS — Appliance-safe configuration
   // In appliance mode, requests come through Nginx reverse proxy (same origin),
   // so we accept the origin dynamically. In dev, we allow localhost.
+  // NOTE: @fastify/cors@11 defaults methods to 'GET,HEAD,POST' only.
+  // We must list all REST methods explicitly to allow PATCH, PUT, DELETE.
   await app.register(cors, {
     origin: (origin, cb) => {
       // Allow requests with no origin (same-origin, curl, server-to-server)
@@ -65,6 +67,7 @@ export async function buildApp() {
       // For cloud deployments, restrict this to specific domains
       return cb(null, true);
     },
+    methods: 'GET,HEAD,OPTIONS,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
 

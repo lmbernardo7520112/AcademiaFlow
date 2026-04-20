@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import type { BuscaAtivaCase } from '../../../services/buscaAtiva';
 import { buscaAtivaApi } from '../../../services/buscaAtiva';
+import type { ResolutionType } from '@academiaflow/shared';
 
 interface ResponseModalProps {
   caso: BuscaAtivaCase;
@@ -24,7 +25,7 @@ export default function ResponseModal({ caso, onClose }: ResponseModalProps) {
   const [responseText, setResponseText] = useState('');
   const [notes, setNotes] = useState('');
   const [resolution, setResolution] = useState<'responded' | 'justified'>('responded');
-  const [resolutionType, setResolutionType] = useState('justified');
+  const [resolutionType, setResolutionType] = useState<ResolutionType>('justified');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -159,7 +160,7 @@ export default function ResponseModal({ caso, onClose }: ResponseModalProps) {
                   id="resolution-type"
                   className="ba-select"
                   value={resolutionType}
-                  onChange={e => setResolutionType(e.target.value)}
+                  onChange={e => setResolutionType(e.target.value as ResolutionType)}
                 >
                   <option value="justified">Justificativa genérica</option>
                   <option value="medical">Atestado médico</option>

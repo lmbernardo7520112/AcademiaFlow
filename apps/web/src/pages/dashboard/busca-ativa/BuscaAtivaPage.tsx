@@ -5,6 +5,7 @@ import { buscaAtivaApi } from '../../../services/buscaAtiva';
 import type { BuscaAtivaCase } from '../../../services/buscaAtiva';
 import CaseCard from './CaseCard';
 import WhatsAppModal from './WhatsAppModal';
+import ResponseModal from './ResponseModal';
 import ImportConflictModal from './ImportConflictModal';
 import './busca-ativa.css';
 
@@ -21,6 +22,7 @@ export default function BuscaAtivaPage() {
   const [conflictData, setConflictData] = useState<Record<string, unknown> | null>(null);
   const [whatsAppCase, setWhatsAppCase] = useState<BuscaAtivaCase | null>(null);
   const [whatsAppContactId, setWhatsAppContactId] = useState<string | null>(null);
+  const [responseCase, setResponseCase] = useState<BuscaAtivaCase | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [turmaFilter, setTurmaFilter] = useState<string>('');
 
@@ -120,6 +122,17 @@ export default function BuscaAtivaPage() {
   const closeWhatsApp = () => {
     setWhatsAppCase(null);
     setWhatsAppContactId(null);
+    loadCases();
+  };
+
+  // ─── Response Modal ──────────────────────────────────────────────────────────
+
+  const openResponseModal = (caso: BuscaAtivaCase) => {
+    setResponseCase(caso);
+  };
+
+  const closeResponseModal = () => {
+    setResponseCase(null);
     loadCases();
   };
 
@@ -325,6 +338,7 @@ export default function BuscaAtivaPage() {
                     await buscaAtivaApi.updateCaseStatus(caso._id, newStatus);
                     loadCases();
                   }}
+                  onResponseClick={openResponseModal}
                   onRefresh={loadCases}
                 />
               ))}
@@ -354,6 +368,13 @@ export default function BuscaAtivaPage() {
           caso={whatsAppCase}
           contactId={whatsAppContactId}
           onClose={closeWhatsApp}
+        />
+      )}
+
+      {responseCase && (
+        <ResponseModal
+          caso={responseCase}
+          onClose={closeResponseModal}
         />
       )}
     </div>

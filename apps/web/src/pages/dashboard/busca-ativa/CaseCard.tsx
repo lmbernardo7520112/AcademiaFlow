@@ -4,6 +4,7 @@ interface CaseCardProps {
   caso: BuscaAtivaCase;
   onContactClick: (caso: BuscaAtivaCase, contactId: string) => void;
   onStatusChange: (newStatus: string) => Promise<void>;
+  onResponseClick: (caso: BuscaAtivaCase) => void;
   onRefresh: () => void;
 }
 
@@ -21,7 +22,7 @@ const STATUS_LABELS: Record<string, { label: string; emoji: string; color: strin
   SUPERSEDED: { label: 'Substituído', emoji: '🗄️', color: '#9ca3af' },
 };
 
-export default function CaseCard({ caso, onContactClick, onStatusChange }: CaseCardProps) {
+export default function CaseCard({ caso, onContactClick, onStatusChange, onResponseClick }: CaseCardProps) {
   const statusInfo = STATUS_LABELS[caso.status] || { label: caso.status, emoji: '❓', color: '#6b7280' };
 
   const hasValidContact = caso.contacts.some(c => c.hasValidPhone);
@@ -91,8 +92,10 @@ export default function CaseCard({ caso, onContactClick, onStatusChange }: CaseC
         )}
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions — complete for ALL transitional statuses */}
       <div className="ba-case-card__actions">
+
+        {/* NOVO: Iniciar Contato + Marcar Pendente */}
         {caso.status === 'NOVO' && (
           <>
             {hasValidContact && (
@@ -111,20 +114,132 @@ export default function CaseCard({ caso, onContactClick, onStatusChange }: CaseC
             </button>
           </>
         )}
+
+        {/* CONTATO_INICIADO: Aguardando Resposta + Registrar Resposta */}
         {caso.status === 'CONTATO_INICIADO' && (
-          <button
-            className="ba-btn ba-btn--small ba-btn--secondary"
-            onClick={() => onStatusChange('AGUARDANDO_RESPOSTA')}
-          >
-            ⏱️ Aguardando Resposta
-          </button>
+          <>
+            <button
+              className="ba-btn ba-btn--small ba-btn--secondary"
+              onClick={() => onStatusChange('AGUARDANDO_RESPOSTA')}
+            >
+              ⏱️ Aguardando Resposta
+            </button>
+            <button
+              className="ba-btn ba-btn--small ba-btn--success"
+              onClick={() => onResponseClick(caso)}
+            >
+              💬 Registrar Resposta
+            </button>
+          </>
         )}
+
+        {/* AGUARDANDO_RESPOSTA: Registrar Resposta + Sem Retorno + Retentar */}
+        {caso.status === 'AGUARDANDO_RESPOSTA' && (
+          <>
+            <button
+              className="ba-btn ba-btn--small ba-btn--success"
+              onClick={() => onResponseClick(caso)}
+            >
+              💬 Registrar Resposta
+            </button>
+            <button
+              className="ba-btn ba-btn--small ba-btn--warning"
+              onClick={() => onStatusChange('SEM_RETORNO')}
+            >
+              🔇 Sem Retorno
+            </button>
+            {hasValidContact && (
+              <button
+                className="ba-btn ba-btn--small ba-btn--secondary"
+                onClick={() => onContactClick(caso, caso.contacts.find(c => c.hasValidPhone)?._id || '')}
+              >
+                📞 Retentar Contato
+              </button>
+            )}
+          </>
+        )}
+
+        {/* PENDENTE: Reabrir + Encerrar */}
+        {caso.status === 'PENDENTE' && (
+          <>
+            {hasValidContact && (
+              <button
+                className="ba-btn ba-btn--small ba-btn--primary"
+                onClick={() => onContactClick(caso, caso.contacts.find(c => c.hasValidPhone)?._id || '')}
+              >
+                📞 Iniciar Contato
+              </button>
+            )}
+            <button
+              className="ba-btn ba-btn--small ba-btn--danger"
+              onClick={() => onStatusChange('ENCERRADO')}
+            >
+              ✔️ Encerrar
+            </button>
+          </>
+        )}
+
+        {/* RESPONDIDO / JUSTIFICADO: Encerrar */}
         {(caso.status === 'RESPONDIDO' || caso.status === 'JUSTIFICADO') && (
           <button
             className="ba-btn ba-btn--small ba-btn--success"
             onClick={() => onStatusChange('ENCERRADO')}
           >
             ✔️ Encerrar
+          </button>
+        )}
+
+        {/* SEM_RETORNO: Revisão + Retentar + Encerrar */}
+        {caso.status === 'SEM_RETORNO' && (
+          <>
+            <button
+              className="ba-btn ba-btn--small ba-btn--secondary"
+              onClick={() => onStatusChange('REVISAO_ADMINISTRATIVA')}
+            >
+              📋 Revisão Administrativa
+            </button>
+            {hasValidContact && (
+              <button
+                className="ba-btn ba-btn--small ba-btn--primary"
+                onClick={() => onContactClick(caso, caso.contacts.find(c => c.hasValidPhone)?._id || '')}
+              >
+                📞 Retentar Contato
+              </button>
+            )}
+            <button
+              className="ba-btn ba-btn--small ba-btn--danger"
+              onClick={() => onStatusChange('ENCERRADO')}
+            >
+              ✔️ Encerrar
+            </button>
+          </>
+        )}
+
+        {/* TELEFONE_INVALIDO: Corrigir + Encerrar */}
+        {caso.status === 'TELEFONE_INVALIDO' && (
+          <>
+            <button
+              className="ba-btn ba-btn--small ba-btn--primary"
+              onClick={() => onContactClick(caso, caso.contacts[0]?._id || '')}
+            >
+              ✏️ Corrigir Telefone
+            </button>
+            <button
+              className="ba-btn ba-btn--small ba-btn--danger"
+              onClick={() => onStatusChange('ENCERRADO')}
+            >
+              ✔️ Encerrar
+            </button>
+          </>
+        )}
+
+        {/* REVISAO_ADMINISTRATIVA: Encerrar */}
+        {caso.status === 'REVISAO_ADMINISTRATIVA' && (
+          <button
+            className="ba-btn ba-btn--small ba-btn--danger"
+            onClick={() => onStatusChange('ENCERRADO')}
+          >
+            ✔️ Encerrar Caso
           </button>
         )}
       </div>

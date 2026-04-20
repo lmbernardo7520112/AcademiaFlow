@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { promises as fsp } from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
+import mongoose from 'mongoose';
 import { AbsenceImportModel } from '../../models/AbsenceImport.js';
 import { CasoBuscaAtivaModel } from '../../models/CasoBuscaAtiva.js';
 import { AlunoModel } from '../../models/Aluno.js';
@@ -220,12 +221,12 @@ export async function replaceImport(
   existing.rawText = rawText;
   existing.version = (existing.version || 1) + 1;
   existing.replacedAt = new Date();
-  existing.replacedBy = userId as unknown as typeof existing.replacedBy;
+  existing.replacedBy = new mongoose.Types.ObjectId(userId);
 
   // Re-parse and create new cases
   const parseResult = parseAbsenceList(rawText);
   existing.stats = parseResult.stats;
-  existing.warnings = parseResult.warnings as typeof existing.warnings;
+  existing.set('warnings', parseResult.warnings);
   existing.casesCreated = parseResult.entries.length;
   await existing.save();
 
@@ -322,19 +323,19 @@ export async function updateCaseStatus(
   tenantId: string,
   userId: string,
   caseId: string,
-  newStatus: string,
+  newStatus: CaseStatus,
 ) {
   const caso = await CasoBuscaAtivaModel.findOne({ _id: caseId, tenantId });
   if (!caso) return null;
 
   // ── State machine guard ──
   const previousStatus = caso.status as CaseStatus;
-  const result = validateTransition(previousStatus, newStatus as CaseStatus);
+  const result = validateTransition(previousStatus, newStatus);
   if (!result.valid) {
     throw new Error(result.reason);
   }
 
-  caso.status = newStatus as typeof caso.status;
+  caso.set('status', newStatus);
   caso.timeline.push({
     action: 'STATUS_CHANGED',
     previousStatus,
@@ -578,33 +579,29 @@ export async function uploadAttachment(
     sha256,
     storagePath,
     description: description ?? null,
-    uploadedBy: userId,
-  } as never);
+    uploadedBy: new mongoose.Types.ObjectId(userId),
+  });
 
+  const lastAtt = kaso.attachments[kaso.attachments.length - 1];
   kaso.timeline.push({
     action: 'ATTACHMENT_UPLOADED',
-    attachmentId: (kaso.attachments[kaso.attachments.length - 1] as { _id: unknown })._id,
+    attachmentId: lastAtt?._id ?? null,
     notes: description ?? null,
-    createdBy: userId,
-  } as never);
+    createdBy: new mongoose.Types.ObjectId(userId),
+  });
 
   await kaso.save();
-
-  const att = kaso.attachments[kaso.attachments.length - 1] as {
-    _id: unknown; filename: string; originalName: string; mimeType: string;
-    size: number; sha256: string; uploadedAt?: Date; description?: string | null;
-  };
 
   return {
     status: 201,
     data: {
-      attachmentId: att._id,
-      filename: att.filename,
-      originalName: att.originalName,
-      mimeType: att.mimeType,
-      size: att.size,
-      sha256: att.sha256,
-      uploadedAt: att.uploadedAt,
+      attachmentId: lastAtt?._id,
+      filename: lastAtt?.filename,
+      originalName: lastAtt?.originalName,
+      mimeType: lastAtt?.mimeType,
+      size: lastAtt?.size,
+      sha256: lastAtt?.sha256,
+      uploadedAt: lastAtt?.uploadedAt,
     },
   };
 }

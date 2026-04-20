@@ -17,7 +17,7 @@ import {
   CASE_STATUS,
   validateTransition,
 } from '@academiaflow/shared';
-import type { ParseResult, PhoneResult, CaseStatus, AddTimelineEntryPayload } from '@academiaflow/shared';
+import type { ParseResult, ParsedEntry, PhoneResult, CaseStatus, AddTimelineEntryPayload } from '@academiaflow/shared';
 
 // ─── Import ──────────────────────────────────────────────────────────────────
 
@@ -111,40 +111,13 @@ export async function importAbsenceList(
     // Deterministic matching
     const matchResult = await matchAluno(tenantId, normalizedName, entry.turmaName);
 
-    // Build contacts with hasValidPhone
-    const contacts = entry.contacts.map(c => ({
-      role: c.role,
-      name: c.name,
-      phones: c.phones,
-      hasValidPhone: c.phones.some((p: PhoneResult) => p.phoneE164 !== null),
-      correctedPhone: null,
-    }));
-
-    await CasoBuscaAtivaModel.create({
+    await createCaseFromEntry({
       tenantId,
-      importId: absenceImport._id,
+      importId: absenceImport._id.toString(),
       date: parseResult.date,
-      alunoName: entry.alunoName,
-      normalizedAlunoName: normalizedName,
-      alunoId: matchResult.alunoId,
-      turmaName: entry.turmaName,
-      turmaId: matchResult.turmaId,
-      contacts,
-      flags: {
-        justified_in_source: entry.flags.justified_in_source,
-        possible_transfer: entry.flags.possible_transfer,
-        unmatched_aluno: matchResult.status === 'unmatched',
-        ambiguous_aluno: matchResult.status === 'ambiguous',
-      },
-      matchCandidates: matchResult.candidates || [],
-      observations: entry.observations,
-      status: CASE_STATUS.NOVO,
-      timeline: [{
-        action: 'CASE_CREATED',
-        createdBy: userId,
-        createdAt: new Date(),
-      }],
-      attachments: [],
+      entry,
+      userId,
+      matchResult,
     });
     casesCreated++;
   }
@@ -235,39 +208,13 @@ export async function replaceImport(
     const normalizedName = normalizeStudentName(entry.alunoName);
     const matchResult = await matchAluno(tenantId, normalizedName, entry.turmaName);
 
-    const contacts = entry.contacts.map(c => ({
-      role: c.role,
-      name: c.name,
-      phones: c.phones,
-      hasValidPhone: c.phones.some((p: PhoneResult) => p.phoneE164 !== null),
-      correctedPhone: null,
-    }));
-
-    await CasoBuscaAtivaModel.create({
+    await createCaseFromEntry({
       tenantId,
-      importId: existing._id,
+      importId: existing._id.toString(),
       date: existing.date,
-      alunoName: entry.alunoName,
-      normalizedAlunoName: normalizedName,
-      alunoId: matchResult.alunoId,
-      turmaName: entry.turmaName,
-      turmaId: matchResult.turmaId,
-      contacts,
-      flags: {
-        justified_in_source: entry.flags.justified_in_source,
-        possible_transfer: entry.flags.possible_transfer,
-        unmatched_aluno: matchResult.status === 'unmatched',
-        ambiguous_aluno: matchResult.status === 'ambiguous',
-      },
-      matchCandidates: matchResult.candidates || [],
-      observations: entry.observations,
-      status: CASE_STATUS.NOVO,
-      timeline: [{
-        action: 'CASE_CREATED',
-        createdBy: userId,
-        createdAt: new Date(),
-      }],
-      attachments: [],
+      entry,
+      userId,
+      matchResult,
     });
     casesCreated++;
   }
@@ -511,6 +458,57 @@ async function matchAluno(
     turmaId,
     candidates: [],
   };
+}
+
+async function createCaseFromEntry({
+  tenantId,
+  importId,
+  date,
+  entry,
+  userId,
+  matchResult,
+}: {
+  tenantId: string;
+  importId: string;
+  date: Date;
+  entry: ParsedEntry;
+  userId: string;
+  matchResult: { status: string; alunoId: string | null; turmaId: string | null; candidates: string[] };
+}) {
+  const contacts = entry.contacts.map(c => ({
+    role: c.role,
+    name: c.name,
+    phones: c.phones,
+    hasValidPhone: c.phones.some((p: PhoneResult) => p.phoneE164 !== null),
+    correctedPhone: null,
+  }));
+
+  return await CasoBuscaAtivaModel.create({
+    tenantId,
+    importId: new mongoose.Types.ObjectId(importId),
+    date,
+    alunoName: entry.alunoName,
+    normalizedAlunoName: normalizeStudentName(entry.alunoName),
+    alunoId: matchResult.alunoId ? new mongoose.Types.ObjectId(matchResult.alunoId) : null,
+    turmaName: entry.turmaName,
+    turmaId: matchResult.turmaId ? new mongoose.Types.ObjectId(matchResult.turmaId) : null,
+    contacts,
+    flags: {
+      justified_in_source: entry.flags.justified_in_source,
+      possible_transfer: entry.flags.possible_transfer,
+      unmatched_aluno: matchResult.status === 'unmatched',
+      ambiguous_aluno: matchResult.status === 'ambiguous',
+    },
+    matchCandidates: (matchResult.candidates || []).map(id => new mongoose.Types.ObjectId(id)),
+    observations: entry.observations,
+    status: CASE_STATUS.NOVO,
+    timeline: [{
+      action: 'CASE_CREATED',
+      createdBy: new mongoose.Types.ObjectId(userId),
+      createdAt: new Date(),
+    }],
+    attachments: [],
+  });
 }
 
 export const buscaAtivaService = {

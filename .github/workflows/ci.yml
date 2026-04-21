@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, 'fix/**', 'release/**']
+    branches: [main, 'fix/**', 'feat/**', 'release/**']
   pull_request:
-    branches: [main, 'fix/**', 'release/**']
+    branches: [main, 'fix/**', 'feat/**', 'release/**']
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -68,6 +68,8 @@ jobs:
           DATABASE_URL: mongodb://localhost:27017/academiaflow
 
       - name: Docker Build Validation (API)
-        run: |
-          docker build -t academiaflow-api:ci-check -f apps/api/Dockerfile .
-        continue-on-error: true
+        run: docker build -t academiaflow-api:ci-check -f apps/api/Dockerfile .
+
+      - name: Docker Build Validation (Web)
+        run: docker build -t academiaflow-web:ci-check -f apps/web/Dockerfile .
+

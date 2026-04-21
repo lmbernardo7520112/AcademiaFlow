@@ -11,7 +11,7 @@ import mongoose from 'mongoose';
 import { AlunoModel } from '../models/Aluno.js';
 
 async function backfillNormalizedNames() {
-  const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/academiaflow';
+  const mongoUri = process.env.DATABASE_URL || process.env.MONGODB_URI || 'mongodb://localhost:27017/academiaflow';
 
   console.log(`[backfill] Connecting to ${mongoUri}...`);
   await mongoose.connect(mongoUri);

@@ -1,11 +1,10 @@
-import { GeminiProvider } from './providers/GeminiProvider.js';
 import { NotaModel } from '../../models/Nota.js';
 import { ValidacaoPedagogicaModel } from '../../models/ValidacaoPedagogica.js';
 import type { AiHistoryFilters } from '@academiaflow/shared';
 import type { FilterQuery } from 'mongoose';
 import type { ILLMProvider } from './providers/ILLMProvider.js';
 import { extractJsonFromString } from './utils/json-extractor.js';
-import { AIProviderError } from './errors.js';
+import { AIProviderError, AIUnavailableError } from './errors.js';
 import { DisciplinaModel } from '../../models/Disciplina.js';
 
 interface PopulatedAluno {
@@ -32,10 +31,7 @@ export class IaPedagogicoService {
 
   private get aiProvider(): import('./providers/ILLMProvider.js').ILLMProvider {
     if (!this._aiProvider) {
-      console.error('\n[FORENSIC] iaPedagogicoService: PROVIDER NÃO INJETADO. Utilizando fallback (GeminiProvider)...');
-      this._aiProvider = new GeminiProvider();
-    } else {
-      console.log(`\n[FORENSIC] iaPedagogicoService: PROVIDER ATIVO -> ${this._aiProvider.providerName}`);
+      throw new AIUnavailableError('Serviço de IA indisponível: provider não foi injetado e GEMINI_API_KEY não está configurada.');
     }
     return this._aiProvider;
   }

@@ -32,3 +32,10 @@ export class AIRateLimitError extends AIProviderError {
     this.name = 'AIRateLimitError';
   }
 }
+
+export class AIUnavailableError extends AIProviderError {
+  constructor(message: string = 'Serviço de IA indisponível: GEMINI_API_KEY não configurada. Configure a variável de ambiente para habilitar funcionalidades de IA.') {
+    super(message, 503);
+    this.name = 'AIUnavailableError';
+  }
+}

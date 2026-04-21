@@ -3,22 +3,44 @@ import type { Schema } from '@google/genai';
 import type { AnyZodObject, ZodError } from 'zod';
 import type { ILLMProvider } from './ILLMProvider.js';
 import { extractJsonFromString } from '../utils/json-extractor.js';
-import { AISchemaValidationError, AITimeoutError, AIRateLimitError, AIProviderError } from '../errors.js';
+import { AISchemaValidationError, AITimeoutError, AIRateLimitError, AIProviderError, AIUnavailableError } from '../errors.js';
 
 export class GeminiProvider implements ILLMProvider {
   readonly providerName = 'gemini';
-  private ai: GoogleGenAI;
+  private ai: GoogleGenAI | null = null;
+  private initialized = false;
   private readonly MODEL_NAME = 'gemini-2.5-flash';
 
+  /**
+   * Constructor is intentionally a no-op.
+   * The SDK is only initialized on first actual AI usage via ensureInitialized().
+   * This allows the Fastify server to boot successfully without GEMINI_API_KEY,
+   * keeping non-AI features (e.g. Busca Ativa) fully operational offline.
+   */
   constructor() {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.warn('[AI] AI provider disabled: GEMINI_API_KEY not configured. AI features will return 503 until configured.');
+    }
+  }
+
+  /**
+   * Lazy initialization gate. Called before every AI operation.
+   * Throws AIUnavailableError (503) if GEMINI_API_KEY is absent.
+   * Only initializes the SDK once on first successful call.
+   */
+  private ensureInitialized(): void {
+    if (this.initialized) return;
+
     const apiKey = process.env.GEMINI_API_KEY;
     const isTest = process.env.NODE_ENV === 'test' || !!process.env.VITEST;
 
     if (!apiKey && !isTest) {
-      throw new Error('Variável de ambiente GEMINI_API_KEY não foi configurada.');
+      throw new AIUnavailableError();
     }
 
     this.ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key-for-testing' });
+    this.initialized = true;
   }
 
   /**
@@ -57,8 +79,10 @@ export class GeminiProvider implements ILLMProvider {
   }
 
   async generateStructuredData<T>(prompt: string, schema: AnyZodObject): Promise<T> {
+    this.ensureInitialized();
+
     try {
-      const response = await this.ai.models.generateContent({
+      const response = await this.ai!.models.generateContent({
         model: this.MODEL_NAME,
         contents: prompt,
         config: {
@@ -78,6 +102,7 @@ export class GeminiProvider implements ILLMProvider {
 
       return validatedData as T;
     } catch (error: unknown) {
+      if (error instanceof AIUnavailableError) throw error;
       if (error instanceof Error && error.name === 'ZodError') {
         throw new AISchemaValidationError(`Dados omitidos estruturalmente pela IA: ${(error as ZodError).issues.map(i => i.path.join('.')).join(', ')}`);
       }
@@ -102,8 +127,10 @@ export class GeminiProvider implements ILLMProvider {
   }
 
   async generateText(prompt: string): Promise<string> {
+    this.ensureInitialized();
+
     try {
-      const response = await this.ai.models.generateContent({
+      const response = await this.ai!.models.generateContent({
         model: this.MODEL_NAME,
         contents: prompt,
         config: {
@@ -118,6 +145,7 @@ export class GeminiProvider implements ILLMProvider {
 
       return textPayload;
     } catch (error: unknown) {
+      if (error instanceof AIUnavailableError) throw error;
       this.handleProviderError(error);
       throw error;
     }

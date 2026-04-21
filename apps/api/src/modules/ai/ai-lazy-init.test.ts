@@ -9,7 +9,7 @@
  * 4. Busca Ativa routes work when AI is unavailable
  * 5. AI routes return 503 (not crash) when key is missing
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { GeminiProvider } from './providers/GeminiProvider.js';
 import { AIUnavailableError } from './errors.js';
 import { z } from 'zod';

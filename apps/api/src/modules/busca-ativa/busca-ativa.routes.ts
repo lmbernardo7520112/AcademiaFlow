@@ -12,6 +12,7 @@ import {
   updateCaseStatusSchema,
   correctContactSchema,
   addTimelineEntrySchema,
+  objectIdSchema,
 } from '@academiaflow/shared';
 import { buscaAtivaService } from './busca-ativa.service.js';
 
@@ -56,8 +57,8 @@ export const buscaAtivaRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIn
     {
       preHandler: [fastify.authorize(['admin', 'secretaria'])],
       schema: {
-        params: z.object({ id: z.string() }),
-        body: z.object({ rawText: z.string().min(10) }),
+        params: z.object({ id: objectIdSchema }),
+        body: z.object({ rawText: z.string().min(1) }),
       },
     },
     async (request, reply) => {
@@ -138,8 +139,8 @@ export const buscaAtivaRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIn
   typedFastify.get(
     '/cases/:id',
     {
-      preHandler: [fastify.authorize(['admin', 'secretaria'])],
-      schema: { params: z.object({ id: z.string() }) },
+      preHandler: [fastify.authorize(['admin', 'secretaria', 'professor'])],
+      schema: { params: z.object({ id: objectIdSchema }) },
     },
     async (request, reply) => {
       try {
@@ -165,7 +166,7 @@ export const buscaAtivaRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIn
     {
       preHandler: [fastify.authorize(['admin', 'secretaria'])],
       schema: {
-        params: z.object({ id: z.string() }),
+        params: z.object({ id: objectIdSchema }),
         body: updateCaseStatusSchema,
       },
     },
@@ -191,16 +192,16 @@ export const buscaAtivaRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIn
     }
   );
 
-  // ─── #7 PATCH /cases/:caseId/contacts/:contactId ──────────────────────────
+  // ─── #7 PATCH /cases/:id/contacts/:contactId ──────────────────────────
 
   typedFastify.patch(
-    '/cases/:caseId/contacts/:contactId',
+    '/cases/:id/contacts/:contactId',
     {
       preHandler: [fastify.authorize(['admin', 'secretaria'])],
       schema: {
         params: z.object({
-          caseId: z.string(),
-          contactId: z.string(),
+          id: objectIdSchema,
+          contactId: objectIdSchema,
         }),
         body: correctContactSchema,
       },
@@ -210,7 +211,7 @@ export const buscaAtivaRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIn
         const result = await buscaAtivaService.correctContact(
           request.user.tenantId,
           request.user.id,
-          request.params.caseId,
+          request.params.id,
           request.params.contactId,
           request.body.correctedPhone,
         );
@@ -229,9 +230,8 @@ export const buscaAtivaRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIn
   typedFastify.post(
     '/cases/:id/timeline',
     {
-      preHandler: [fastify.authorize(['admin', 'secretaria'])],
       schema: {
-        params: z.object({ id: z.string() }),
+        params: z.object({ id: objectIdSchema }),
         body: addTimelineEntrySchema,
       },
     },
@@ -265,7 +265,7 @@ export const buscaAtivaRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIn
     '/cases/:id/attachments',
     {
       preHandler: [fastify.authorize(['admin', 'secretaria'])],
-      schema: { params: z.object({ id: z.string() }) },
+      schema: { params: z.object({ id: objectIdSchema }) },
     },
     async (request, reply) => {
       try {
@@ -298,26 +298,26 @@ export const buscaAtivaRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIn
     }
   );
 
-  // ─── #10 GET /cases/:caseId/attachments/:attachId/download ─────────────────
+  // ─── #10 GET /cases/:id/attachments/:attachmentId/download ─────────────────
   // Returns raw file buffer with correct Content-Type and Content-Disposition.
   // No @fastify/static needed — reads from disk and sends via reply.send(buffer).
 
   typedFastify.get(
-    '/cases/:caseId/attachments/:attachId/download',
+    '/cases/:id/attachments/:attachmentId/download',
     {
       preHandler: [fastify.authorize(['admin', 'secretaria'])],
       schema: {
         params: z.object({
-          caseId: z.string(),
-          attachId: z.string(),
+          id: objectIdSchema,
+          attachmentId: objectIdSchema,
         }),
       },
     },
     async (request, reply) => {
       const result = await buscaAtivaService.downloadAttachment(
         request.user.tenantId,
-        request.params.caseId,
-        request.params.attachId,
+        request.params.id,
+        request.params.attachmentId,
       );
       if (result.status !== 200 || !Buffer.isBuffer(result.data)) {
         return reply.code(result.status).send({ success: false, ...(result.data as object) });
@@ -334,8 +334,8 @@ export const buscaAtivaRoutes: FastifyPluginAsyncZod = async (fastify: FastifyIn
   typedFastify.get(
     '/dossie/:alunoId',
     {
-      preHandler: [fastify.authorize(['admin', 'secretaria'])],
-      schema: { params: z.object({ alunoId: z.string() }) },
+      preHandler: [fastify.authorize(['admin', 'secretaria', 'professor'])],
+      schema: { params: z.object({ alunoId: objectIdSchema }) },
     },
     async (request, reply) => {
       try {

@@ -64,6 +64,27 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # Phase A2: Complexity observation (threshold 15, non-blocking).
+      # Baseline 0 found 9 functions above CC=10, max CC=26.
+      # Runs as separate step to avoid conflict with --max-warnings 0.
+      - name: Complexity Report (non-blocking)
+        run: |
+          echo "=== Complexity Report (functions with CC > 15) ==="
+          cd apps/api && npx eslint src/ --rule 'complexity: [warn, 15]' --format compact 2>&1 | grep "complexity" || echo "  API: No violations"
+          cd ../web && npx eslint . --ext ts,tsx --rule 'complexity: [warn, 15]' --format compact 2>&1 | grep "complexity" || echo "  Web: No violations"
+          cd ../../packages/shared && npx eslint src/ --rule 'complexity: [warn, 15]' --format compact 2>&1 | grep "complexity" || echo "  Shared: No violations"
+          echo "=== End Complexity Report ==="
+        continue-on-error: true
+
+      # Phase A2: File size report (info-only, non-blocking).
+      # Baseline 0 found 2 files > 400 LOC.
+      - name: File Size Report (non-blocking)
+        run: |
+          echo "=== Files exceeding 400 LOC budget (excluding tests) ==="
+          find apps/ packages/ -name '*.ts' -o -name '*.tsx' | grep -v node_modules | grep -v dist | grep -v '.test.' | grep -v '.spec.' | xargs wc -l 2>/dev/null | awk '$1 > 400 && !/total$/ {printf "  %s LOC — %s\n", $1, $2}' | sort -rn || echo "  None found"
+          echo "=== End File Size Report ==="
+        continue-on-error: true
+
       - name: Seed Database
         run: pnpm --filter @academiaflow/api seed
         env:

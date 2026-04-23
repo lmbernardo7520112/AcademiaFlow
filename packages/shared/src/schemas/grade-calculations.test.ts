@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateNF, calculateMG, calculateMF, determineSituacao } from './grade-calculations.js';
+import { calculateNF, calculateMG, calculateMF, determineSituacao, boletimConsolidadoSchema } from './grade-calculations.js';
 
 describe('calculateNF', () => {
   it('should return null when no grades are provided', () => {
@@ -104,5 +104,33 @@ describe('determineSituacao', () => {
 
   it('boundary: exactly 4.0 MG should be Recuperação', () => {
     expect(determineSituacao(4.0)).toBe('Recuperação');
+  });
+});
+
+describe('boletimConsolidadoSchema', () => {
+  it('should parse valid boletim data (covers schema properties)', () => {
+    const validBoletim = {
+      alunoId: 'a1',
+      alunoName: 'Alice',
+      matricula: '123',
+      disciplinaId: 'd1',
+      disciplinaName: 'Math',
+      turmaId: 't1',
+      year: 2026,
+      notas: {
+        bimestre1: 7,
+        bimestre2: 8,
+        bimestre3: 6,
+        bimestre4: 9,
+        pf: null,
+      },
+      nf: 7.5,
+      mg: 7.5,
+      mf: 7.5,
+      situacao: 'Aprovado'
+    };
+
+    const parsed = boletimConsolidadoSchema.parse(validBoletim);
+    expect(parsed).toEqual(validBoletim);
   });
 });

@@ -1,0 +1,27 @@
+{
+  "name": "@academiaflow/worker-siage",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src/ --max-warnings 0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@academiaflow/shared": "workspace:*",
+    "@academiaflow/siage-bridge": "workspace:*"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@types/node": "^22.15.0",
+    "@vitest/coverage-v8": "3.2.4",
+    "eslint": "^9.20.0",
+    "typescript": "^5.8.0",
+    "typescript-eslint": "^8.28.0",
+    "vitest": "^3.1.0"
+  }
+}

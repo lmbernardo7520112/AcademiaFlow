@@ -11,6 +11,7 @@
   ],
   "coverageAnalysis": "perTest",
   "mutate": [
-    "src/schemas/grade-calculations.ts"
+    "src/schemas/grade-calculations.ts",
+    "src/schemas/busca-ativa.ts"
   ]
 }

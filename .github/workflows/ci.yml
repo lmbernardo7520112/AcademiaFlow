@@ -85,6 +85,16 @@ jobs:
           echo "=== End File Size Report ==="
         continue-on-error: true
 
+      # Phase B1: Architecture governance (info-only, non-blocking).
+      # Baseline 0 found 0 cycles.
+      # Runs dependency-cruiser to monitor architectural drift (shared/apps boundaries).
+      - name: Architecture Governance Report (non-blocking)
+        run: |
+          echo "=== Dependency Cruiser Report ==="
+          npx depcruise apps/api/src apps/web/src packages/shared/src || true
+          echo "=== End Dependency Cruiser Report ==="
+        continue-on-error: true
+
       - name: Seed Database
         run: pnpm --filter @academiaflow/api seed
         env:

@@ -45,10 +45,11 @@ O arquivo `.dependency-cruiser.cjs` não foi alterado, mas o `stryker.config.jso
 ]
 ```
 
-### Resultados da C2b (Ambos os Módulos)
+### Esclarecimento de Score (Resultados da C2b)
+Para fins de clareza e auditoria, existem dois *scores* distintos decorrentes da expansão:
+- **Mutation Score Isolado (`busca-ativa.ts`)**: **56.18%**. Este é o índice real de proteção da nova interface testada, demonstrando lacunas significativas de validação estrutural.
+- **Mutation Score Agregado (A rodada completa)**: **71.14%** (106 mortos / 39 sobreviventes). Esta é a média ponderada gerada pelo Stryker ao rodar os dois arquivos simultaneamente (`grade-calculations` com 93% + `busca-ativa` com 56%).
 - **Runtime Real**: **5 segundos** (Extremamente dentro do budget de 5 minutos).
-- **Mutation Score Agregado**: **71.14%** (106 mortos / 39 sobreviventes totais).
-- **Mutation Score Isolado (`busca-ativa.ts`)**: **56.18%**.
 
 ### Achados Técnicos sobre `busca-ativa.ts`
 Os 35 mutantes que sobreviveram no `busca-ativa.ts` são quase inteiramente relacionados à estrutura declarativa do Zod:

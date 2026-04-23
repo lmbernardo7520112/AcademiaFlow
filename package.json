@@ -2,7 +2,7 @@
   "name": "academiaflow",
   "version": "1.0.0",
   "private": true,
-  "description": "Sistema de Gest\u00e3o Acad\u00eamica com IA \u2014 Monorepo Turborepo",
+  "description": "Sistema de Gestão Acadêmica com IA — Monorepo Turborepo",
   "author": "Leonardo Maximino Bernardo",
   "license": "MIT",
   "packageManager": "pnpm@10.33.0",
@@ -19,8 +19,9 @@
     "clean": "turbo clean && rm -rf node_modules"
   },
   "devDependencies": {
-    "turbo": "^2.5.0",
-    "prettier": "^3.5.0"
+    "dependency-cruiser": "^17.3.10",
+    "prettier": "^3.5.0",
+    "turbo": "^2.5.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

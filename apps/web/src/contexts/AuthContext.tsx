@@ -1,13 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { User } from '@academiaflow/shared';
 
-// Tipagem base de Usuário
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'secretaria' | 'professor' | 'administrador';
-  tenantId?: string;
-}
+// Re-export User for consumers that import from AuthContext
+export type { User };
 
 interface AuthContextType {
   user: User | null;

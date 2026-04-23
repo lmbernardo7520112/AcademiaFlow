@@ -23,6 +23,7 @@ Thumbs.db
 
 # Testing
 coverage/
+.stryker-tmp/
 
 # Logs
 *.log

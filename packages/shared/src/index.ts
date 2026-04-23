@@ -18,3 +18,4 @@ export * from './schemas/reports.js';
 export * from './schemas/bimester.js';
 export * from './schemas/busca-ativa.js';
 export * from './schemas/absence-parser.js';
+export * from './schemas/siage.js';

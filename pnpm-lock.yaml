@@ -36,7 +36,7 @@ importers:
         specifier: ^10.3.0
         version: 10.3.0
       '@google/genai':
-        specifier: latest
+        specifier: 1.48.0
         version: 1.48.0
       argon2:
         specifier: ^0.44.0

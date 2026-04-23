@@ -45,6 +45,13 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      # Non-blocking audit: visibility-only in Phase A1.
+      # Baseline 0 documented 13 vulnerabilities (3 critical, 2 high).
+      # Escalation to blocking gate deferred until remediation phase.
+      - name: Security Audit (non-blocking)
+        run: pnpm audit --audit-level=moderate 2>&1 || true
+        continue-on-error: true
+
       - name: Build Shared Types
         run: pnpm --filter @academiaflow/shared build
 

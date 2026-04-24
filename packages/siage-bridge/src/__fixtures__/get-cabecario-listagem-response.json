@@ -1,0 +1,22 @@
+{
+  "success": true,
+  "data": {
+    "escolaId": "00000000-0000-0000-0000-000000000001",
+    "anoSerieCicloId": "00000000-0000-0000-0000-000000000002",
+    "turmaEtapa": "Ensino Médio - 1ª Série A",
+    "componenteCurricular": "Biologia",
+    "turno": "Integral",
+    "sala": "SALA 01",
+    "tipoEstruturaComponente": "Formação Geral Básica",
+    "cursoQualificacaoTecnica": null,
+    "eMultiplaLotacao": false,
+    "professores": [
+      {
+        "nome": "PROFESSOR EXEMPLO DA SILVA",
+        "cpf": "00000000000",
+        "matricula": "0000000",
+        "email": "professor.exemplo@escola.gov.br"
+      }
+    ]
+  }
+}

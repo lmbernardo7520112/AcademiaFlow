@@ -289,4 +289,89 @@ describe('SIAGE Module Integration', () => {
       expect(ingestRes.json().data.pending).toBe(1);
     });
   });
+
+  // ─── Internal Worker Endpoints ─────────────────────────────────────────────
+
+  describe('Internal worker auth boundary', () => {
+    const WORKER_SECRET = 'dev-worker-secret-not-for-production';
+
+    it('rejects internal ingest without X-Worker-Secret', async () => {
+      const fakeRunId = new mongoose.Types.ObjectId().toString();
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/siage/internal/${fakeRunId}/ingest`,
+        payload: { tenantId: 'test', items: [] },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('rejects internal ingest with wrong secret', async () => {
+      const fakeRunId = new mongoose.Types.ObjectId().toString();
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/siage/internal/${fakeRunId}/ingest`,
+        headers: { 'x-worker-secret': 'wrong-secret-value-here' },
+        payload: { tenantId: 'test', items: [] },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('accepts internal status update with valid secret', async () => {
+      const { adminUser } = await setupFullScenario();
+      // Create a run first (via human endpoint)
+      const runRes = await app.inject({
+        method: 'POST', url: '/api/siage/runs',
+        headers: { Authorization: `Bearer ${adminUser.token}` },
+        payload: { year: 2026, bimester: 1 },
+      });
+      const runId = runRes.json().data._id;
+
+      // Worker updates status via internal endpoint
+      const statusRes = await app.inject({
+        method: 'POST',
+        url: `/api/siage/internal/${runId}/status`,
+        headers: { 'x-worker-secret': WORKER_SECRET },
+        payload: { tenantId: adminUser.tenantId, status: 'RUNNING' },
+      });
+      expect(statusRes.statusCode).toBe(200);
+      expect(statusRes.json().data.status).toBe('RUNNING');
+    });
+
+    it('worker ingest flow via internal endpoint', async () => {
+      const { adminUser, disciplinaId } = await setupFullScenario();
+
+      // Create alias + run via human endpoints
+      await app.inject({
+        method: 'POST', url: '/api/siage/aliases',
+        headers: { Authorization: `Bearer ${adminUser.token}` },
+        payload: { siageName: 'Biologia', disciplinaId },
+      });
+      const runRes = await app.inject({
+        method: 'POST', url: '/api/siage/runs',
+        headers: { Authorization: `Bearer ${adminUser.token}` },
+        payload: { year: 2026, bimester: 2 },
+      });
+      const runId = runRes.json().data._id;
+
+      // Worker ingests via internal endpoint (no JWT needed)
+      const ingestRes = await app.inject({
+        method: 'POST',
+        url: `/api/siage/internal/${runId}/ingest`,
+        headers: { 'x-worker-secret': WORKER_SECRET },
+        payload: {
+          tenantId: adminUser.tenantId,
+          items: [{
+            alunoName: 'ALUNO CURSANDO COM NOTA',
+            matriculaSiage: 'test-uuid',
+            disciplinaName: 'Biologia',
+            turmaName: 'Turma A',
+            bimester: 2,
+            value: 7.5,
+          }],
+        },
+      });
+      expect(ingestRes.statusCode).toBe(200);
+      expect(ingestRes.json().data.matched).toBe(1);
+    });
+  });
 });

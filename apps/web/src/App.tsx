@@ -21,6 +21,7 @@ import TurmaAnalyticsPage from './pages/dashboard/TurmaAnalyticsPage';
 import BoletimIndividualPage from './pages/dashboard/BoletimIndividualPage';
 import BoletimLotePage from './pages/dashboard/BoletimLotePage';
 import BuscaAtivaPage from './pages/dashboard/busca-ativa/BuscaAtivaPage';
+import SiagePage from './pages/dashboard/siage/SiagePage';
 import DashboardLayout from './components/layout/DashboardLayout';
 
 function App() {
@@ -56,6 +57,7 @@ function App() {
               <Route path="/secretaria/alunos" element={<AlunosPage />} />
               <Route path="/secretaria/disciplinas" element={<DisciplinasPage />} />
               <Route path="/secretaria/busca-ativa" element={<BuscaAtivaPage />} />
+              <Route path="/secretaria/siage" element={<SiagePage />} />
             </Route>
           </Route>
 

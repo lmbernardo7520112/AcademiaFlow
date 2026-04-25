@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { LayoutDashboard, Users, BookOpen, UserSquare2, LogOut, FileText, Cpu, Menu, X, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, UserSquare2, LogOut, FileText, Cpu, Menu, X, ClipboardList, ArrowLeftRight } from 'lucide-react';
 import '../../styles/dashboard.css';
 
 interface DashboardLayoutProps {
@@ -29,6 +29,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { path: '/secretaria/disciplinas', label: 'Catálogo de Disciplinas', icon: BookOpen, roles: ['secretaria', 'admin', 'administrador'] },
     { path: '/secretaria/alunos', label: 'Matrículas de Alunos', icon: UserSquare2, roles: ['secretaria', 'admin', 'administrador'] },
     { path: '/secretaria/busca-ativa', label: 'Busca Ativa', icon: ClipboardList, roles: ['secretaria', 'admin', 'administrador'] },
+    { path: '/secretaria/siage', label: 'SIAGE', icon: ArrowLeftRight, roles: ['secretaria', 'admin', 'administrador'] },
     { path: '/professor', label: 'Meus Diários / Notas', icon: FileText, roles: ['professor'] },
     { path: '/professor/ai', label: 'CoPilot Pedagógico', icon: Cpu, roles: ['professor'] },
   ];

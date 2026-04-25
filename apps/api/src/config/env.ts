@@ -11,6 +11,10 @@ const envSchema = z.object({
   APP_MODE: z.enum(['demo', 'school_production']).default('demo'),
   /** Shared secret for worker → API internal endpoints (X-Worker-Secret header) */
   SIAGE_WORKER_SECRET: z.string().min(16).default('dev-worker-secret-not-for-production'),
+  /** Redis URL for BullMQ queue producer */
+  REDIS_URL: z.string().default('redis://localhost:6379'),
+  /** Master key for encrypting SIAGE credentials into job envelopes */
+  SIAGE_ENVELOPE_KEY: z.string().min(16).default('dev-envelope-key-not-for-prod'),
 });
 
 const _env = envSchema.safeParse(process.env);

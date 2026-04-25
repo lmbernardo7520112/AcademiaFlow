@@ -12,6 +12,7 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { siageService } from './siage.service.js';
+import { enqueueSiageSyncJob } from './siage-queue.js';
 
 // ─── Validation Schemas ──────────────────────────────────────────────────────
 
@@ -19,6 +20,11 @@ const createRunBodySchema = z.object({
   year: z.number().int().min(2020).max(2100),
   bimester: z.number().int().min(1).max(5),
   turmaFilter: z.string().optional(),
+  /** SIAGE credentials — encrypted into envelope, never stored */
+  credentials: z.object({
+    username: z.string().min(1),
+    password: z.string().min(1),
+  }),
 });
 
 const ingestBodySchema = z.object({
@@ -78,6 +84,23 @@ export const siageRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
           turmaFilter: request.body.turmaFilter,
           createdBy: request.user.id,
         });
+
+        // Enqueue BullMQ job with encrypted credentials (best-effort)
+        const runId = String(run._id);
+        try {
+          await enqueueSiageSyncJob({
+            runId,
+            tenantId: request.user.tenantId,
+            year: request.body.year,
+            bimester: request.body.bimester,
+            turmaFilter: request.body.turmaFilter,
+            credentials: request.body.credentials,
+          });
+        } catch (enqueueErr) {
+          // Run was created but queue is unavailable — run stays QUEUED for retry
+          request.log.warn({ err: enqueueErr, runId }, 'Failed to enqueue SIAGE job — run stays QUEUED');
+        }
+
         reply.code(201).send({ success: true, data: run });
       } catch (error) {
         reply.code(409).send({

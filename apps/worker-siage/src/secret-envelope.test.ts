@@ -7,7 +7,7 @@ const RUN_ID = '507f1f77bcf86cd799439011';
 describe('Secret Envelope', () => {
   const credentials: SiageCredentials = {
     username: 'professor@example.com',
-    password: 's3cret-p@ssword!',
+    password: 'FAKE_ENVELOPE_TEST_VALUE',
   };
 
   it('encrypts and decrypts credentials correctly', () => {

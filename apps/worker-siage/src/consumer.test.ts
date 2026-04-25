@@ -46,7 +46,7 @@ describe('Consumer Job Processor', () => {
 
   it('processes a successful job end-to-end', async () => {
     const envelope = encryptCredentials(
-      { username: 'user@test.com', password: 'pass123' },
+      { username: 'fake-user@example.test', password: 'FAKE_PLACEHOLDER_1' },
       RUN_ID, ENVELOPE_KEY,
     );
     const processor = createJobProcessor(mockApi, mockBridge, ENVELOPE_KEY);
@@ -76,7 +76,7 @@ describe('Consumer Job Processor', () => {
 
   it('sets FAILED on bridge extraction error (non-retryable by default)', async () => {
     const envelope = encryptCredentials(
-      { username: 'u', password: 'p' }, RUN_ID, ENVELOPE_KEY,
+      { username: 'x', password: 'y' }, RUN_ID, ENVELOPE_KEY,
     );
     const failingBridge: BridgeExecutor = vi.fn(async () => {
       throw new Error('Invalid SIAGE credentials');
@@ -92,7 +92,7 @@ describe('Consumer Job Processor', () => {
 
   it('rethrows retryable bridge errors for BullMQ retry', async () => {
     const envelope = encryptCredentials(
-      { username: 'u', password: 'p' }, RUN_ID, ENVELOPE_KEY,
+      { username: 'x', password: 'y' }, RUN_ID, ENVELOPE_KEY,
     );
     const timeoutBridge: BridgeExecutor = vi.fn(async () => {
       throw new Error('Connection timeout to SIAGE');
@@ -109,7 +109,7 @@ describe('Consumer Job Processor', () => {
 
   it('handles empty extraction result gracefully', async () => {
     const envelope = encryptCredentials(
-      { username: 'u', password: 'p' }, RUN_ID, ENVELOPE_KEY,
+      { username: 'x', password: 'y' }, RUN_ID, ENVELOPE_KEY,
     );
     const emptyBridge: BridgeExecutor = vi.fn(async () => []);
     const processor = createJobProcessor(mockApi, emptyBridge, ENVELOPE_KEY);
@@ -127,7 +127,7 @@ describe('Consumer Job Processor', () => {
   });
 
   it('bridge receives decrypted credentials (not the envelope)', async () => {
-    const creds = { username: 'real@user.com', password: 'realpass' };
+    const creds = { username: 'fixture-user@example.test', password: 'FAKE_PLACEHOLDER_2' };
     const envelope = encryptCredentials(creds, RUN_ID, ENVELOPE_KEY);
     const spyBridge: BridgeExecutor = vi.fn(async () => []);
     const processor = createJobProcessor(mockApi, spyBridge, ENVELOPE_KEY);
@@ -138,12 +138,12 @@ describe('Consumer Job Processor', () => {
     await processor(job);
 
     expect(spyBridge).toHaveBeenCalledWith(
-      expect.objectContaining({ username: 'real@user.com', password: 'realpass' }),
+      expect.objectContaining({ username: 'fixture-user@example.test', password: 'FAKE_PLACEHOLDER_2' }),
     );
   });
 
   it('never logs or exposes credentials', async () => {
-    const creds = { username: 'secret@user.com', password: 'TopSecret!123' };
+    const creds = { username: 'leak-check@example.test', password: 'FAKE_LEAK_CHECK_VALUE' };
     const envelope = encryptCredentials(creds, RUN_ID, ENVELOPE_KEY);
     const processor = createJobProcessor(mockApi, mockBridge, ENVELOPE_KEY);
     const job = createMockJob({
@@ -154,7 +154,7 @@ describe('Consumer Job Processor', () => {
 
     // Verify credentials don't appear in any API call arguments
     const allCalls = JSON.stringify((mockApi.updateRunStatus as ReturnType<typeof vi.fn>).mock.calls);
-    expect(allCalls).not.toContain('TopSecret!123');
-    expect(allCalls).not.toContain('secret@user.com');
+    expect(allCalls).not.toContain('FAKE_LEAK_CHECK_VALUE');
+    expect(allCalls).not.toContain('leak-check@example.test');
   });
 });

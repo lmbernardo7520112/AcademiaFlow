@@ -72,7 +72,7 @@ describe('SIAGE Module Integration', () => {
       const res = await app.inject({
         method: 'POST', url: '/api/siage/runs',
         headers: { Authorization: `Bearer ${adminUser.token}` },
-        payload: { year: 2026, bimester: 1 },
+        payload: { year: 2026, bimester: 1, credentials: { username: 'test', password: 'test' } },
       });
       expect(res.statusCode).toBe(201);
       const body = res.json();
@@ -87,14 +87,14 @@ describe('SIAGE Module Integration', () => {
       const first = await app.inject({
         method: 'POST', url: '/api/siage/runs',
         headers: { Authorization: `Bearer ${adminUser.token}` },
-        payload: { year: 2026, bimester: 1 },
+        payload: { year: 2026, bimester: 1, credentials: { username: 'test', password: 'test' } },
       });
       expect(first.statusCode).toBe(201);
 
       const second = await app.inject({
         method: 'POST', url: '/api/siage/runs',
         headers: { Authorization: `Bearer ${adminUser.token}` },
-        payload: { year: 2026, bimester: 1 },
+        payload: { year: 2026, bimester: 1, credentials: { username: 'test', password: 'test' } },
       });
       expect(second.statusCode).toBe(409);
     });
@@ -106,7 +106,7 @@ describe('SIAGE Module Integration', () => {
       const res = await app.inject({
         method: 'POST', url: '/api/siage/runs',
         headers: { Authorization: `Bearer ${professor.token}` },
-        payload: { year: 2026, bimester: 2 },
+        payload: { year: 2026, bimester: 2, credentials: { username: 'test', password: 'test' } },
       });
       expect(res.statusCode).toBe(403);
     });
@@ -117,7 +117,7 @@ describe('SIAGE Module Integration', () => {
       await app.inject({
         method: 'POST', url: '/api/siage/runs',
         headers: { Authorization: `Bearer ${adminUser.token}` },
-        payload: { year: 2026, bimester: 1 },
+        payload: { year: 2026, bimester: 1, credentials: { username: 'test', password: 'test' } },
       });
 
       const res = await app.inject({
@@ -134,7 +134,7 @@ describe('SIAGE Module Integration', () => {
       const createRes = await app.inject({
         method: 'POST', url: '/api/siage/runs',
         headers: { Authorization: `Bearer ${adminUser.token}` },
-        payload: { year: 2026, bimester: 3 },
+        payload: { year: 2026, bimester: 3, credentials: { username: 'test', password: 'test' } },
       });
       const runId = createRes.json().data._id;
 
@@ -197,7 +197,7 @@ describe('SIAGE Module Integration', () => {
       const runRes = await app.inject({
         method: 'POST', url: '/api/siage/runs',
         headers: { Authorization: `Bearer ${adminUser.token}` },
-        payload: { year: 2026, bimester: 2 },
+        payload: { year: 2026, bimester: 2, credentials: { username: 'test', password: 'test' } },
       });
       expect(runRes.statusCode).toBe(201);
       const runId = runRes.json().data._id;
@@ -266,7 +266,7 @@ describe('SIAGE Module Integration', () => {
       const runRes = await app.inject({
         method: 'POST', url: '/api/siage/runs',
         headers: { Authorization: `Bearer ${adminUser.token}` },
-        payload: { year: 2026, bimester: 1 },
+        payload: { year: 2026, bimester: 1, credentials: { username: 'test', password: 'test' } },
       });
       const runId = runRes.json().data._id;
 
@@ -322,7 +322,7 @@ describe('SIAGE Module Integration', () => {
       const runRes = await app.inject({
         method: 'POST', url: '/api/siage/runs',
         headers: { Authorization: `Bearer ${adminUser.token}` },
-        payload: { year: 2026, bimester: 1 },
+        payload: { year: 2026, bimester: 1, credentials: { username: 'test', password: 'test' } },
       });
       const runId = runRes.json().data._id;
 
@@ -349,7 +349,7 @@ describe('SIAGE Module Integration', () => {
       const runRes = await app.inject({
         method: 'POST', url: '/api/siage/runs',
         headers: { Authorization: `Bearer ${adminUser.token}` },
-        payload: { year: 2026, bimester: 2 },
+        payload: { year: 2026, bimester: 2, credentials: { username: 'test', password: 'test' } },
       });
       const runId = runRes.json().data._id;
 

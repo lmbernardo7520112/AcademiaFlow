@@ -104,12 +104,98 @@ function CreateRunForm({ onCreated, onCancel }: { onCreated: () => void; onCance
   );
 }
 
+// ─── Resolve Modal ───────────────────────────────────────────────────────────
+
+const RESOLVABLE_STATUSES = ['MANUAL_PENDING', 'UNMATCHED'];
+
+function ResolveModal({ item, runId, onClose, onResolved }: {
+  item: SiageRunItem; runId: string; onClose: () => void; onResolved: () => void;
+}) {
+  const [alunos, setAlunos] = useState<{ _id: string; name: string }[]>([]);
+  const [disciplinas, setDisciplinas] = useState<{ _id: string; name: string }[]>([]);
+  const [selectedAluno, setSelectedAluno] = useState(item.matchResult.alunoId || '');
+  const [selectedDisciplina, setSelectedDisciplina] = useState(item.matchResult.disciplinaId || '');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [loadingData, setLoadingData] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [alunoRes, discRes] = await Promise.all([api.get('/alunos'), api.get('/disciplinas')]);
+        setAlunos(alunoRes.data.data || []);
+        setDisciplinas(discRes.data.data || []);
+      } catch { /* empty */ }
+      finally { setLoadingData(false); }
+    })();
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!selectedAluno && !selectedDisciplina) { setError('Selecione ao menos um campo para resolver.'); return; }
+    setSubmitting(true); setError('');
+    try {
+      await siageApi.resolveItem(runId, item._id, {
+        alunoId: selectedAluno || undefined,
+        disciplinaId: selectedDisciplina || undefined,
+      });
+      onResolved();
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Erro ao resolver item.');
+    } finally { setSubmitting(false); }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)' }} onClick={onClose} />
+      <div className="glass-panel" style={{ position: 'relative', width: '100%', maxWidth: 480, padding: '1.5rem', zIndex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ margin: 0 }}>Resolver Item</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }} aria-label="Fechar"><X size={20} /></button>
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '0.75rem', marginBottom: '1rem', fontSize: '0.85rem' }}>
+          <div><strong>Aluno SIAGE:</strong> {item.source.alunoName}</div>
+          <div><strong>Disciplina SIAGE:</strong> {item.source.disciplinaName}</div>
+          <div><strong>Nota:</strong> {item.source.value != null ? item.source.value.toFixed(1) : '—'}</div>
+        </div>
+        {loadingData ? (
+          <div style={{ textAlign: 'center', padding: '1rem', color: '#888' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /></div>
+        ) : (
+          <>
+            <div style={{ marginBottom: '0.75rem' }}>
+              <label className="form-label">Aluno Local</label>
+              <select className="form-input" value={selectedAluno} onChange={e => setSelectedAluno(e.target.value)}>
+                <option value="">— Selecionar aluno —</option>
+                {alunos.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
+              </select>
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label className="form-label">Disciplina Local</label>
+              <select className="form-input" value={selectedDisciplina} onChange={e => setSelectedDisciplina(e.target.value)}>
+                <option value="">— Selecionar disciplina —</option>
+                {disciplinas.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
+              </select>
+            </div>
+          </>
+        )}
+        {error && <div style={{ color: '#ef4444', marginBottom: '0.75rem', fontSize: '0.85rem' }}><AlertCircle size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />{error}</div>}
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button className="btn-secondary" onClick={onClose} style={{ flex: 1 }}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSubmit} disabled={submitting || loadingData} style={{ flex: 1 }}>
+            {submitting ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite', marginRight: 4 }} />Resolvendo...</> : 'Confirmar Resolução'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Run Detail Panel ────────────────────────────────────────────────────────
 
 function RunDetail({ run, onBack }: { run: SiageRun; onBack: () => void }) {
   const [items, setItems] = useState<SiageRunItem[]>([]);
   const [filter, setFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [resolvingItem, setResolvingItem] = useState<SiageRunItem | null>(null);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -164,23 +250,37 @@ function RunDetail({ run, onBack }: { run: SiageRun; onBack: () => void }) {
 
       <div className="glass-panel" style={{ padding: 0 }}>
         <table className="data-table">
-          <thead><tr><th>Aluno</th><th>Disciplina</th><th>Nota</th><th>Status</th></tr></thead>
+          <thead><tr><th>Aluno</th><th>Disciplina</th><th>Nota</th><th>Status</th><th>Ação</th></tr></thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /></td></tr>
+              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /></td></tr>
             ) : items.length === 0 ? (
-              <tr><td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Nenhum item encontrado.</td></tr>
+              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Nenhum item encontrado.</td></tr>
             ) : items.map(item => (
               <tr key={item._id}>
                 <td>{item.source.alunoName}</td>
                 <td>{item.source.disciplinaName}</td>
                 <td>{item.source.value != null ? item.source.value.toFixed(1) : '—'}</td>
                 <td><span style={{ color: matchColors[item.matchResult.status] || '#888', fontWeight: 500, fontSize: '0.85rem' }}>{item.matchResult.status.replace(/_/g, ' ')}</span></td>
+                <td>
+                  {RESOLVABLE_STATUSES.includes(item.matchResult.status) && (
+                    <button className="btn-primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }} onClick={() => setResolvingItem(item)}>
+                      Resolver
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {resolvingItem && (
+        <ResolveModal item={resolvingItem} runId={run._id}
+          onClose={() => setResolvingItem(null)}
+          onResolved={() => { setResolvingItem(null); fetchItems(); }}
+        />
+      )}
     </div>
   );
 }

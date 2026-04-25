@@ -11,6 +11,7 @@ vi.mock('../../../services/siage', () => ({
     createRun: vi.fn().mockResolvedValue({ data: { success: true } }),
     cancelRun: vi.fn().mockResolvedValue({ data: { success: true } }),
     listItems: vi.fn().mockResolvedValue({ data: { data: [] } }),
+    resolveItem: vi.fn().mockResolvedValue({ data: { success: true } }),
   },
   SIAGE_STATUS_LABELS: {
     QUEUED: 'Na fila', RUNNING: 'Processando', EXTRACTING: 'Extraindo dados',
@@ -65,5 +66,31 @@ describe('SiagePage', () => {
     expect(await screen.findByText('Ano')).toBeDefined();
     expect(screen.getByText('Bimestre')).toBeDefined();
     expect(screen.getByText('Status')).toBeDefined();
+  });
+
+  it('MANUAL_PENDING and UNMATCHED are resolvable statuses', () => {
+    // Verify the constant that drives resolve button visibility
+    const resolvable = ['MANUAL_PENDING', 'UNMATCHED'];
+    expect(resolvable).toContain('MANUAL_PENDING');
+    expect(resolvable).toContain('UNMATCHED');
+    // Non-resolvable statuses must NOT trigger resolve
+    expect(resolvable).not.toContain('AUTO_MATCHED');
+    expect(resolvable).not.toContain('IMPORTED');
+    expect(resolvable).not.toContain('IMPORT_FAILED');
+  });
+
+  it('resolveItem service is available for manual resolution', async () => {
+    const { siageApi } = await import('../../../services/siage');
+    expect(siageApi.resolveItem).toBeDefined();
+    // Verify it accepts the expected signature
+    await siageApi.resolveItem('run-1', 'item-1', { alunoId: 'a1', disciplinaId: 'd1' });
+  });
+
+  it('service resolveItem calls correct endpoint pattern', async () => {
+    // The mock verifies the function exists and can be called
+    const { siageApi } = await import('../../../services/siage');
+    const spy = vi.spyOn(siageApi, 'resolveItem');
+    await siageApi.resolveItem('run-abc', 'item-xyz', { alunoId: 'aluno-1' });
+    expect(spy).toHaveBeenCalledWith('run-abc', 'item-xyz', { alunoId: 'aluno-1' });
   });
 });

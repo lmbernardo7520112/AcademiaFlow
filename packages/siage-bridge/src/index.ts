@@ -63,6 +63,8 @@ export {
   type SiageNavigatorConfig,
   type SiageCredentials,
   type PlaywrightPageMinimal,
+  type BoletimGrade,
+  type ComponentScanResult,
 } from './page-objects/siage-navigator.js';
 
 export { SIAGE_SELECTORS } from './page-objects/selectors.js';

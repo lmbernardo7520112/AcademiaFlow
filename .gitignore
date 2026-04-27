@@ -42,3 +42,4 @@ apps/api/src/scripts/siage-pilot/
 
 # Scratch files
 scratch-*.ts
+ops/siage-sync/

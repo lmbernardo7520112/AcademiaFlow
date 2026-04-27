@@ -69,6 +69,8 @@ export async function enqueueSiageSyncJob(params: {
   bimester: number;
   turmaFilter?: string;
   credentials: { username: string; password: string };
+  /** When true (default), skip auto-import into Nota. Staging only. */
+  dryRun?: boolean;
 }): Promise<string> {
   // In test mode, skip actual Redis connection — run stays QUEUED
   if (process.env.NODE_ENV === 'test' || process.env.VITEST) {
@@ -91,6 +93,7 @@ export async function enqueueSiageSyncJob(params: {
       bimester: params.bimester,
       turmaFilter: params.turmaFilter,
       envelope,
+      dryRun: params.dryRun !== false, // default: true (staging only)
     },
     {
       attempts: 3,

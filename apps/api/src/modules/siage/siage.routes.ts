@@ -25,6 +25,11 @@ const createRunBodySchema = z.object({
     username: z.string().min(1),
     password: z.string().min(1),
   }),
+  /**
+   * When true (default), extraction + match only. No writes to Nota.
+   * Set to false to enable automatic import after matching.
+   */
+  dryRun: z.boolean().optional().default(true),
 });
 
 const ingestBodySchema = z.object({
@@ -95,6 +100,7 @@ export const siageRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
             bimester: request.body.bimester,
             turmaFilter: request.body.turmaFilter,
             credentials: request.body.credentials,
+            dryRun: request.body.dryRun,
           });
         } catch (enqueueErr) {
           // Run was created but queue is unavailable — run stays QUEUED for retry

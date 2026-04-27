@@ -44,7 +44,7 @@ describe('Consumer Job Processor', () => {
     mockBridge = vi.fn(async () => sampleRecords);
   });
 
-  it('processes a successful job end-to-end', async () => {
+  it('processes a successful job end-to-end (dryRun=true by default — no import)', async () => {
     const envelope = encryptCredentials(
       { username: 'fake-user@example.test', password: 'FAKE_PLACEHOLDER_1' },
       RUN_ID, ENVELOPE_KEY,
@@ -56,10 +56,30 @@ describe('Consumer Job Processor', () => {
 
     await processor(job);
 
+    // Verify lifecycle: EXTRACTING → MATCHING → COMPLETED (no IMPORTING, no import)
+    expect(mockApi.calls).toEqual([
+      'status:EXTRACTING', 'status:MATCHING', 'ingest', 'status:COMPLETED',
+    ]);
+    expect(mockApi.triggerImport).not.toHaveBeenCalled();
+  });
+
+  it('triggers import when dryRun is explicitly false', async () => {
+    const envelope = encryptCredentials(
+      { username: 'fake-user@example.test', password: 'FAKE_PLACEHOLDER_1' },
+      RUN_ID, ENVELOPE_KEY,
+    );
+    const processor = createJobProcessor(mockApi, mockBridge, ENVELOPE_KEY);
+    const job = createMockJob({
+      runId: RUN_ID, tenantId: TENANT_ID, year: 2026, bimester: 1, envelope, dryRun: false,
+    });
+
+    await processor(job);
+
     // Verify lifecycle: EXTRACTING → MATCHING → IMPORTING → COMPLETED
     expect(mockApi.calls).toEqual([
       'status:EXTRACTING', 'status:MATCHING', 'ingest', 'status:IMPORTING', 'import', 'status:COMPLETED',
     ]);
+    expect(mockApi.triggerImport).toHaveBeenCalled();
   });
 
   it('sets FAILED status on decryption error (non-retryable)', async () => {
@@ -119,11 +139,12 @@ describe('Consumer Job Processor', () => {
 
     await processor(job);
 
-    // No ingest call when records are empty
+    // No ingest call when records are empty, no import (dryRun default)
     expect(mockApi.calls).toEqual([
-      'status:EXTRACTING', 'status:MATCHING', 'status:IMPORTING', 'import', 'status:COMPLETED',
+      'status:EXTRACTING', 'status:MATCHING', 'status:COMPLETED',
     ]);
     expect(mockApi.ingestItems).not.toHaveBeenCalled();
+    expect(mockApi.triggerImport).not.toHaveBeenCalled();
   });
 
   it('bridge receives decrypted credentials (not the envelope)', async () => {

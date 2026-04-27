@@ -8,11 +8,12 @@
  * 3. Update run status → RUNNING
  * 4. Execute bridge extraction (via injected bridgeExecutor)
  * 5. Send extracted records to API internal endpoint
- * 6. Trigger import
+ * 6. If dryRun=false: trigger import into Nota collection
  * 7. Update run status → COMPLETED or FAILED
  *
- * The bridge executor is injected as a dependency for testability.
- * In production, it wraps the actual Playwright-based bridge.
+ * dryRun (default: true) controls whether matched items are
+ * automatically promoted to the Nota collection. When true,
+ * items stay in SiageRunItem staging only.
  */
 import { Worker, type Job, UnrecoverableError } from 'bullmq';
 import { decryptCredentials, type SecretEnvelope } from './secret-envelope.js';
@@ -31,6 +32,12 @@ export interface SiageSyncJobData {
   bimester: number;
   turmaFilter?: string;
   envelope: SecretEnvelope;
+  /**
+   * When true (default), the job performs extraction + matching only.
+   * Items stay in SiageRunItem staging — no writes to Nota.
+   * When false, matched items are imported into the Nota collection.
+   */
+  dryRun?: boolean;
 }
 
 export interface ExtractedRecord {
@@ -106,13 +113,19 @@ export function createJobProcessor(
       }
     }
 
-    // Step 6: Update status → IMPORTING
-    await apiClient.updateRunStatus(runId, tenantId, 'IMPORTING');
+    // Step 6: Import (only if dryRun is explicitly false)
+    const isDryRun = job.data.dryRun !== false; // default: true (staging only)
+    if (isDryRun) {
+      console.log(`  → dryRun=true — skipping import into Nota. Items stay in staging.`);
+    } else {
+      // Step 6a: Update status → IMPORTING
+      await apiClient.updateRunStatus(runId, tenantId, 'IMPORTING');
 
-    // Step 7: Trigger import
-    await apiClient.triggerImport(runId, tenantId);
+      // Step 6b: Trigger import
+      await apiClient.triggerImport(runId, tenantId);
+    }
 
-    // Step 8: Update status → COMPLETED
+    // Step 7: Update status → COMPLETED
     await apiClient.updateRunStatus(runId, tenantId, 'COMPLETED');
 
     // Clear credentials from memory

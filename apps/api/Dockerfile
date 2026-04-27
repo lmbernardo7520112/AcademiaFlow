@@ -14,6 +14,7 @@ WORKDIR /app
 # 1. Copy manifests first (cache layer)
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/shared/package.json packages/shared/
+COPY packages/siage-bridge/package.json packages/siage-bridge/
 COPY apps/api/package.json apps/api/
 
 # 2. Install dependencies
@@ -21,10 +22,12 @@ RUN pnpm install --frozen-lockfile
 
 # 3. Copy source
 COPY packages/shared packages/shared
+COPY packages/siage-bridge packages/siage-bridge
 COPY apps/api apps/api
 
-# 4. Build shared types (dependency of api)
+# 4. Build shared types and bridge
 RUN pnpm --filter @academiaflow/shared build
+RUN pnpm --filter @academiaflow/siage-bridge build
 
 # 5. Build API
 RUN pnpm --filter @academiaflow/api build
@@ -39,6 +42,7 @@ WORKDIR /app
 # Copy manifests for production install
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/shared/package.json packages/shared/
+COPY packages/siage-bridge/package.json packages/siage-bridge/
 COPY apps/api/package.json apps/api/
 
 # Install production dependencies only
@@ -50,6 +54,8 @@ RUN npm install -g tsx
 # Copy built artifacts
 COPY --from=builder /app/packages/shared/dist packages/shared/dist
 COPY --from=builder /app/packages/shared/package.json packages/shared/
+COPY --from=builder /app/packages/siage-bridge/dist packages/siage-bridge/dist
+COPY --from=builder /app/packages/siage-bridge/package.json packages/siage-bridge/
 COPY --from=builder /app/apps/api/dist apps/api/dist
 COPY --from=builder /app/apps/api/package.json apps/api/
 

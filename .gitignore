@@ -33,3 +33,12 @@ pnpm-debug.log*
 # Build artifacts
 *.tsbuildinfo
 uploads/
+
+# Appliance release (contains .env.production + Docker tar.gz)
+appliance_v1.4.0_release/
+
+# One-off pilot/maintenance scripts
+apps/api/src/scripts/siage-pilot/
+
+# Scratch files
+scratch-*.ts

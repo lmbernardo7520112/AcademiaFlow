@@ -38,6 +38,12 @@ const notaSchema = new Schema(
       min: 0,
       max: 10,
     },
+    /** Provenance: who/what created this nota. null = legacy/unknown */
+    source: {
+      type: String,
+      enum: ['seed', 'manual', 'siage'],
+      default: null,
+    },
   },
   {
     timestamps: true,

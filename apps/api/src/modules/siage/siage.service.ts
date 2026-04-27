@@ -89,7 +89,7 @@ export class SiageService {
       turmaFilter: normalizedFilter,
       createdBy: input.createdBy,
       status: 'QUEUED',
-      stats: { total: 0, matched: 0, imported: 0, skipped: 0, errors: 0 },
+      stats: { total: 0, matched: 0, imported: 0, notRegistered: 0, errors: 0 },
     });
 
     return run;
@@ -216,7 +216,7 @@ export class SiageService {
 
   async importMatchedItems(runId: string, tenantId: string): Promise<{
     imported: number;
-    skipped: number;
+    notRegistered: number;
     errors: number;
   }> {
     const items = await SiageRunItemModel.find({
@@ -226,7 +226,7 @@ export class SiageService {
     });
 
     let imported = 0;
-    let skipped = 0;
+    let notRegistered = 0;
     let errors = 0;
 
     for (const item of items) {
@@ -238,9 +238,9 @@ export class SiageService {
           continue;
         }
         if (item.source.value === null || item.source.value === undefined) {
-          // No grade to import — skip
-          item.importResult = { notaId: null, status: 'skipped', reason: 'No grade value' };
-          skipped++;
+          // No grade to import — record as not registered (NOT zero)
+          item.importResult = { notaId: null, status: 'not_registered', reason: 'Nota não registrada no SIAGE' };
+          notRegistered++;
         } else {
           // Find the run to get year info
           const run = await SiageRunModel.findById(runId).select('year').lean();
@@ -258,6 +258,7 @@ export class SiageService {
               $set: {
                 value: item.source.value,
                 turmaId: item.matchResult?.turmaId,
+                source: 'siage',
               },
             },
             { upsert: true },
@@ -287,12 +288,12 @@ export class SiageService {
     await SiageRunModel.findByIdAndUpdate(runId, {
       $inc: {
         'stats.imported': imported,
-        'stats.skipped': skipped,
+        'stats.notRegistered': notRegistered,
         'stats.errors': errors,
       },
     });
 
-    return { imported, skipped, errors };
+    return { imported, notRegistered, errors };
   }
 
   // ── Item Queries ──

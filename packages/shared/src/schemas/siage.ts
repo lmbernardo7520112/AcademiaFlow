@@ -55,7 +55,7 @@ export const siageMatchStatusSchema = z.nativeEnum(SIAGE_MATCH_STATUS);
 
 export const SIAGE_IMPORT_STATUS = {
   IMPORTED: 'imported',
-  SKIPPED: 'skipped',
+  NOT_REGISTERED: 'not_registered',
   ERROR: 'error',
 } as const;
 
@@ -82,7 +82,7 @@ export const siageRunStatsSchema = z.object({
   total: z.number().int().min(0).describe('Total items extracted'),
   matched: z.number().int().min(0).describe('Items auto-matched'),
   imported: z.number().int().min(0).describe('Items successfully imported'),
-  skipped: z.number().int().min(0).describe('Items skipped (already up-to-date)'),
+  notRegistered: z.number().int().min(0).describe('Items not registered (null value)'),
   errors: z.number().int().min(0).describe('Items that failed import'),
 });
 

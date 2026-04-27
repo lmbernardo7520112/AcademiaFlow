@@ -35,7 +35,7 @@ function makeRunStats(overrides = {}) {
     total: 10,
     matched: 8,
     imported: 7,
-    skipped: 1,
+    notRegistered: 1,
     errors: 0,
     ...overrides,
   };
@@ -166,7 +166,7 @@ describe('siage schemas', () => {
 
     it('accepts zeroed stats', () => {
       const stats = siageRunStatsSchema.parse(makeRunStats({
-        total: 0, matched: 0, imported: 0, skipped: 0, errors: 0,
+        total: 0, matched: 0, imported: 0, notRegistered: 0, errors: 0,
       }));
       expect(stats.total).toBe(0);
     });

@@ -51,7 +51,7 @@ export interface SiageRun {
     total: number;
     matched: number;
     imported: number;
-    skipped: number;
+    notRegistered: number;
     errors: number;
   };
   errorMessage?: string;

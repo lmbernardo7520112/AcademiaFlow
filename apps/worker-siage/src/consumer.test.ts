@@ -22,7 +22,7 @@ function createMockApiClient(): SiageApiClient & { calls: string[] } {
     }),
     triggerImport: vi.fn(async () => {
       calls.push('import');
-      return { success: true, data: { imported: 1, skipped: 0, errors: 0 } };
+      return { success: true, data: { imported: 1, notRegistered: 0, errors: 0 } };
     }),
   } as unknown as SiageApiClient & { calls: string[] };
 }

@@ -31,7 +31,7 @@ const internalIngestSchema = z.object({
   tenantId: z.string().min(1),
   items: z.array(z.object({
     alunoName: z.string().min(1),
-    matriculaSiage: z.string().min(1),
+    matriculaSiage: z.string(), // allow empty string
     disciplinaName: z.string().min(1),
     turmaName: z.string().min(1),
     bimester: z.number().int().min(1).max(5),

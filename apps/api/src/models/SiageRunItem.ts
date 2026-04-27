@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 const MATCH_STATUSES = ['AUTO_MATCHED', 'MANUAL_PENDING', 'UNMATCHED', 'SKIPPED'] as const;
-const IMPORT_STATUSES = ['imported', 'skipped', 'error'] as const;
+const IMPORT_STATUSES = ['imported', 'skipped', 'not_registered', 'error'] as const;
 
 const siageRunItemSchema = new Schema(
   {
@@ -18,7 +18,7 @@ const siageRunItemSchema = new Schema(
     },
     source: {
       alunoName: { type: String, required: true },
-      matriculaSiage: { type: String, required: true },
+      matriculaSiage: { type: String, required: false, default: '' },
       disciplinaName: { type: String, required: true },
       turmaName: { type: String, required: true },
       bimester: { type: Number, required: true },

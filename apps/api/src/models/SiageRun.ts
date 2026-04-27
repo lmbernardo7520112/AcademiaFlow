@@ -36,7 +36,7 @@ const siageRunSchema = new Schema(
       total: { type: Number, default: 0 },
       matched: { type: Number, default: 0 },
       imported: { type: Number, default: 0 },
-      skipped: { type: Number, default: 0 },
+      notRegistered: { type: Number, default: 0 },
       errors: { type: Number, default: 0 },
     },
     createdBy: {

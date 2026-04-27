@@ -348,7 +348,7 @@ export class SiageNavigator {
       h.includes('PROFESSOR'),
     );
 
-    // eslint-disable-next-line no-constant-condition
+     
     while (true) {
       const rowsLocator = tableLocator.locator('tbody tr');
       const rowCount = await rowsLocator.count();
@@ -547,7 +547,7 @@ export class SiageNavigator {
       let totalRowsChecked = 0;
 
       // Paginate through the component table to find the discipline
-      // eslint-disable-next-line no-constant-condition
+       
       while (true) {
         const rowsLocator = tableLocator.locator('tbody tr');
         const rowCount = await rowsLocator.count();
@@ -731,7 +731,7 @@ export class SiageNavigator {
       const allGrades: BoletimGrade[] = [];
       let pageNum = 1;
 
-      // eslint-disable-next-line no-constant-condition
+       
       while (true) {
         // Wait for table to stabilize and data to hydrate (skip skeleton/dash rows)
         const rowsLocator = tableLocator.locator('tbody tr');

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Plus, X, Search, ArrowLeftRight, AlertCircle, CheckCircle2, Clock, Loader2, XCircle } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { RefreshCw, Plus, X, Search, ArrowLeftRight, AlertCircle, CheckCircle2, Clock, Loader2, XCircle, Wand2, UserCheck } from 'lucide-react';
 import { siageApi, SIAGE_STATUS_LABELS, SIAGE_STATUS_COLORS, isTerminalStatus, isProcessing } from '../../../services/siage';
 import { api } from '../../../services/api';
 import type { SiageRun, SiageRunItem, SiageAlias, SiageRunStatus } from '../../../services/siage';
@@ -196,6 +196,13 @@ function RunDetail({ run, onBack }: { run: SiageRun; onBack: () => void }) {
   const [filter, setFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [resolvingItem, setResolvingItem] = useState<SiageRunItem | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredItems = useMemo(() => {
+    if (!searchTerm.trim()) return items;
+    const term = searchTerm.toLowerCase();
+    return items.filter(i => i.source.alunoName.toLowerCase().includes(term));
+  }, [items, searchTerm]);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -249,19 +256,40 @@ function RunDetail({ run, onBack }: { run: SiageRun; onBack: () => void }) {
       </div>
 
       <div className="glass-panel" style={{ padding: 0 }}>
+        <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#888' }} />
+            <input
+              className="form-input"
+              placeholder="Buscar por nome do aluno..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              style={{ paddingLeft: 32, width: '100%' }}
+              id="siage-item-search"
+            />
+          </div>
+        </div>
         <table className="data-table">
-          <thead><tr><th>Aluno</th><th>Disciplina</th><th>Nota</th><th>Status</th><th>Ação</th></tr></thead>
+          <thead><tr><th>Aluno</th><th>Disciplina</th><th>Nota</th><th>Status</th><th>Resolução</th><th>Ação</th></tr></thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /></td></tr>
-            ) : items.length === 0 ? (
-              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Nenhum item encontrado.</td></tr>
-            ) : items.map(item => (
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /></td></tr>
+            ) : filteredItems.length === 0 ? (
+              <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Nenhum item encontrado.</td></tr>
+            ) : filteredItems.map(item => (
               <tr key={item._id}>
                 <td>{item.source.alunoName}</td>
                 <td>{item.source.disciplinaName}</td>
                 <td>{item.source.value != null ? item.source.value.toFixed(1) : '—'}</td>
                 <td><span style={{ color: matchColors[item.matchResult.status] || '#888', fontWeight: 500, fontSize: '0.85rem' }}>{item.matchResult.status.replace(/_/g, ' ')}</span></td>
+                <td style={{ fontSize: '0.78rem', color: '#888' }}>
+                  {item.resolution?.resolvedAt ? (
+                    <span title={`Por: ${item.resolution.resolvedBy} | Ação: ${item.resolution.action} | De: ${item.resolution.previousStatus}`}>
+                      <UserCheck size={12} style={{ marginRight: 3, verticalAlign: 'middle', color: '#10b981' }} />
+                      {new Date(item.resolution.resolvedAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  ) : '—'}
+                </td>
                 <td>
                   {RESOLVABLE_STATUSES.includes(item.matchResult.status) && (
                     <button className="btn-primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }} onClick={() => setResolvingItem(item)}>
@@ -294,6 +322,8 @@ function AliasManager() {
   const [disciplinas, setDisciplinas] = useState<{ _id: string; name: string }[]>([]);
   const [selectedDisciplina, setSelectedDisciplina] = useState('');
   const [creating, setCreating] = useState(false);
+  const [autoCreating, setAutoCreating] = useState(false);
+  const [autoResult, setAutoResult] = useState<{ created: { siageName: string; disciplinaName: string }[]; skipped: { siageName: string; reason: string }[]; alreadyExisted: string[] } | null>(null);
   const [error, setError] = useState('');
 
   const fetchAll = useCallback(async () => {
@@ -341,6 +371,39 @@ function AliasManager() {
           </button>
         </div>
         {error && <div style={{ color: '#ef4444', marginTop: '0.5rem', fontSize: '0.85rem' }}>{error}</div>}
+        <div style={{ marginTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1rem' }}>
+          <button
+            className="btn-primary"
+            onClick={async () => {
+              setAutoCreating(true); setError(''); setAutoResult(null);
+              try {
+                const res = await siageApi.autoCreateAliases();
+                setAutoResult(res.data.data);
+                fetchAll();
+              } catch (err: unknown) {
+                setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Erro ao criar aliases automáticos.');
+              } finally { setAutoCreating(false); }
+            }}
+            disabled={autoCreating}
+            style={{ width: '100%' }}
+          >
+            {autoCreating ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite', marginRight: 6 }} />Criando...</> : <><Wand2 size={16} style={{ marginRight: 6 }} />Criar Aliases Automaticamente (match exato)</>}
+          </button>
+          {autoResult && (
+            <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '0.75rem' }}>
+              <div style={{ color: '#10b981', marginBottom: 4 }}><strong>Criados ({autoResult.created.length}):</strong></div>
+              {autoResult.created.map(c => <div key={c.siageName} style={{ marginLeft: 12 }}>✅ {c.siageName} → {c.disciplinaName}</div>)}
+              {autoResult.skipped.length > 0 && <>
+                <div style={{ color: '#f59e0b', marginTop: 8, marginBottom: 4 }}><strong>Ignorados ({autoResult.skipped.length}):</strong></div>
+                {autoResult.skipped.map(s => <div key={s.siageName} style={{ marginLeft: 12 }}>⚠️ {s.siageName}: {s.reason}</div>)}
+              </>}
+              {autoResult.alreadyExisted.length > 0 && <>
+                <div style={{ color: '#888', marginTop: 8, marginBottom: 4 }}><strong>Já existiam ({autoResult.alreadyExisted.length}):</strong></div>
+                {autoResult.alreadyExisted.map(n => <div key={n} style={{ marginLeft: 12 }}>— {n}</div>)}
+              </>}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="glass-panel" style={{ padding: 0 }}>

@@ -78,6 +78,12 @@ export interface SiageRunItem {
     disciplinaId?: string;
     turmaId?: string;
   };
+  resolution?: {
+    resolvedBy: string;
+    resolvedAt: string;
+    action: string;
+    previousStatus: string;
+  };
   importResult?: {
     status: string;
     notaId?: string;
@@ -122,6 +128,9 @@ export const siageApi = {
 
   createAlias: (data: { siageName: string; disciplinaId: string }) =>
     api.post('/siage/aliases', data),
+
+  autoCreateAliases: () =>
+    api.post('/siage/aliases/auto-create'),
 
   // Import (human-triggered)
   importRun: (runId: string) => api.post(`/siage/runs/${runId}/import`),

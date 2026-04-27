@@ -35,6 +35,16 @@ const siageRunItemSchema = new Schema(
         default: 'UNMATCHED',
       },
     },
+    resolution: {
+      resolvedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+      resolvedAt: { type: Date, default: null },
+      action: {
+        type: String,
+        enum: ['link_aluno', 'link_disciplina', 'link_both', 'mark_pending', null],
+        default: null,
+      },
+      previousStatus: { type: String, default: null },
+    },
     importResult: {
       notaId: { type: Schema.Types.ObjectId, ref: 'Nota', default: null },
       status: {

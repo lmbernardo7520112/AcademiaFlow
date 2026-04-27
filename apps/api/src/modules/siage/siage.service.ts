@@ -321,12 +321,66 @@ export class SiageService {
       .lean();
   }
 
+  /**
+   * Auto-create aliases by EXACT name match only.
+   * No fuzzy matching, no heuristics. Strict 1:1 mapping.
+   */
+  async autoCreateAliases(tenantId: string): Promise<{
+    created: { siageName: string; disciplinaName: string; disciplinaId: string }[];
+    skipped: { siageName: string; reason: string }[];
+    alreadyExisted: string[];
+  }> {
+    // 1. Get all distinct SIAGE discipline names from items
+    const siageNames: string[] = await SiageRunItemModel.distinct('source.disciplinaName', { tenantId });
+
+    // 2. Get all local disciplines
+    const { DisciplinaModel } = await import('../../models/Disciplina.js');
+    const localDisciplinas = await DisciplinaModel.find({ tenantId }).select('_id name').lean();
+
+    const created: { siageName: string; disciplinaName: string; disciplinaId: string }[] = [];
+    const skipped: { siageName: string; reason: string }[] = [];
+    const alreadyExisted: string[] = [];
+
+    for (const siageName of siageNames) {
+      if (!siageName) { skipped.push({ siageName: '(null)', reason: 'Nome vazio' }); continue; }
+
+      const normalized = normalizeName(siageName);
+
+      // Check if alias already exists
+      const existing = await SiageDisciplinaAliasModel.findOne({ tenantId, siageNameNormalized: normalized });
+      if (existing) { alreadyExisted.push(siageName); continue; }
+
+      // EXACT match only: normalized SIAGE name must equal normalized local name
+      const match = localDisciplinas.find(d => normalizeName(d.name) === normalized);
+      if (!match) {
+        skipped.push({ siageName, reason: 'Sem correspondência exata local' });
+        continue;
+      }
+
+      await SiageDisciplinaAliasModel.create({
+        tenantId,
+        siageName,
+        siageNameNormalized: normalized,
+        disciplinaId: match._id,
+      });
+
+      created.push({
+        siageName,
+        disciplinaName: match.name,
+        disciplinaId: String(match._id),
+      });
+    }
+
+    return { created, skipped, alreadyExisted };
+  }
+
   // ── Manual Resolution ──
 
   async resolveItem(
     tenantId: string,
     itemId: string,
     resolution: { alunoId?: string; disciplinaId?: string },
+    resolvedBy: string,
   ) {
     const item = await SiageRunItemModel.findOne({ _id: itemId, tenantId });
     if (!item) throw new Error('Item não encontrado');
@@ -336,6 +390,24 @@ export class SiageService {
         item.matchResult.matchStatus !== 'UNMATCHED') {
       throw new Error('Item não está pendente de resolução');
     }
+
+    // Determine audit action
+    const hasAluno = !!resolution.alunoId;
+    const hasDisciplina = !!resolution.disciplinaId;
+    let action: 'link_aluno' | 'link_disciplina' | 'link_both' | 'mark_pending';
+    if (hasAluno && hasDisciplina) action = 'link_both';
+    else if (hasAluno) action = 'link_aluno';
+    else if (hasDisciplina) action = 'link_disciplina';
+    else action = 'mark_pending';
+
+    // Record audit trail
+    const previousStatus = item.matchResult.matchStatus;
+    item.resolution = {
+      resolvedBy: resolvedBy as unknown as Types.ObjectId,
+      resolvedAt: new Date(),
+      action,
+      previousStatus,
+    };
 
     if (resolution.alunoId) {
       item.matchResult.alunoId = resolution.alunoId as unknown as Types.ObjectId;
@@ -354,6 +426,11 @@ export class SiageService {
       if (aluno) {
         item.matchResult.turmaId = aluno.turmaId as Types.ObjectId;
       }
+
+      // Increment run stats.matched
+      await SiageRunModel.findByIdAndUpdate(item.runId, {
+        $inc: { 'stats.matched': 1 },
+      });
     }
 
     await item.save();

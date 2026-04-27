@@ -245,6 +245,7 @@ export const siageRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
           request.user.tenantId,
           request.params.itemId,
           request.body,
+          request.user.id,
         );
         reply.send({ success: true, data: item });
       } catch (error) {
@@ -289,6 +290,25 @@ export const siageRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
     async (request, reply) => {
       const aliases = await siageService.listAliases(request.user.tenantId);
       reply.send({ success: true, data: aliases });
+    },
+  );
+
+  // ── POST /aliases/auto-create — Auto-create aliases by exact name match ──
+  typedFastify.post(
+    '/aliases/auto-create',
+    {
+      preHandler: [fastify.authorize(['admin', 'secretaria'])],
+    },
+    async (request, reply) => {
+      try {
+        const result = await siageService.autoCreateAliases(request.user.tenantId);
+        reply.send({ success: true, data: result });
+      } catch (error) {
+        reply.code(400).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Erro ao criar aliases automáticos',
+        });
+      }
     },
   );
 };

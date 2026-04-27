@@ -407,21 +407,49 @@ export class SiageNavigator {
         });
       }
 
-      // Find and click "next page" button using DOM evaluation
+      // ── Universal pagination: supports 3 SIAGE paginator types ──
+      // Type A: ngx-pagination (component table) — <pagination-controls> with .ngx-pagination
+      //   next: <li class="pagination-next"><a>
+      //   prev: <li class="pagination-previous"><a>
+      // Type B: ngb-pagination (unused here but kept for safety) — <a class="page-link"> with text »
+      // Type C: Bootstrap (boletim) — <button class="page-link"> with FontAwesome icons
+
+      // Scroll to bottom to ensure pagination is rendered
+      await this.page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       const hasNext = await this.page.evaluate(() => {
+        // Type A: ngx-pagination — <li class="pagination-next"> without "disabled"
+        const ngxNext = document.querySelector('.ngx-pagination .pagination-next:not(.disabled) a');
+        if (ngxNext) {
+          (ngxNext as HTMLElement).click();
+          return 'ngx';
+        }
+        // Type B: ngb-pagination or Bootstrap li.page-item
         const items = document.querySelectorAll('li.page-item');
         for (const item of items) {
+          if (item.classList.contains('disabled') || item.classList.contains('active')) continue;
+          const link = item.querySelector('a.page-link');
+          if (link) {
+            const text = link.textContent?.trim() ?? '';
+            if (text === '»' || text === '›') {
+              (link as HTMLElement).click();
+              return 'ngb';
+            }
+          }
           const icon = item.querySelector('i.fa-chevron-right, i.fa-angle-right');
-          if (icon && !item.classList.contains('disabled')) {
+          if (icon) {
             const btn = item.querySelector('button.page-link') as HTMLButtonElement;
             if (btn && !btn.disabled) {
               btn.click();
-              return true;
+              return 'bootstrap';
             }
           }
         }
-        return false;
+        return null;
       });
+
+      console.log(`    [SCAN] pagination result: ${hasNext ?? 'none'}`);
 
       if (hasNext) {
         pageNum++;
@@ -432,13 +460,28 @@ export class SiageNavigator {
       break;
     }
 
+    console.log(`    [SCAN SUMMARY] ${totalRows} rows across ${pageNum} page(s)`);
+
     // Navigate back to page 1 if we advanced
     if (pageNum > 1) {
       await this.page.evaluate(() => {
+        // Type A: ngx-pagination first page
+        const ngxFirst = document.querySelector('.ngx-pagination .pagination-previous:not(.disabled) a');
+        if (ngxFirst) {
+          (ngxFirst as HTMLElement).click();
+          return;
+        }
+        // Type B/C: li.page-item with «
         const items = document.querySelectorAll('li.page-item');
         for (const item of items) {
+          if (item.classList.contains('disabled')) continue;
+          const link = item.querySelector('a.page-link');
+          if (link && (link.textContent?.trim() === '«')) {
+            (link as HTMLElement).click();
+            return;
+          }
           const icon = item.querySelector('i.fa-angle-double-left');
-          if (icon && !item.classList.contains('disabled')) {
+          if (icon) {
             const btn = item.querySelector('button.page-link') as HTMLButtonElement;
             if (btn && !btn.disabled) {
               btn.click();
@@ -553,12 +596,31 @@ export class SiageNavigator {
 
         if (found) break;
 
-        // Try next page of component table using DOM evaluation
+        // Try next page of component table using universal pagination
+        await this.page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         const hasNextPage = await this.page.evaluate(() => {
+          // Type A: ngx-pagination
+          const ngxNext = document.querySelector('.ngx-pagination .pagination-next:not(.disabled) a');
+          if (ngxNext) {
+            (ngxNext as HTMLElement).click();
+            return true;
+          }
+          // Type B/C: li.page-item
           const items = document.querySelectorAll('li.page-item');
           for (const item of items) {
+            if (item.classList.contains('disabled') || item.classList.contains('active')) continue;
+            const link = item.querySelector('a.page-link');
+            if (link) {
+              const text = link.textContent?.trim() ?? '';
+              if (text === '»' || text === '›') {
+                (link as HTMLElement).click();
+                return true;
+              }
+            }
             const icon = item.querySelector('i.fa-chevron-right, i.fa-angle-right');
-            if (icon && !item.classList.contains('disabled')) {
+            if (icon) {
               const btn = item.querySelector('button.page-link') as HTMLButtonElement;
               if (btn && !btn.disabled) {
                 btn.click();

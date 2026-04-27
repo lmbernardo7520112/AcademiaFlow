@@ -221,18 +221,23 @@ const bridgeExecutor: BridgeExecutor = async (params) => {
       }
     }
 
-    // Record BNCC disciplines that are NOT eligible
+    // Classify BNCC disciplines that are NOT in the eligible list
+    // Categories: rejected_not_bncc, rejected_no_professor, not_found_after_full_component_pagination
     const eligibleNames = scan.eligible.map(e => e.name);
     for (const disc of BNCC_DISCIPLINES) {
-      if (!eligibleNames.includes(disc)) {
-        const rejection = scan.rejected.find(r =>
-          r.name.toLowerCase().includes(disc.toLowerCase()),
+      if (eligibleNames.includes(disc)) continue;
+
+      // Check if it was explicitly rejected during the scan
+      const rejection = scan.rejected.find(r =>
+        r.name.toLowerCase().trim() === disc.toLowerCase().trim(),
+      );
+      if (rejection) {
+        metrics.disciplinesSkippedRejected.push(`${disc}: ${rejection.reason}`);
+      } else {
+        // Discipline not found in ANY page of the component table
+        metrics.disciplinesSkippedRejected.push(
+          `${disc}: not_found_after_full_component_pagination (${scan.totalPages} page(s), ${scan.totalRows} rows scanned)`,
         );
-        if (rejection) {
-          metrics.disciplinesSkippedRejected.push(`${disc}: ${rejection.reason}`);
-        } else {
-          metrics.disciplinesSkippedRejected.push(`${disc}: not present in component table`);
-        }
       }
     }
 

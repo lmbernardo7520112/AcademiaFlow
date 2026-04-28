@@ -11,7 +11,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { siageService } from './siage.service.js';
+import { siageService, getPilotPolicy } from './siage.service.js';
 import { enqueueSiageSyncJob } from './siage-queue.js';
 
 // ─── Validation Schemas ──────────────────────────────────────────────────────
@@ -361,6 +361,24 @@ export const siageRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
           message: error instanceof Error ? error.message : 'Erro ao criar aliases automáticos',
         });
       }
+    },
+  );
+
+  // ── GET /pilot-policy — Current pilot scope policy ──
+  typedFastify.get(
+    '/pilot-policy',
+    {
+      preHandler: [fastify.authorize(['admin', 'secretaria'])],
+    },
+    async (_request, reply) => {
+      const policy = getPilotPolicy();
+      reply.send({
+        success: true,
+        data: {
+          isRestricted: policy.isRestricted,
+          allowedBimesters: policy.allowedBimesters,
+        },
+      });
     },
   );
 };

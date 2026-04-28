@@ -1,13 +1,19 @@
 /**
  * @module siage.guard.test
- * Guard tests for dryRun staging-only default behavior.
+ * Guard tests for dryRun staging-only default behavior AND pilot scope policy.
  *
- * These tests serve as CI regression barriers. If the dryRun default
- * ever changes to false (which would allow automatic Nota writes),
- * these tests MUST fail and block the pipeline.
+ * These tests serve as CI regression barriers. They are organized in two classes:
+ *
+ * 1. **Capability tests** — verify the product supports bimesters 1–4
+ * 2. **Pilot policy tests** — verify the operational restriction is enforced
+ *    when SIAGE_PILOT_BIMESTERS is configured
+ *
+ * This separation ensures the tests don't falsely imply that the product
+ * can only operate on a single bimester.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { z } from 'zod';
+import { getPilotPolicy } from './siage.service.js';
 
 // ── Schema guard: dryRun defaults to true ──────────────────────────────────
 
@@ -132,71 +138,155 @@ describe('SIAGE dryRun Guard Tests — Staging Safety', () => {
   });
 });
 
-// ── Pilot Bimester Scope Guards ──────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// CAPABILITY TESTS — Product supports bimesters 1–4
+// ══════════════════════════════════════════════════════════════════════════════
 
-describe('SIAGE Pilot Bimester Guard Tests — Scope Enforcement', () => {
-  const PILOT_ALLOWED_BIMESTER = 1;
+describe('SIAGE Product Capability — Multi-Bimester Support', () => {
+  let originalEnv: string | undefined;
 
-  function assertBimesterScope(bimester: number): { allowed: boolean; error?: string } {
-    if (bimester !== PILOT_ALLOWED_BIMESTER) {
-      return {
-        allowed: false,
-        error: `Operação bloqueada: o piloto atual permite apenas o ${PILOT_ALLOWED_BIMESTER}º bimestre. Bimestre solicitado: ${bimester}º.`,
-      };
+  beforeEach(() => {
+    originalEnv = process.env.SIAGE_PILOT_BIMESTERS;
+    // Unlock all bimesters (full product capability)
+    process.env.SIAGE_PILOT_BIMESTERS = '';
+  });
+
+  afterEach(() => {
+    if (originalEnv !== undefined) {
+      process.env.SIAGE_PILOT_BIMESTERS = originalEnv;
+    } else {
+      delete process.env.SIAGE_PILOT_BIMESTERS;
     }
-    return { allowed: true };
-  }
+  });
 
-  describe('createRun scope', () => {
-    it('bimester=1 is allowed', () => {
-      const result = assertBimesterScope(1);
-      expect(result.allowed).toBe(true);
-      expect(result.error).toBeUndefined();
+  it('bimester 1 is accepted when policy is unrestricted', () => {
+    const policy = getPilotPolicy();
+    expect(policy.isBimesterAllowed(1)).toBe(true);
+    expect(policy.isRestricted).toBe(false);
+  });
+
+  it('bimester 2 is accepted when policy is unrestricted', () => {
+    const policy = getPilotPolicy();
+    expect(policy.isBimesterAllowed(2)).toBe(true);
+  });
+
+  it('bimester 3 is accepted when policy is unrestricted', () => {
+    const policy = getPilotPolicy();
+    expect(policy.isBimesterAllowed(3)).toBe(true);
+  });
+
+  it('bimester 4 is accepted when policy is unrestricted', () => {
+    const policy = getPilotPolicy();
+    expect(policy.isBimesterAllowed(4)).toBe(true);
+  });
+
+  it('all 4 bimesters are allowed when SIAGE_PILOT_BIMESTERS is empty', () => {
+    const policy = getPilotPolicy();
+    expect(policy.allowedBimesters).toEqual([1, 2, 3, 4]);
+    expect(policy.isRestricted).toBe(false);
+  });
+
+  it('all 4 bimesters are allowed when SIAGE_PILOT_BIMESTERS is "1,2,3,4"', () => {
+    process.env.SIAGE_PILOT_BIMESTERS = '1,2,3,4';
+    const policy = getPilotPolicy();
+    expect(policy.allowedBimesters).toEqual([1, 2, 3, 4]);
+    expect(policy.isRestricted).toBe(false);
+  });
+
+  it('schema accepts all bimesters 1-4', () => {
+    for (const b of [1, 2, 3, 4]) {
+      const parsed = createRunBodySchema.parse({
+        year: 2026,
+        bimester: b,
+        credentials: { username: 'test', password: 'test' },
+      });
+      expect(parsed.bimester).toBe(b);
+    }
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PILOT POLICY TESTS — Operational restriction via SIAGE_PILOT_BIMESTERS
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('SIAGE Pilot Policy — Bimester Scope Enforcement', () => {
+  let originalEnv: string | undefined;
+
+  beforeEach(() => {
+    originalEnv = process.env.SIAGE_PILOT_BIMESTERS;
+  });
+
+  afterEach(() => {
+    if (originalEnv !== undefined) {
+      process.env.SIAGE_PILOT_BIMESTERS = originalEnv;
+    } else {
+      delete process.env.SIAGE_PILOT_BIMESTERS;
+    }
+  });
+
+  describe('when SIAGE_PILOT_BIMESTERS="1" (current pilot)', () => {
+    beforeEach(() => {
+      process.env.SIAGE_PILOT_BIMESTERS = '1';
     });
 
-    it('bimester=2 is BLOCKED', () => {
-      const result = assertBimesterScope(2);
-      expect(result.allowed).toBe(false);
-      expect(result.error).toContain('bloqueada');
-      expect(result.error).toContain('2º');
+    it('policy reports restriction is active', () => {
+      const policy = getPilotPolicy();
+      expect(policy.isRestricted).toBe(true);
+      expect(policy.allowedBimesters).toEqual([1]);
     });
 
-    it('bimester=3 is BLOCKED', () => {
-      const result = assertBimesterScope(3);
-      expect(result.allowed).toBe(false);
-      expect(result.error).toContain('bloqueada');
+    it('bimester 1 is ALLOWED', () => {
+      expect(getPilotPolicy().isBimesterAllowed(1)).toBe(true);
     });
 
-    it('bimester=4 is BLOCKED', () => {
-      const result = assertBimesterScope(4);
-      expect(result.allowed).toBe(false);
-      expect(result.error).toContain('bloqueada');
+    it('bimester 2 is BLOCKED', () => {
+      expect(getPilotPolicy().isBimesterAllowed(2)).toBe(false);
+    });
+
+    it('bimester 3 is BLOCKED', () => {
+      expect(getPilotPolicy().isBimesterAllowed(3)).toBe(false);
+    });
+
+    it('bimester 4 is BLOCKED', () => {
+      expect(getPilotPolicy().isBimesterAllowed(4)).toBe(false);
     });
   });
 
-  describe('promote/import scope', () => {
-    it('promotion allowed for bimester=1 run', () => {
-      const runBimester = 1;
-      const allowed = runBimester === PILOT_ALLOWED_BIMESTER;
-      expect(allowed).toBe(true);
+  describe('when SIAGE_PILOT_BIMESTERS="1,2" (expanded pilot)', () => {
+    beforeEach(() => {
+      process.env.SIAGE_PILOT_BIMESTERS = '1,2';
     });
 
-    it('promotion BLOCKED for bimester=2 run', () => {
-      const runBimester = 2;
-      const allowed = runBimester === PILOT_ALLOWED_BIMESTER;
-      expect(allowed).toBe(false);
+    it('policy reports restriction is active', () => {
+      const policy = getPilotPolicy();
+      expect(policy.isRestricted).toBe(true);
+      expect(policy.allowedBimesters).toEqual([1, 2]);
     });
 
-    it('promotion BLOCKED for bimester=3 run', () => {
-      const runBimester = 3;
-      const allowed = runBimester === PILOT_ALLOWED_BIMESTER;
-      expect(allowed).toBe(false);
+    it('bimesters 1 and 2 are ALLOWED', () => {
+      expect(getPilotPolicy().isBimesterAllowed(1)).toBe(true);
+      expect(getPilotPolicy().isBimesterAllowed(2)).toBe(true);
     });
 
-    it('promotion BLOCKED for bimester=4 run', () => {
-      const runBimester = 4;
-      const allowed = runBimester === PILOT_ALLOWED_BIMESTER;
-      expect(allowed).toBe(false);
+    it('bimesters 3 and 4 are BLOCKED', () => {
+      expect(getPilotPolicy().isBimesterAllowed(3)).toBe(false);
+      expect(getPilotPolicy().isBimesterAllowed(4)).toBe(false);
+    });
+  });
+
+  describe('promote/import respects pilot policy', () => {
+    beforeEach(() => {
+      process.env.SIAGE_PILOT_BIMESTERS = '1';
+    });
+
+    it('promotion allowed for bimester matching policy', () => {
+      expect(getPilotPolicy().isBimesterAllowed(1)).toBe(true);
+    });
+
+    it('promotion BLOCKED for bimester outside policy', () => {
+      for (const b of [2, 3, 4]) {
+        expect(getPilotPolicy().isBimesterAllowed(b)).toBe(false);
+      }
     });
   });
 });

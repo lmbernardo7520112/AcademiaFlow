@@ -134,7 +134,7 @@ describe('SIAGE Module Integration', () => {
       const createRes = await app.inject({
         method: 'POST', url: '/api/siage/runs',
         headers: { Authorization: `Bearer ${adminUser.token}` },
-        payload: { year: 2026, bimester: 1, turmaFilter: 'cancel-test', credentials: { username: 'test', password: 'test' } },
+        payload: { year: 2026, bimester: 3, credentials: { username: 'test', password: 'test' } },
       });
       const runId = createRes.json().data._id;
 
@@ -197,7 +197,7 @@ describe('SIAGE Module Integration', () => {
       const runRes = await app.inject({
         method: 'POST', url: '/api/siage/runs',
         headers: { Authorization: `Bearer ${adminUser.token}` },
-        payload: { year: 2026, bimester: 1, turmaFilter: 'ingest-test', credentials: { username: 'test', password: 'test' } },
+        payload: { year: 2026, bimester: 2, credentials: { username: 'test', password: 'test' } },
       });
       expect(runRes.statusCode).toBe(201);
       const runId = runRes.json().data._id;
@@ -213,7 +213,7 @@ describe('SIAGE Module Integration', () => {
               matriculaSiage: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
               disciplinaName: 'Biologia',
               turmaName: 'Ensino Médio - 1ª Série A',
-              bimester: 1,
+              bimester: 2,
               value: 7.5,
             },
             {
@@ -221,7 +221,7 @@ describe('SIAGE Module Integration', () => {
               matriculaSiage: 'zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz',
               disciplinaName: 'Biologia',
               turmaName: 'Ensino Médio - 1ª Série A',
-              bimester: 1,
+              bimester: 2,
               value: 5.0,
             },
           ],
@@ -349,7 +349,7 @@ describe('SIAGE Module Integration', () => {
       const runRes = await app.inject({
         method: 'POST', url: '/api/siage/runs',
         headers: { Authorization: `Bearer ${adminUser.token}` },
-        payload: { year: 2026, bimester: 1, turmaFilter: 'worker-test', credentials: { username: 'test', password: 'test' } },
+        payload: { year: 2026, bimester: 2, credentials: { username: 'test', password: 'test' } },
       });
       const runId = runRes.json().data._id;
 
@@ -365,7 +365,7 @@ describe('SIAGE Module Integration', () => {
             matriculaSiage: 'test-uuid',
             disciplinaName: 'Biologia',
             turmaName: 'Turma A',
-            bimester: 1,
+            bimester: 2,
             value: 7.5,
           }],
         },

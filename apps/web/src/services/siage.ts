@@ -139,6 +139,9 @@ export const siageApi = {
   promoteRun: (runId: string) => api.post(`/siage/runs/${runId}/promote`),
 
   getPromotionPreview: (runId: string) => api.get(`/siage/runs/${runId}/promote/preview`),
+
+  // Pilot policy
+  getPilotPolicy: () => api.get('/siage/pilot-policy'),
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

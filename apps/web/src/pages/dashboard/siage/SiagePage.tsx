@@ -24,16 +24,33 @@ function StatusBadge({ status }: { status: SiageRunStatus }) {
 
 // ─── Create Run Form ─────────────────────────────────────────────────────────
 
+interface PilotPolicyData {
+  isRestricted: boolean;
+  allowedBimesters: number[];
+}
+
 function CreateRunForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: () => void }) {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
+  const [bimester, setBimester] = useState(1);
   const [turmaFilter, setTurmaFilter] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [policy, setPolicy] = useState<PilotPolicyData | null>(null);
 
-  const PILOT_BIMESTER = 1;
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await siageApi.getPilotPolicy();
+        setPolicy(res.data.data);
+      } catch { /* policy unavailable — allow all as fallback */ }
+    })();
+  }, []);
+
+  const isBimesterAllowed = (b: number) =>
+    !policy || !policy.isRestricted || policy.allowedBimesters.includes(b);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,11 +59,10 @@ function CreateRunForm({ onCreated, onCancel }: { onCreated: () => void; onCance
     setError('');
     try {
       await siageApi.createRun({
-        year, bimester: PILOT_BIMESTER,
+        year, bimester,
         turmaFilter: turmaFilter || undefined,
         credentials: { username, password },
       });
-      // Clear credentials from memory immediately
       setPassword('');
       setUsername('');
       onCreated();
@@ -64,9 +80,11 @@ function CreateRunForm({ onCreated, onCancel }: { onCreated: () => void; onCance
         <h3 style={{ margin: 0 }}>Nova Sincronização SIAGE</h3>
         <button onClick={onCancel} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><X size={20} /></button>
       </div>
-      <div style={{ background: '#3b82f622', border: '1px solid #3b82f644', borderRadius: 8, padding: '0.6rem 0.8rem', marginBottom: '1rem', fontSize: '0.82rem', color: '#93c5fd' }}>
-        🔒 <strong>Modo Piloto:</strong> apenas o 1º bimestre está habilitado para extração nesta fase.
-      </div>
+      {policy?.isRestricted && (
+        <div style={{ background: '#3b82f622', border: '1px solid #3b82f644', borderRadius: 8, padding: '0.6rem 0.8rem', marginBottom: '1rem', fontSize: '0.82rem', color: '#93c5fd' }}>
+          🔒 <strong>Política do piloto ativa:</strong> apenas o{policy.allowedBimesters.length === 1 ? ` ${policy.allowedBimesters[0]}º` : `s bimestres ${policy.allowedBimesters.join(', ')}`} bimestre{policy.allowedBimesters.length > 1 ? 's estão' : ' está'} habilitado{policy.allowedBimesters.length > 1 ? 's' : ''} nesta fase.
+        </div>
+      )}
       <form onSubmit={handleSubmit}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
           <div>
@@ -77,8 +95,12 @@ function CreateRunForm({ onCreated, onCancel }: { onCreated: () => void; onCance
           </div>
           <div>
             <label className="form-label">Bimestre</label>
-            <select className="form-input" value={PILOT_BIMESTER} disabled style={{ opacity: 0.7 }}>
-              <option value={1}>1º Bimestre</option>
+            <select className="form-input" value={bimester} onChange={e => setBimester(Number(e.target.value))}>
+              {[1, 2, 3, 4].map(b => (
+                <option key={b} value={b} disabled={!isBimesterAllowed(b)}>
+                  {b}º Bimestre{!isBimesterAllowed(b) ? ' (bloqueado pelo piloto)' : ''}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -100,8 +122,8 @@ function CreateRunForm({ onCreated, onCancel }: { onCreated: () => void; onCance
           ⚠️ As credenciais são usadas apenas para esta sincronização e não são armazenadas.
         </p>
         {error && <div style={{ color: '#ef4444', marginBottom: '0.75rem', fontSize: '0.85rem' }}><AlertCircle size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />{error}</div>}
-        <button type="submit" className="btn-primary" disabled={submitting} style={{ width: '100%' }}>
-          {submitting ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite', marginRight: 6 }} />Criando...</> : 'Iniciar Sincronização (1º Bimestre)'}
+        <button type="submit" className="btn-primary" disabled={submitting || !isBimesterAllowed(bimester)} style={{ width: '100%' }}>
+          {submitting ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite', marginRight: 6 }} />Criando...</> : `Iniciar Sincronização (${bimester}º Bimestre)`}
         </button>
       </form>
     </div>
@@ -381,7 +403,7 @@ function RunDetail({ run, onBack }: { run: SiageRun; onBack: () => void }) {
     RESOLVED: '#3b82f6', IMPORTED: '#10b981', IMPORT_FAILED: '#ef4444',
   };
 
-  const canPromote = run.status === 'COMPLETED' && run.bimester === 1 && itemStats.matched > 0;
+  const canPromote = run.status === 'COMPLETED' && itemStats.matched > 0;
 
   return (
     <div className="fade-in">
@@ -633,6 +655,7 @@ export default function SiagePage() {
   const [showForm, setShowForm] = useState(false);
   const [selectedRun, setSelectedRun] = useState<SiageRun | null>(null);
   const [error, setError] = useState('');
+  const [pilotPolicy, setPilotPolicy] = useState<PilotPolicyData | null>(null);
 
   const fetchRuns = useCallback(async () => {
     setLoading(true); setError('');
@@ -644,6 +667,15 @@ export default function SiagePage() {
   }, []);
 
   useEffect(() => { fetchRuns(); }, [fetchRuns]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await siageApi.getPilotPolicy();
+        setPilotPolicy(res.data.data);
+      } catch { /* policy unavailable */ }
+    })();
+  }, []);
 
   // Auto-refresh for non-terminal runs
   useEffect(() => {
@@ -675,9 +707,11 @@ export default function SiagePage() {
         <p className="text-secondary">Sincronização de notas com o sistema SIAGE da Secretaria de Educação</p>
       </div>
 
-      <div style={{ background: '#3b82f622', border: '1px solid #3b82f644', borderRadius: 8, padding: '0.6rem 1rem', marginBottom: '1rem', fontSize: '0.82rem', color: '#93c5fd' }} className="fade-in">
-        🔒 <strong>Modo Piloto Ativo:</strong> operações restritas ao 1º bimestre. Bimestres 2-4 bloqueados por governança de escopo.
-      </div>
+      {pilotPolicy?.isRestricted && (
+        <div style={{ background: '#3b82f622', border: '1px solid #3b82f644', borderRadius: 8, padding: '0.6rem 1rem', marginBottom: '1rem', fontSize: '0.82rem', color: '#93c5fd' }} className="fade-in">
+          🔒 <strong>Política do piloto ativa:</strong> operações restritas ao{pilotPolicy.allowedBimesters.length === 1 ? ` ${pilotPolicy.allowedBimesters[0]}º bimestre` : `s bimestres ${pilotPolicy.allowedBimesters.join(', ')}`}. Demais bimestres bloqueados por governança de escopo.
+        </div>
+      )}
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }} className="fade-in">

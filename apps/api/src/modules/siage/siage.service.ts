@@ -42,12 +42,52 @@ interface IngestResult {
 
 const NON_TERMINAL_STATUSES = ['QUEUED', 'RUNNING', 'EXTRACTING', 'MATCHING', 'IMPORTING'];
 
-/**
- * Pilot scope constraint: only bimester 1 is allowed for all SIAGE operations.
- * This guard is enforced at the service layer (defense-in-depth).
- * To expand scope, update this constant and the route schema.
- */
-const PILOT_ALLOWED_BIMESTER = 1;
+// ─── Pilot Scope Policy ──────────────────────────────────────────────────────
+//
+// The SIAGE product supports bimesters 1–4. The pilot policy may restrict
+// which bimesters are allowed for operations. This is an OPERATIONAL POLICY,
+// not a product limitation.
+//
+// Config: env SIAGE_PILOT_BIMESTERS (comma-separated, e.g. '1' or '1,2,3,4')
+// When empty: all bimesters are allowed (full capability).
+
+export interface PilotPolicy {
+  /** True if the pilot restricts bimesters (not all 1-4 are allowed) */
+  isRestricted: boolean;
+  /** Which bimesters are currently allowed by the policy */
+  allowedBimesters: number[];
+  /** Check if a specific bimester is allowed */
+  isBimesterAllowed(bimester: number): boolean;
+}
+
+function parsePilotPolicy(): PilotPolicy {
+  // In test environments, use the env value set by tests (or default 'all')
+  const raw = process.env.SIAGE_PILOT_BIMESTERS ?? '';
+  const trimmed = raw.trim();
+
+  if (trimmed === '' || trimmed === '1,2,3,4') {
+    return {
+      isRestricted: false,
+      allowedBimesters: [1, 2, 3, 4],
+      isBimesterAllowed: (b: number) => b >= 1 && b <= 4,
+    };
+  }
+
+  const allowed = trimmed.split(',')
+    .map(s => parseInt(s.trim(), 10))
+    .filter(n => !isNaN(n) && n >= 1 && n <= 4);
+
+  return {
+    isRestricted: allowed.length < 4,
+    allowedBimesters: allowed,
+    isBimesterAllowed: (b: number) => allowed.includes(b),
+  };
+}
+
+/** Re-parsed on each call to allow test overrides of process.env */
+export function getPilotPolicy(): PilotPolicy {
+  return parsePilotPolicy();
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -71,10 +111,11 @@ export class SiageService {
   // ── Run Management ──
 
   async createRun(input: CreateRunInput) {
-    // Pilot scope enforcement
-    if (input.bimester !== PILOT_ALLOWED_BIMESTER) {
+    // Pilot scope policy enforcement (operational restriction, not product limitation)
+    const policy = getPilotPolicy();
+    if (!policy.isBimesterAllowed(input.bimester)) {
       throw new Error(
-        `Operação bloqueada: o piloto atual permite apenas o ${PILOT_ALLOWED_BIMESTER}º bimestre. ` +
+        `Operação bloqueada pela política do piloto: apenas os bimestres [${policy.allowedBimesters.join(', ')}] estão habilitados. ` +
         `Bimestre solicitado: ${input.bimester}º.`,
       );
     }
@@ -234,12 +275,13 @@ export class SiageService {
     notRegistered: number;
     errors: number;
   }> {
-    // Pilot scope enforcement: verify run bimester before import
+    // Pilot scope policy enforcement (operational restriction, not product limitation)
     const run = await SiageRunModel.findOne({ _id: runId, tenantId }).lean();
     if (!run) throw new Error('Run não encontrada.');
-    if (run.bimester !== PILOT_ALLOWED_BIMESTER) {
+    const policy = getPilotPolicy();
+    if (!policy.isBimesterAllowed(run.bimester)) {
       throw new Error(
-        `Operação bloqueada: promoção para Nota permitida apenas para o ${PILOT_ALLOWED_BIMESTER}º bimestre. ` +
+        `Operação bloqueada pela política do piloto: promoção para Nota permitida apenas para os bimestres [${policy.allowedBimesters.join(', ')}]. ` +
         `Este run é do ${run.bimester}º bimestre.`,
       );
     }
@@ -357,7 +399,7 @@ export class SiageService {
       totalImportable: withGrade.length,
       totalNotRegistered: withoutGrade.length,
       byDiscipline,
-      pilotBimesterAllowed: run.bimester === PILOT_ALLOWED_BIMESTER,
+      pilotBimesterAllowed: getPilotPolicy().isBimesterAllowed(run.bimester),
       alreadyImported: await SiageRunItemModel.countDocuments({
         runId,
         'importResult.status': 'imported',

@@ -15,6 +15,13 @@ const envSchema = z.object({
   REDIS_URL: z.string().default('redis://localhost:6379'),
   /** Master key for encrypting SIAGE credentials into job envelopes */
   SIAGE_ENVELOPE_KEY: z.string().min(16).default('dev-envelope-key-not-for-prod'),
+  /**
+   * Pilot scope policy: comma-separated bimesters allowed for SIAGE operations.
+   * Default: '1' (current pilot restricts to 1st bimester).
+   * Set to '' or '1,2,3,4' to unlock all bimesters (full product capability).
+   * This is an operational policy, NOT a product limitation.
+   */
+  SIAGE_PILOT_BIMESTERS: z.string().default('1'),
 });
 
 const _env = envSchema.safeParse(process.env);

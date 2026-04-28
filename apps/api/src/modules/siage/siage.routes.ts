@@ -381,4 +381,81 @@ export const siageRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
       });
     },
   );
+
+  // ── POST /runs/:runId/dismiss-placeholders — Batch dismiss DOM artifacts ──
+  typedFastify.post(
+    '/runs/:runId/dismiss-placeholders',
+    {
+      preHandler: [fastify.authorize(['admin', 'secretaria'])],
+      schema: {
+        params: z.object({ runId: z.string() }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const result = await siageService.dismissPlaceholders(
+          request.params.runId,
+          request.user.tenantId,
+          request.user.id,
+        );
+        reply.send({ success: true, data: result });
+      } catch (error) {
+        reply.code(400).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Erro ao descartar placeholders',
+        });
+      }
+    },
+  );
+
+  // ── POST /items/:itemId/dismiss — Dismiss single UNMATCHED item ──
+  typedFastify.post(
+    '/items/:itemId/dismiss',
+    {
+      preHandler: [fastify.authorize(['admin', 'secretaria'])],
+      schema: {
+        params: z.object({ itemId: z.string() }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const result = await siageService.dismissItem(
+          request.params.itemId,
+          request.user.tenantId,
+          request.user.id,
+        );
+        reply.send({ success: true, data: result });
+      } catch (error) {
+        reply.code(400).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Erro ao descartar item',
+        });
+      }
+    },
+  );
+
+  // ── GET /runs/:runId/unmatched-breakdown — Operational metrics ──
+  typedFastify.get(
+    '/runs/:runId/unmatched-breakdown',
+    {
+      preHandler: [fastify.authorize(['admin', 'secretaria'])],
+      schema: {
+        params: z.object({ runId: z.string() }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const data = await siageService.getUnmatchedBreakdown(
+          request.params.runId,
+          request.user.tenantId,
+        );
+        reply.send({ success: true, data });
+      } catch (error) {
+        reply.code(400).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Erro ao carregar breakdown',
+        });
+      }
+    },
+  );
 };

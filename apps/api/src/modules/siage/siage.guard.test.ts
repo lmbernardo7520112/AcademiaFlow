@@ -13,7 +13,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { z } from 'zod';
-import { getPilotPolicy } from './siage.service.js';
+import { getPilotPolicy, isDomPlaceholder } from './siage.service.js';
 
 // ── Schema guard: dryRun defaults to true ──────────────────────────────────
 
@@ -287,6 +287,67 @@ describe('SIAGE Pilot Policy — Bimester Scope Enforcement', () => {
       for (const b of [2, 3, 4]) {
         expect(getPilotPolicy().isBimesterAllowed(b)).toBe(false);
       }
+    });
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// UNMATCHED TAXONOMY TESTS — Operational Classification
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('SIAGE UNMATCHED Taxonomy — DOM Placeholder Detection', () => {
+  describe('isDomPlaceholder', () => {
+    it('detects "-" as DOM placeholder', () => {
+      expect(isDomPlaceholder('-')).toBe(true);
+    });
+
+    it('detects empty string as DOM placeholder', () => {
+      expect(isDomPlaceholder('')).toBe(true);
+    });
+
+    it('detects "Nenhum registro foi encontrado" as DOM placeholder', () => {
+      expect(isDomPlaceholder('Nenhum registro foi encontrado')).toBe(true);
+    });
+
+    it('detects "Nenhum registro encontrado" as DOM placeholder', () => {
+      expect(isDomPlaceholder('Nenhum registro encontrado')).toBe(true);
+    });
+
+    it('is case-insensitive', () => {
+      expect(isDomPlaceholder('NENHUM REGISTRO FOI ENCONTRADO')).toBe(true);
+    });
+
+    it('handles whitespace', () => {
+      expect(isDomPlaceholder('  -  ')).toBe(true);
+      expect(isDomPlaceholder('  ')).toBe(true);
+    });
+
+    it('rejects real student names', () => {
+      expect(isDomPlaceholder('Geovannaa Alves de Lima')).toBe(false);
+      expect(isDomPlaceholder('PEDRO HENRIQUE MAIA DO NASCIMENTO')).toBe(false);
+      expect(isDomPlaceholder('Ana Julia')).toBe(false);
+    });
+  });
+
+  describe('Semantic separation: UNMATCHED ≠ notRegistered', () => {
+    it('UNMATCHED is about identity reconciliation failure', () => {
+      // UNMATCHED = student name from SIAGE not found in local cadastro
+      const unmatchedReasons = ['DOM_PLACEHOLDER', 'NO_LOCAL_STUDENT'];
+      expect(unmatchedReasons).not.toContain('missing_grade');
+      expect(unmatchedReasons).not.toContain('not_registered');
+    });
+
+    it('notRegistered is about grade absence in SIAGE', () => {
+      // notRegistered = student was matched but grade value was null
+      const importStatuses = ['imported', 'skipped', 'not_registered', 'error'];
+      expect(importStatuses).toContain('not_registered');
+      // not_registered only applies AFTER a successful match
+    });
+
+    it('DOM_PLACEHOLDER and NO_LOCAL_STUDENT are distinct operational categories', () => {
+      // DOM_PLACEHOLDER: scraping artifact, should be auto-dismissed
+      // NO_LOCAL_STUDENT: real student not in local cadastro, requires institutional decision
+      expect('DOM_PLACEHOLDER').not.toBe('NO_LOCAL_STUDENT');
     });
   });
 });

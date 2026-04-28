@@ -142,6 +142,11 @@ export const siageApi = {
 
   // Pilot policy
   getPilotPolicy: () => api.get('/siage/pilot-policy'),
+
+  // UNMATCHED operations
+  dismissPlaceholders: (runId: string) => api.post(`/siage/runs/${runId}/dismiss-placeholders`),
+  dismissItem: (itemId: string) => api.post(`/siage/items/${itemId}/dismiss`),
+  getUnmatchedBreakdown: (runId: string) => api.get(`/siage/runs/${runId}/unmatched-breakdown`),
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

@@ -1,7 +1,8 @@
 import mongoose, { Schema } from 'mongoose';
 
-const MATCH_STATUSES = ['AUTO_MATCHED', 'MANUAL_PENDING', 'UNMATCHED', 'SKIPPED'] as const;
+const MATCH_STATUSES = ['AUTO_MATCHED', 'MANUAL_PENDING', 'UNMATCHED', 'SKIPPED', 'RESOLVED', 'DISMISSED'] as const;
 const IMPORT_STATUSES = ['imported', 'skipped', 'not_registered', 'error'] as const;
+const UNMATCHED_REASONS = ['DOM_PLACEHOLDER', 'NO_LOCAL_STUDENT'] as const;
 
 const siageRunItemSchema = new Schema(
   {
@@ -33,6 +34,12 @@ const siageRunItemSchema = new Schema(
         enum: MATCH_STATUSES,
         required: true,
         default: 'UNMATCHED',
+      },
+      /** Sub-classification reason for UNMATCHED items */
+      reason: {
+        type: String,
+        enum: [...UNMATCHED_REASONS, null],
+        default: null,
       },
     },
     resolution: {

@@ -100,6 +100,26 @@ function normalizeName(name: string): string {
     .replace(/\s+/g, ' ');
 }
 
+// ─── UNMATCHED Sub-Classification ────────────────────────────────────────────
+//
+// UNMATCHED reasons (operational taxonomy):
+//   DOM_PLACEHOLDER  — scraping artifact ("-", empty, "Nenhum registro foi encontrado")
+//   NO_LOCAL_STUDENT — real student name but not found in local cadastro
+//
+// This is NOT the same as notRegistered (which means the student was matched
+// but their grade was null in SIAGE).
+
+const DOM_PLACEHOLDER_PATTERNS = ['-', '', 'nenhum registro foi encontrado', 'nenhum registro encontrado'];
+
+export function isDomPlaceholder(name: string): boolean {
+  const normalized = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+  return DOM_PLACEHOLDER_PATTERNS.includes(normalized);
+}
+
+function classifyUnmatchedReason(alunoName: string): string {
+  return isDomPlaceholder(alunoName) ? 'DOM_PLACEHOLDER' : 'NO_LOCAL_STUDENT';
+}
+
 function normalizeTurmaFilter(filter?: string | null): string {
   return filter?.trim() || '__ALL__';
 }
@@ -224,7 +244,19 @@ export class SiageService {
     disciplinaId: Types.ObjectId | null;
     turmaId: Types.ObjectId | null;
     matchStatus: string;
+    reason?: string;
   }> {
+    // 0. Detect DOM placeholder artifacts before any DB lookup
+    if (isDomPlaceholder(item.alunoName)) {
+      return {
+        alunoId: null,
+        disciplinaId: null,
+        turmaId: null,
+        matchStatus: 'UNMATCHED',
+        reason: 'DOM_PLACEHOLDER',
+      };
+    }
+
     // 1. Match aluno by normalizedName
     const normalizedStudentName = normalizeName(item.alunoName);
     const aluno = await AlunoModel.findOne({
@@ -238,6 +270,7 @@ export class SiageService {
         disciplinaId: null,
         turmaId: null,
         matchStatus: 'UNMATCHED',
+        reason: classifyUnmatchedReason(item.alunoName),
       };
     }
 
@@ -527,9 +560,9 @@ export class SiageService {
       item.matchResult.disciplinaId = resolution.disciplinaId as unknown as Types.ObjectId;
     }
 
-    // If both aluno and disciplina are now resolved, auto-match
+    // If both aluno and disciplina are now resolved, mark as RESOLVED
     if (item.matchResult.alunoId && item.matchResult.disciplinaId) {
-      item.matchResult.matchStatus = 'AUTO_MATCHED';
+      item.matchResult.matchStatus = 'RESOLVED';
 
       // Resolve turma from aluno
       const aluno = await AlunoModel.findById(item.matchResult.alunoId)
@@ -546,6 +579,76 @@ export class SiageService {
 
     await item.save();
     return item;
+  }
+
+  // ── Dismiss DOM Placeholders (batch) ──
+
+  async dismissPlaceholders(runId: string, tenantId: string, dismissedBy: string): Promise<{
+    dismissed: number;
+  }> {
+    const result = await SiageRunItemModel.updateMany(
+      {
+        runId,
+        tenantId,
+        'matchResult.matchStatus': 'UNMATCHED',
+        'matchResult.reason': 'DOM_PLACEHOLDER',
+      },
+      {
+        $set: {
+          'matchResult.matchStatus': 'DISMISSED',
+          'resolution.resolvedBy': dismissedBy,
+          'resolution.resolvedAt': new Date(),
+          'resolution.action': 'mark_pending',
+          'resolution.previousStatus': 'UNMATCHED',
+        },
+      },
+    );
+
+    return { dismissed: result.modifiedCount };
+  }
+
+  // ── Dismiss single item (NO_LOCAL_STUDENT or any) ──
+
+  async dismissItem(itemId: string, tenantId: string, dismissedBy: string): Promise<{ success: boolean }> {
+    const item = await SiageRunItemModel.findOne({ _id: itemId, tenantId });
+    if (!item) throw new Error('Item não encontrado');
+
+    if (item.matchResult?.matchStatus !== 'UNMATCHED') {
+      throw new Error('Apenas itens UNMATCHED podem ser descartados');
+    }
+
+    item.matchResult.matchStatus = 'DISMISSED';
+    item.resolution = {
+      resolvedBy: dismissedBy as unknown as Types.ObjectId,
+      resolvedAt: new Date(),
+      action: 'mark_pending',
+      previousStatus: 'UNMATCHED',
+    };
+
+    await item.save();
+    return { success: true };
+  }
+
+  // ── UNMATCHED Breakdown (operational metrics) ──
+
+  async getUnmatchedBreakdown(runId: string, tenantId: string): Promise<{
+    total: number;
+    domPlaceholders: number;
+    noLocalStudent: number;
+    noReason: number;
+    dismissed: number;
+    resolved: number;
+  }> {
+    const [total, domPlaceholders, noLocalStudent, noReason, dismissed, resolved] = await Promise.all([
+      SiageRunItemModel.countDocuments({ runId, tenantId, 'matchResult.matchStatus': 'UNMATCHED' }),
+      SiageRunItemModel.countDocuments({ runId, tenantId, 'matchResult.matchStatus': 'UNMATCHED', 'matchResult.reason': 'DOM_PLACEHOLDER' }),
+      SiageRunItemModel.countDocuments({ runId, tenantId, 'matchResult.matchStatus': 'UNMATCHED', 'matchResult.reason': 'NO_LOCAL_STUDENT' }),
+      SiageRunItemModel.countDocuments({ runId, tenantId, 'matchResult.matchStatus': 'UNMATCHED', 'matchResult.reason': { $in: [null, 'NO_REASON'] } }),
+      SiageRunItemModel.countDocuments({ runId, tenantId, 'matchResult.matchStatus': 'DISMISSED' }),
+      SiageRunItemModel.countDocuments({ runId, tenantId, 'matchResult.matchStatus': 'RESOLVED' }),
+    ]);
+
+    return { total, domPlaceholders, noLocalStudent, noReason, dismissed, resolved };
   }
 }
 

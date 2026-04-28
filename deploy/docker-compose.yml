@@ -1,0 +1,108 @@
+# ============================================================
+# AcademiaFlow Appliance v1.4.0 — Docker Compose
+# ============================================================
+# Entrypoint: scripts/first_boot.sh (WSL2) or scripts/host_startup.ps1 (Windows)
+# Config:     .env.production
+#
+# IMPORTANT: This appliance boots WITHOUT GEMINI_API_KEY.
+# AI features degrade gracefully (HTTP 503). Busca Ativa is fully offline.
+
+services:
+  mongo:
+    image: mongo:6.0-jammy
+    container_name: academiaflow_mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - academiaflow_net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    image: academiaflow_api:appliance-v1.4.0
+    container_name: academiaflow_api
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    env_file:
+      - .env.production
+    environment:
+      - DATABASE_URL=mongodb://mongo:27017/academiaflow
+    networks:
+      - academiaflow_net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  redis:
+    image: redis:7-alpine
+    container_name: academiaflow_redis
+    restart: unless-stopped
+    networks:
+      - academiaflow_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  worker:
+    image: academiaflow_worker:appliance-v1.4.0
+    container_name: academiaflow_worker
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env.production
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - API_BASE_URL=http://api:3000
+      - SIAGE_BASE_URL=https://escola.see.pb.gov.br/auth
+    networks:
+      - academiaflow_net
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('fs').existsSync('/app/apps/worker-siage/dist/start-worker.js') ? process.exit(0) : process.exit(1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  web:
+    image: academiaflow_web:appliance-v1.4.0
+    container_name: academiaflow_web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    networks:
+      - academiaflow_net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+networks:
+  academiaflow_net:
+    driver: bridge
+
+volumes:
+  mongo_data:
+    external: true
+    name: appliance_academiaflow_v130_mongo_data

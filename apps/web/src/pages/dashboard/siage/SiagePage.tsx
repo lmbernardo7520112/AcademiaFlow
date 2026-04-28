@@ -27,12 +27,13 @@ function StatusBadge({ status }: { status: SiageRunStatus }) {
 function CreateRunForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: () => void }) {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
-  const [bimester, setBimester] = useState(1);
   const [turmaFilter, setTurmaFilter] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const PILOT_BIMESTER = 1;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +42,7 @@ function CreateRunForm({ onCreated, onCancel }: { onCreated: () => void; onCance
     setError('');
     try {
       await siageApi.createRun({
-        year, bimester,
+        year, bimester: PILOT_BIMESTER,
         turmaFilter: turmaFilter || undefined,
         credentials: { username, password },
       });
@@ -63,6 +64,9 @@ function CreateRunForm({ onCreated, onCancel }: { onCreated: () => void; onCance
         <h3 style={{ margin: 0 }}>Nova Sincronização SIAGE</h3>
         <button onClick={onCancel} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><X size={20} /></button>
       </div>
+      <div style={{ background: '#3b82f622', border: '1px solid #3b82f644', borderRadius: 8, padding: '0.6rem 0.8rem', marginBottom: '1rem', fontSize: '0.82rem', color: '#93c5fd' }}>
+        🔒 <strong>Modo Piloto:</strong> apenas o 1º bimestre está habilitado para extração nesta fase.
+      </div>
       <form onSubmit={handleSubmit}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
           <div>
@@ -73,8 +77,8 @@ function CreateRunForm({ onCreated, onCancel }: { onCreated: () => void; onCance
           </div>
           <div>
             <label className="form-label">Bimestre</label>
-            <select className="form-input" value={bimester} onChange={e => setBimester(Number(e.target.value))}>
-              {[1, 2, 3, 4].map(b => <option key={b} value={b}>{b}º Bimestre</option>)}
+            <select className="form-input" value={PILOT_BIMESTER} disabled style={{ opacity: 0.7 }}>
+              <option value={1}>1º Bimestre</option>
             </select>
           </div>
           <div>
@@ -97,7 +101,7 @@ function CreateRunForm({ onCreated, onCancel }: { onCreated: () => void; onCance
         </p>
         {error && <div style={{ color: '#ef4444', marginBottom: '0.75rem', fontSize: '0.85rem' }}><AlertCircle size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />{error}</div>}
         <button type="submit" className="btn-primary" disabled={submitting} style={{ width: '100%' }}>
-          {submitting ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite', marginRight: 6 }} />Criando...</> : 'Iniciar Sincronização'}
+          {submitting ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite', marginRight: 6 }} />Criando...</> : 'Iniciar Sincronização (1º Bimestre)'}
         </button>
       </form>
     </div>
@@ -189,6 +193,141 @@ function ResolveModal({ item, runId, onClose, onResolved }: {
   );
 }
 
+// ─── Promotion Preview Modal ─────────────────────────────────────────────────
+
+interface PromotionPreview {
+  totalImportable: number;
+  totalNotRegistered: number;
+  byDiscipline: Record<string, number>;
+  alreadyImported: number;
+  pilotBimesterAllowed: boolean;
+}
+
+function PromoteModal({ run, onClose, onPromoted }: { run: SiageRun; onClose: () => void; onPromoted: () => void }) {
+  const [preview, setPreview] = useState<PromotionPreview | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [promoting, setPromoting] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState<{ imported: number; notRegistered: number; errors: number } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await siageApi.getPromotionPreview(run._id);
+        setPreview(res.data.data);
+      } catch (err: unknown) {
+        setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Erro ao carregar preview.');
+      } finally { setLoading(false); }
+    })();
+  }, [run._id]);
+
+  const handlePromote = async () => {
+    setPromoting(true); setError('');
+    try {
+      const res = await siageApi.promoteRun(run._id);
+      setResult(res.data.data);
+      setTimeout(onPromoted, 2000);
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Erro na promoção.');
+    } finally { setPromoting(false); }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)' }} onClick={onClose} />
+      <div className="glass-panel" style={{ position: 'relative', width: '100%', maxWidth: 520, padding: '1.5rem', zIndex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ margin: 0 }}>Promover para Notas</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }} aria-label="Fechar"><X size={20} /></button>
+        </div>
+
+        {loading && <div style={{ textAlign: 'center', padding: '2rem', color: '#888' }}><Loader2 size={24} style={{ animation: 'spin 1s linear infinite' }} /></div>}
+
+        {result && (
+          <div style={{ background: '#10b98122', border: '1px solid #10b98144', borderRadius: 8, padding: '1rem', textAlign: 'center' }}>
+            <CheckCircle2 size={32} style={{ color: '#10b981', marginBottom: 8 }} />
+            <div style={{ fontWeight: 600, color: '#10b981' }}>Promoção realizada</div>
+            <div style={{ fontSize: '0.85rem', color: '#888', marginTop: 4 }}>
+              {result.imported} notas escritas | {result.notRegistered} sem nota | {result.errors} erros
+            </div>
+          </div>
+        )}
+
+        {!loading && !result && preview && (
+          <>
+            {!preview.pilotBimesterAllowed && (
+              <div style={{ background: '#ef444422', border: '1px solid #ef444444', borderRadius: 8, padding: '0.6rem', marginBottom: '1rem', fontSize: '0.82rem', color: '#fca5a5' }}>
+                ⛔ Este run é de um bimestre fora do escopo do piloto. Promoção bloqueada.
+              </div>
+            )}
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: '1rem', marginBottom: '1rem', fontSize: '0.85rem' }}>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>Preview da promoção:</div>
+              <div>📝 Notas a escrever: <strong>{preview.totalImportable}</strong></div>
+              <div>📭 Sem nota registrada: {preview.totalNotRegistered}</div>
+              <div>✅ Já importadas: {preview.alreadyImported}</div>
+              {Object.keys(preview.byDiscipline).length > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  <div style={{ fontWeight: 500, marginBottom: 4 }}>Por disciplina:</div>
+                  {Object.entries(preview.byDiscipline).sort(([,a],[,b]) => b - a).map(([disc, count]) => (
+                    <div key={disc} style={{ marginLeft: 12 }}>• {disc}: {count}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ background: '#f59e0b22', border: '1px solid #f59e0b44', borderRadius: 8, padding: '0.6rem', marginBottom: '1rem', fontSize: '0.82rem', color: '#fcd34d' }}>
+              ⚠️ <strong>Atenção:</strong> Esta ação escreverá {preview.totalImportable} notas definitivamente na coleção Notas. Esta ação não pode ser desfeita pela interface.
+            </div>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: '1rem', fontSize: '0.85rem', cursor: 'pointer' }}>
+              <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />
+              Confirmo que revisei os dados e autorizo a promoção
+            </label>
+
+            {error && <div style={{ color: '#ef4444', marginBottom: '0.75rem', fontSize: '0.85rem' }}><AlertCircle size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />{error}</div>}
+
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button className="btn-secondary" onClick={onClose} style={{ flex: 1 }}>Cancelar</button>
+              <button
+                className="btn-primary"
+                onClick={handlePromote}
+                disabled={promoting || !confirmed || !preview.pilotBimesterAllowed || preview.totalImportable === 0}
+                style={{ flex: 1, background: confirmed && preview.pilotBimesterAllowed ? '#10b981' : undefined }}
+              >
+                {promoting ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite', marginRight: 4 }} />Promovendo...</> : `Promover ${preview.totalImportable} Notas`}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Match Rate Helper ───────────────────────────────────────────────────────
+
+function MatchRateBadge({ matched, total }: { matched: number; total: number }) {
+  if (total === 0) return null;
+  const rate = (matched / total * 100);
+  const color = rate >= 80 ? '#10b981' : rate >= 50 ? '#f59e0b' : '#ef4444';
+  const emoji = rate >= 80 ? '🟢' : rate >= 50 ? '🟡' : '🔴';
+  return (
+    <span title={`${matched}/${total} auto-matched`} style={{ fontSize: '0.78rem', color, fontWeight: 600 }}>
+      {emoji} {rate.toFixed(0)}%
+    </span>
+  );
+}
+
+// ─── DOM Placeholder Check ───────────────────────────────────────────────────
+
+const DOM_PLACEHOLDERS = ['-', 'Nenhum registro foi encontrado', ''];
+
+function isDomPlaceholder(name: string): boolean {
+  return DOM_PLACEHOLDERS.includes(name.trim());
+}
+
 // ─── Run Detail Panel ────────────────────────────────────────────────────────
 
 function RunDetail({ run, onBack }: { run: SiageRun; onBack: () => void }) {
@@ -197,12 +336,25 @@ function RunDetail({ run, onBack }: { run: SiageRun; onBack: () => void }) {
   const [loading, setLoading] = useState(true);
   const [resolvingItem, setResolvingItem] = useState<SiageRunItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showPromote, setShowPromote] = useState(false);
 
   const filteredItems = useMemo(() => {
-    if (!searchTerm.trim()) return items;
-    const term = searchTerm.toLowerCase();
-    return items.filter(i => i.source.alunoName.toLowerCase().includes(term));
+    let result = items;
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(i => i.source.alunoName.toLowerCase().includes(term));
+    }
+    return result;
   }, [items, searchTerm]);
+
+  // Computed stats from items
+  const itemStats = useMemo(() => {
+    const matched = items.filter(i => i.matchResult.status === 'AUTO_MATCHED').length;
+    const unmatched = items.filter(i => i.matchResult.status === 'UNMATCHED').length;
+    const pending = items.filter(i => i.matchResult.status === 'MANUAL_PENDING').length;
+    const placeholders = items.filter(i => isDomPlaceholder(i.source.alunoName)).length;
+    return { matched, unmatched, pending, placeholders, total: items.length };
+  }, [items]);
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -229,21 +381,50 @@ function RunDetail({ run, onBack }: { run: SiageRun; onBack: () => void }) {
     RESOLVED: '#3b82f6', IMPORTED: '#10b981', IMPORT_FAILED: '#ef4444',
   };
 
+  const canPromote = run.status === 'COMPLETED' && run.bimester === 1 && itemStats.matched > 0;
+
   return (
     <div className="fade-in">
       <button onClick={onBack} className="btn-secondary" style={{ marginBottom: '1rem' }}>← Voltar</button>
       <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
           <div>
-            <h3 style={{ margin: '0 0 0.5rem' }}>{run.year} — {run.bimester}º Bim</h3>
+            <h3 style={{ margin: '0 0 0.5rem' }}>
+              {run.year} — {run.bimester}º Bim
+              {' '}<MatchRateBadge matched={itemStats.matched} total={itemStats.total - itemStats.placeholders} />
+            </h3>
             <StatusBadge status={run.status} />
             {run.turmaFilter && run.turmaFilter !== '__ALL__' && <span style={{ marginLeft: 8, color: '#888' }}>Turma: {run.turmaFilter}</span>}
           </div>
           <div style={{ textAlign: 'right', fontSize: '0.85rem', color: '#888' }}>
             <div>Criado: {new Date(run.createdAt).toLocaleString('pt-BR')}</div>
-            <div>Total: {run.stats.total} | Match: {run.stats.matched} | Import: {run.stats.imported} | Erros: {run.stats.errors}</div>
+            <div>Total: {run.stats.total} | Match: {itemStats.matched} | Import: {run.stats.imported} | Erros: {run.stats.errors}</div>
           </div>
         </div>
+
+        {/* Stats bar */}
+        {itemStats.total > 0 && (
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem', flexWrap: 'wrap', fontSize: '0.82rem' }}>
+            <span style={{ color: '#10b981' }}>✅ Auto-match: {itemStats.matched}</span>
+            <span style={{ color: '#ef4444' }}>❌ Não encontrados: {itemStats.unmatched}</span>
+            {itemStats.pending > 0 && <span style={{ color: '#f59e0b' }}>⏳ Pendentes: {itemStats.pending}</span>}
+            {itemStats.placeholders > 0 && <span style={{ color: '#6b7280' }}>👻 Placeholders DOM: {itemStats.placeholders}</span>}
+          </div>
+        )}
+
+        {/* Promote button */}
+        {canPromote && (
+          <button
+            className="btn-primary"
+            onClick={() => setShowPromote(true)}
+            style={{ marginTop: '1rem', background: '#10b981', width: '100%' }}
+            id="siage-promote-btn"
+          >
+            <CheckCircle2 size={16} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+            Promover para Notas ({itemStats.matched} itens matched)
+          </button>
+        )}
+
         {run.errorMessage && <div style={{ marginTop: '0.75rem', padding: '0.5rem', background: '#ef444422', borderRadius: 6, color: '#ef4444', fontSize: '0.85rem' }}>{run.errorMessage}</div>}
       </div>
 
@@ -276,29 +457,36 @@ function RunDetail({ run, onBack }: { run: SiageRun; onBack: () => void }) {
               <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /></td></tr>
             ) : filteredItems.length === 0 ? (
               <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Nenhum item encontrado.</td></tr>
-            ) : filteredItems.map(item => (
-              <tr key={item._id}>
-                <td>{item.source.alunoName}</td>
-                <td>{item.source.disciplinaName}</td>
-                <td>{item.source.value != null ? item.source.value.toFixed(1) : '—'}</td>
-                <td><span style={{ color: matchColors[item.matchResult.status] || '#888', fontWeight: 500, fontSize: '0.85rem' }}>{item.matchResult.status.replace(/_/g, ' ')}</span></td>
-                <td style={{ fontSize: '0.78rem', color: '#888' }}>
-                  {item.resolution?.resolvedAt ? (
-                    <span title={`Por: ${item.resolution.resolvedBy} | Ação: ${item.resolution.action} | De: ${item.resolution.previousStatus}`}>
-                      <UserCheck size={12} style={{ marginRight: 3, verticalAlign: 'middle', color: '#10b981' }} />
-                      {new Date(item.resolution.resolvedAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  ) : '—'}
-                </td>
-                <td>
-                  {RESOLVABLE_STATUSES.includes(item.matchResult.status) && (
-                    <button className="btn-primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }} onClick={() => setResolvingItem(item)}>
-                      Resolver
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+            ) : filteredItems.map(item => {
+              const isPlaceholder = isDomPlaceholder(item.source.alunoName);
+              return (
+                <tr key={item._id} style={isPlaceholder ? { opacity: 0.4 } : undefined}>
+                  <td>
+                    {isPlaceholder ? (
+                      <span style={{ fontStyle: 'italic', color: '#6b7280' }}>👻 {item.source.alunoName || '(vazio)'}</span>
+                    ) : item.source.alunoName}
+                  </td>
+                  <td>{item.source.disciplinaName}</td>
+                  <td>{item.source.value != null ? item.source.value.toFixed(1) : '—'}</td>
+                  <td><span style={{ color: matchColors[item.matchResult.status] || '#888', fontWeight: 500, fontSize: '0.85rem' }}>{item.matchResult.status.replace(/_/g, ' ')}</span></td>
+                  <td style={{ fontSize: '0.78rem', color: '#888' }}>
+                    {item.resolution?.resolvedAt ? (
+                      <span title={`Por: ${item.resolution.resolvedBy} | Ação: ${item.resolution.action} | De: ${item.resolution.previousStatus}`}>
+                        <UserCheck size={12} style={{ marginRight: 3, verticalAlign: 'middle', color: '#10b981' }} />
+                        {new Date(item.resolution.resolvedAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    ) : isPlaceholder ? <span style={{ color: '#6b7280' }}>placeholder</span> : '—'}
+                  </td>
+                  <td>
+                    {!isPlaceholder && RESOLVABLE_STATUSES.includes(item.matchResult.status) && (
+                      <button className="btn-primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }} onClick={() => setResolvingItem(item)}>
+                        Resolver
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -307,6 +495,13 @@ function RunDetail({ run, onBack }: { run: SiageRun; onBack: () => void }) {
         <ResolveModal item={resolvingItem} runId={run._id}
           onClose={() => setResolvingItem(null)}
           onResolved={() => { setResolvingItem(null); fetchItems(); }}
+        />
+      )}
+
+      {showPromote && (
+        <PromoteModal run={run}
+          onClose={() => setShowPromote(false)}
+          onPromoted={() => { setShowPromote(false); fetchItems(); }}
         />
       )}
     </div>
@@ -480,6 +675,10 @@ export default function SiagePage() {
         <p className="text-secondary">Sincronização de notas com o sistema SIAGE da Secretaria de Educação</p>
       </div>
 
+      <div style={{ background: '#3b82f622', border: '1px solid #3b82f644', borderRadius: 8, padding: '0.6rem 1rem', marginBottom: '1rem', fontSize: '0.82rem', color: '#93c5fd' }} className="fade-in">
+        🔒 <strong>Modo Piloto Ativo:</strong> operações restritas ao 1º bimestre. Bimestres 2-4 bloqueados por governança de escopo.
+      </div>
+
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }} className="fade-in">
         <button className={tab === 'runs' ? 'btn-primary' : 'btn-secondary'} onClick={() => setTab('runs')}>Execuções</button>
@@ -505,17 +704,18 @@ export default function SiagePage() {
           {/* Runs table */}
           <div className="glass-panel" style={{ padding: 0 }}>
             <table className="data-table" id="siage-runs-table">
-              <thead><tr><th>Ano</th><th>Bimestre</th><th>Status</th><th>Itens</th><th>Data</th><th>Ações</th></tr></thead>
+              <thead><tr><th>Ano</th><th>Bimestre</th><th>Status</th><th>Match</th><th>Itens</th><th>Data</th><th>Ações</th></tr></thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /></td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /></td></tr>
                 ) : runs.length === 0 ? (
-                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Nenhuma execução registrada. Clique em "Nova Sincronização" para começar.</td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Nenhuma execução registrada. Clique em "Nova Sincronização" para começar.</td></tr>
                 ) : runs.map(run => (
                   <tr key={run._id}>
                     <td>{run.year}</td>
                     <td>{run.bimester}º</td>
                     <td><StatusBadge status={run.status} /></td>
+                    <td>{run.stats.total > 0 ? <MatchRateBadge matched={run.stats.matched} total={run.stats.total} /> : '—'}</td>
                     <td>{run.stats.total > 0 ? `${run.stats.imported}/${run.stats.total}` : '—'}</td>
                     <td style={{ fontSize: '0.85rem', color: '#888' }}>{new Date(run.createdAt).toLocaleString('pt-BR')}</td>
                     <td>

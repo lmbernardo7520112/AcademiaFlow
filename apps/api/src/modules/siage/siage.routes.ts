@@ -224,12 +224,58 @@ export const siageRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
         const result = await siageService.importMatchedItems(
           request.params.runId,
           request.user.tenantId,
+          request.user.id,
         );
         reply.send({ success: true, data: result });
       } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Erro no import';
+        const code = msg.includes('bloqueada') ? 422 : 400;
+        reply.code(code).send({ success: false, message: msg });
+      }
+    },
+  );
+
+  // ── POST /runs/:runId/promote — Explicit promotion (UI-driven, audit trail) ──
+  typedFastify.post(
+    '/runs/:runId/promote',
+    {
+      preHandler: [fastify.authorize(['admin', 'secretaria'])],
+      schema: { params: runIdParamSchema },
+    },
+    async (request, reply) => {
+      try {
+        const result = await siageService.importMatchedItems(
+          request.params.runId,
+          request.user.tenantId,
+          request.user.id,
+        );
+        reply.send({ success: true, data: result });
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : 'Erro na promoção';
+        const code = msg.includes('bloqueada') ? 422 : 400;
+        reply.code(code).send({ success: false, message: msg });
+      }
+    },
+  );
+
+  // ── GET /runs/:runId/promote/preview — Preview what promotion would write ──
+  typedFastify.get(
+    '/runs/:runId/promote/preview',
+    {
+      preHandler: [fastify.authorize(['admin', 'secretaria'])],
+      schema: { params: runIdParamSchema },
+    },
+    async (request, reply) => {
+      try {
+        const preview = await siageService.getPromotionPreview(
+          request.params.runId,
+          request.user.tenantId,
+        );
+        reply.send({ success: true, data: preview });
+      } catch (error) {
         reply.code(400).send({
           success: false,
-          message: error instanceof Error ? error.message : 'Erro no import',
+          message: error instanceof Error ? error.message : 'Erro ao gerar preview',
         });
       }
     },

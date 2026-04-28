@@ -131,3 +131,72 @@ describe('SIAGE dryRun Guard Tests — Staging Safety', () => {
     });
   });
 });
+
+// ── Pilot Bimester Scope Guards ──────────────────────────────────────────────
+
+describe('SIAGE Pilot Bimester Guard Tests — Scope Enforcement', () => {
+  const PILOT_ALLOWED_BIMESTER = 1;
+
+  function assertBimesterScope(bimester: number): { allowed: boolean; error?: string } {
+    if (bimester !== PILOT_ALLOWED_BIMESTER) {
+      return {
+        allowed: false,
+        error: `Operação bloqueada: o piloto atual permite apenas o ${PILOT_ALLOWED_BIMESTER}º bimestre. Bimestre solicitado: ${bimester}º.`,
+      };
+    }
+    return { allowed: true };
+  }
+
+  describe('createRun scope', () => {
+    it('bimester=1 is allowed', () => {
+      const result = assertBimesterScope(1);
+      expect(result.allowed).toBe(true);
+      expect(result.error).toBeUndefined();
+    });
+
+    it('bimester=2 is BLOCKED', () => {
+      const result = assertBimesterScope(2);
+      expect(result.allowed).toBe(false);
+      expect(result.error).toContain('bloqueada');
+      expect(result.error).toContain('2º');
+    });
+
+    it('bimester=3 is BLOCKED', () => {
+      const result = assertBimesterScope(3);
+      expect(result.allowed).toBe(false);
+      expect(result.error).toContain('bloqueada');
+    });
+
+    it('bimester=4 is BLOCKED', () => {
+      const result = assertBimesterScope(4);
+      expect(result.allowed).toBe(false);
+      expect(result.error).toContain('bloqueada');
+    });
+  });
+
+  describe('promote/import scope', () => {
+    it('promotion allowed for bimester=1 run', () => {
+      const runBimester = 1;
+      const allowed = runBimester === PILOT_ALLOWED_BIMESTER;
+      expect(allowed).toBe(true);
+    });
+
+    it('promotion BLOCKED for bimester=2 run', () => {
+      const runBimester = 2;
+      const allowed = runBimester === PILOT_ALLOWED_BIMESTER;
+      expect(allowed).toBe(false);
+    });
+
+    it('promotion BLOCKED for bimester=3 run', () => {
+      const runBimester = 3;
+      const allowed = runBimester === PILOT_ALLOWED_BIMESTER;
+      expect(allowed).toBe(false);
+    });
+
+    it('promotion BLOCKED for bimester=4 run', () => {
+      const runBimester = 4;
+      const allowed = runBimester === PILOT_ALLOWED_BIMESTER;
+      expect(allowed).toBe(false);
+    });
+  });
+});

@@ -42,6 +42,13 @@ interface IngestResult {
 
 const NON_TERMINAL_STATUSES = ['QUEUED', 'RUNNING', 'EXTRACTING', 'MATCHING', 'IMPORTING'];
 
+/**
+ * Pilot scope constraint: only bimester 1 is allowed for all SIAGE operations.
+ * This guard is enforced at the service layer (defense-in-depth).
+ * To expand scope, update this constant and the route schema.
+ */
+const PILOT_ALLOWED_BIMESTER = 1;
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function normalizeName(name: string): string {
@@ -64,6 +71,14 @@ export class SiageService {
   // ── Run Management ──
 
   async createRun(input: CreateRunInput) {
+    // Pilot scope enforcement
+    if (input.bimester !== PILOT_ALLOWED_BIMESTER) {
+      throw new Error(
+        `Operação bloqueada: o piloto atual permite apenas o ${PILOT_ALLOWED_BIMESTER}º bimestre. ` +
+        `Bimestre solicitado: ${input.bimester}º.`,
+      );
+    }
+
     const normalizedFilter = normalizeTurmaFilter(input.turmaFilter);
 
     // Deduplication: reject if a non-terminal run exists for the same scope
@@ -214,11 +229,21 @@ export class SiageService {
 
   // ── Import Matched Items ──
 
-  async importMatchedItems(runId: string, tenantId: string): Promise<{
+  async importMatchedItems(runId: string, tenantId: string, promotedBy?: string): Promise<{
     imported: number;
     notRegistered: number;
     errors: number;
   }> {
+    // Pilot scope enforcement: verify run bimester before import
+    const run = await SiageRunModel.findOne({ _id: runId, tenantId }).lean();
+    if (!run) throw new Error('Run não encontrada.');
+    if (run.bimester !== PILOT_ALLOWED_BIMESTER) {
+      throw new Error(
+        `Operação bloqueada: promoção para Nota permitida apenas para o ${PILOT_ALLOWED_BIMESTER}º bimestre. ` +
+        `Este run é do ${run.bimester}º bimestre.`,
+      );
+    }
+
     const items = await SiageRunItemModel.find({
       runId,
       'matchResult.matchStatus': 'AUTO_MATCHED',
@@ -242,10 +267,7 @@ export class SiageService {
           item.importResult = { notaId: null, status: 'not_registered', reason: 'Nota não registrada no SIAGE' };
           notRegistered++;
         } else {
-          // Find the run to get year info
-          const run = await SiageRunModel.findById(runId).select('year').lean();
-          if (!run) throw new Error('Run not found');
-
+          // run already fetched at top of method (pilot scope check)
           const result = await NotaModel.updateOne(
             {
               tenantId,
@@ -284,16 +306,63 @@ export class SiageService {
       await item.save();
     }
 
-    // Update run stats
+    // Update run stats + audit trail
+    const auditEntry = {
+      promotedBy: promotedBy || 'system',
+      promotedAt: new Date(),
+      imported,
+      notRegistered,
+      errors,
+    };
     await SiageRunModel.findByIdAndUpdate(runId, {
       $inc: {
         'stats.imported': imported,
         'stats.notRegistered': notRegistered,
         'stats.errors': errors,
       },
+      $push: { promotionLog: auditEntry },
     });
 
     return { imported, notRegistered, errors };
+  }
+
+  // ── Promotion Preview ──
+
+  async getPromotionPreview(runId: string, tenantId: string) {
+    const run = await SiageRunModel.findOne({ _id: runId, tenantId }).lean();
+    if (!run) throw new Error('Run não encontrada.');
+
+    // Count importable items (AUTO_MATCHED, not yet imported)
+    const items = await SiageRunItemModel.find({
+      runId,
+      'matchResult.matchStatus': 'AUTO_MATCHED',
+      'importResult.status': null,
+    }).lean();
+
+    const withGrade = items.filter(i => i.source?.value != null);
+    const withoutGrade = items.filter(i => i.source?.value == null);
+
+    // Group by discipline
+    const byDiscipline: Record<string, number> = {};
+    for (const item of withGrade) {
+      const disc = item.source?.disciplinaName || 'Desconhecida';
+      byDiscipline[disc] = (byDiscipline[disc] || 0) + 1;
+    }
+
+    return {
+      runId,
+      bimester: run.bimester,
+      year: run.year,
+      turmaFilter: run.turmaFilter,
+      totalImportable: withGrade.length,
+      totalNotRegistered: withoutGrade.length,
+      byDiscipline,
+      pilotBimesterAllowed: run.bimester === PILOT_ALLOWED_BIMESTER,
+      alreadyImported: await SiageRunItemModel.countDocuments({
+        runId,
+        'importResult.status': 'imported',
+      }),
+    };
   }
 
   // ── Item Queries ──

@@ -134,6 +134,11 @@ export const siageApi = {
 
   // Import (human-triggered)
   importRun: (runId: string) => api.post(`/siage/runs/${runId}/import`),
+
+  // Promote (explicit, auditable, UI-driven)
+  promoteRun: (runId: string) => api.post(`/siage/runs/${runId}/promote`),
+
+  getPromotionPreview: (runId: string) => api.get(`/siage/runs/${runId}/promote/preview`),
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

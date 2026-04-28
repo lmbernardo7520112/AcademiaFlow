@@ -47,6 +47,14 @@ const siageRunSchema = new Schema(
     startedAt: { type: Date, default: null },
     completedAt: { type: Date, default: null },
     errorMessage: { type: String, default: null },
+    /** Audit trail: each promotion event is logged here */
+    promotionLog: [{
+      promotedBy: { type: String, required: true },
+      promotedAt: { type: Date, required: true },
+      imported: { type: Number, required: true },
+      notRegistered: { type: Number, required: true },
+      errors: { type: Number, required: true },
+    }],
   },
   {
     timestamps: true,

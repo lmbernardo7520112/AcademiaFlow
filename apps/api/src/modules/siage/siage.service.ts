@@ -61,10 +61,10 @@ export interface PilotPolicy {
 }
 
 function parsePilotPolicy(): PilotPolicy {
-  // In test environments, use the env value set by tests (or default 'all')
   const raw = process.env.SIAGE_PILOT_BIMESTERS ?? '';
   const trimmed = raw.trim();
 
+  // Unrestricted: empty or all bimesters
   if (trimmed === '' || trimmed === '1,2,3,4') {
     return {
       isRestricted: false,
@@ -76,6 +76,18 @@ function parsePilotPolicy(): PilotPolicy {
   const allowed = trimmed.split(',')
     .map(s => parseInt(s.trim(), 10))
     .filter(n => !isNaN(n) && n >= 1 && n <= 4);
+
+  // Validation: if config is non-empty but parsing yields nothing, fallback safely
+  if (allowed.length === 0) {
+    console.warn(
+      `[SIAGE] SIAGE_PILOT_BIMESTERS="${raw}" parsed to empty set. Falling back to all bimesters.`,
+    );
+    return {
+      isRestricted: false,
+      allowedBimesters: [1, 2, 3, 4],
+      isBimesterAllowed: (b: number) => b >= 1 && b <= 4,
+    };
+  }
 
   return {
     isRestricted: allowed.length < 4,
@@ -104,7 +116,8 @@ function normalizeName(name: string): string {
 //
 // UNMATCHED reasons (operational taxonomy):
 //   DOM_PLACEHOLDER  — scraping artifact ("-", empty, "Nenhum registro foi encontrado")
-//   NO_LOCAL_STUDENT — real student name but not found in local cadastro
+//   NAME_MISMATCH    — real student with similar but divergent name in local cadastro
+//   NO_LOCAL_STUDENT — real student name not found at all in local cadastro
 //
 // This is NOT the same as notRegistered (which means the student was matched
 // but their grade was null in SIAGE).
@@ -116,8 +129,33 @@ export function isDomPlaceholder(name: string): boolean {
   return DOM_PLACEHOLDER_PATTERNS.includes(normalized);
 }
 
-function classifyUnmatchedReason(alunoName: string): string {
-  return isDomPlaceholder(alunoName) ? 'DOM_PLACEHOLDER' : 'NO_LOCAL_STUDENT';
+/**
+ * Detect NAME_MISMATCH: a student exists locally with the same first AND last name
+ * but the full normalized name differs (typo, middle name variation, preposition).
+ * This is a lightweight heuristic — not fuzzy matching — to separate reconciliable
+ * divergences from truly absent students.
+ */
+async function classifyUnmatchedReason(tenantId: string, alunoName: string): Promise<string> {
+  if (isDomPlaceholder(alunoName)) return 'DOM_PLACEHOLDER';
+
+  const normalized = normalizeName(alunoName);
+  const parts = normalized.split(' ');
+  if (parts.length < 2) return 'NO_LOCAL_STUDENT';
+
+  const firstName = parts[0];
+  const lastName = parts[parts.length - 1];
+
+  // Search for local students whose normalizedName starts with the same first name
+  // and ends with the same last name (but full name differs — that's the mismatch)
+  const candidate = await AlunoModel.findOne({
+    tenantId,
+    normalizedName: {
+      $regex: `^${firstName}\\b.*\\b${lastName}$`,
+      $ne: normalized,
+    },
+  }).select('_id name').lean();
+
+  return candidate ? 'NAME_MISMATCH' : 'NO_LOCAL_STUDENT';
 }
 
 function normalizeTurmaFilter(filter?: string | null): string {
@@ -270,7 +308,7 @@ export class SiageService {
         disciplinaId: null,
         turmaId: null,
         matchStatus: 'UNMATCHED',
-        reason: classifyUnmatchedReason(item.alunoName),
+        reason: await classifyUnmatchedReason(tenantId, item.alunoName),
       };
     }
 
@@ -634,21 +672,23 @@ export class SiageService {
   async getUnmatchedBreakdown(runId: string, tenantId: string): Promise<{
     total: number;
     domPlaceholders: number;
+    nameMismatch: number;
     noLocalStudent: number;
     noReason: number;
     dismissed: number;
     resolved: number;
   }> {
-    const [total, domPlaceholders, noLocalStudent, noReason, dismissed, resolved] = await Promise.all([
+    const [total, domPlaceholders, nameMismatch, noLocalStudent, noReason, dismissed, resolved] = await Promise.all([
       SiageRunItemModel.countDocuments({ runId, tenantId, 'matchResult.matchStatus': 'UNMATCHED' }),
       SiageRunItemModel.countDocuments({ runId, tenantId, 'matchResult.matchStatus': 'UNMATCHED', 'matchResult.reason': 'DOM_PLACEHOLDER' }),
+      SiageRunItemModel.countDocuments({ runId, tenantId, 'matchResult.matchStatus': 'UNMATCHED', 'matchResult.reason': 'NAME_MISMATCH' }),
       SiageRunItemModel.countDocuments({ runId, tenantId, 'matchResult.matchStatus': 'UNMATCHED', 'matchResult.reason': 'NO_LOCAL_STUDENT' }),
       SiageRunItemModel.countDocuments({ runId, tenantId, 'matchResult.matchStatus': 'UNMATCHED', 'matchResult.reason': { $in: [null, 'NO_REASON'] } }),
       SiageRunItemModel.countDocuments({ runId, tenantId, 'matchResult.matchStatus': 'DISMISSED' }),
       SiageRunItemModel.countDocuments({ runId, tenantId, 'matchResult.matchStatus': 'RESOLVED' }),
     ]);
 
-    return { total, domPlaceholders, noLocalStudent, noReason, dismissed, resolved };
+    return { total, domPlaceholders, nameMismatch, noLocalStudent, noReason, dismissed, resolved };
   }
 }
 

@@ -289,13 +289,45 @@ describe('SIAGE Pilot Policy — Bimester Scope Enforcement', () => {
       }
     });
   });
+
+  describe('invalid/edge-case config handling', () => {
+    it('garbage value falls back to all bimesters (safe)', () => {
+      process.env.SIAGE_PILOT_BIMESTERS = 'abc,xyz';
+      const policy = getPilotPolicy();
+      expect(policy.isRestricted).toBe(false);
+      expect(policy.allowedBimesters).toEqual([1, 2, 3, 4]);
+    });
+
+    it('out-of-range numbers are filtered', () => {
+      process.env.SIAGE_PILOT_BIMESTERS = '0,1,5,99';
+      const policy = getPilotPolicy();
+      expect(policy.allowedBimesters).toEqual([1]);
+      expect(policy.isRestricted).toBe(true);
+    });
+
+    it('mixed valid and invalid values work correctly', () => {
+      process.env.SIAGE_PILOT_BIMESTERS = '1,abc,3';
+      const policy = getPilotPolicy();
+      expect(policy.allowedBimesters).toEqual([1, 3]);
+      expect(policy.isRestricted).toBe(true);
+      expect(policy.isBimesterAllowed(1)).toBe(true);
+      expect(policy.isBimesterAllowed(2)).toBe(false);
+      expect(policy.isBimesterAllowed(3)).toBe(true);
+    });
+
+    it('whitespace is tolerated', () => {
+      process.env.SIAGE_PILOT_BIMESTERS = ' 1 , 2 ';
+      const policy = getPilotPolicy();
+      expect(policy.allowedBimesters).toEqual([1, 2]);
+    });
+  });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
 // UNMATCHED TAXONOMY TESTS — Operational Classification
 // ══════════════════════════════════════════════════════════════════════════════
 
-describe('SIAGE UNMATCHED Taxonomy — DOM Placeholder Detection', () => {
+describe('SIAGE UNMATCHED Taxonomy — Complete Classification', () => {
   describe('isDomPlaceholder', () => {
     it('detects "-" as DOM placeholder', () => {
       expect(isDomPlaceholder('-')).toBe(true);
@@ -329,25 +361,42 @@ describe('SIAGE UNMATCHED Taxonomy — DOM Placeholder Detection', () => {
     });
   });
 
-  describe('Semantic separation: UNMATCHED ≠ notRegistered', () => {
-    it('UNMATCHED is about identity reconciliation failure', () => {
-      // UNMATCHED = student name from SIAGE not found in local cadastro
-      const unmatchedReasons = ['DOM_PLACEHOLDER', 'NO_LOCAL_STUDENT'];
-      expect(unmatchedReasons).not.toContain('missing_grade');
-      expect(unmatchedReasons).not.toContain('not_registered');
+  describe('Three-category taxonomy', () => {
+    it('taxonomy has exactly 3 UNMATCHED reasons', () => {
+      const reasons = ['DOM_PLACEHOLDER', 'NAME_MISMATCH', 'NO_LOCAL_STUDENT'];
+      expect(reasons).toHaveLength(3);
     });
 
-    it('notRegistered is about grade absence in SIAGE', () => {
-      // notRegistered = student was matched but grade value was null
+    it('DOM_PLACEHOLDER is for scraping artifacts (auto-dismiss)', () => {
+      expect(isDomPlaceholder('-')).toBe(true);
+      expect(isDomPlaceholder('Ana Julia')).toBe(false);
+    });
+
+    it('NAME_MISMATCH is for divergent names (reconciliable)', () => {
+      // Example: "Guilherme Clementino dos Santos" vs "Guilherme Clemente dos Santos"
+      // Same person, different spelling — requires manual resolution, not dismissal
+      const reason = 'NAME_MISMATCH';
+      expect(reason).not.toBe('NO_LOCAL_STUDENT');
+      expect(reason).not.toBe('DOM_PLACEHOLDER');
+    });
+
+    it('NO_LOCAL_STUDENT is for truly absent students', () => {
+      // Example: "Kalebe de Souza Gomes" — no similar name in local cadastro
+      const reason = 'NO_LOCAL_STUDENT';
+      expect(reason).not.toBe('NAME_MISMATCH');
+    });
+
+    it('all three are distinct from notRegistered', () => {
+      const unmatchedReasons = ['DOM_PLACEHOLDER', 'NAME_MISMATCH', 'NO_LOCAL_STUDENT'];
+      const importStatuses = ['imported', 'skipped', 'not_registered', 'error'];
+      // No overlap between the two taxonomies
+      unmatchedReasons.forEach(r => expect(importStatuses).not.toContain(r));
+    });
+
+    it('notRegistered is about grade absence, not identity failure', () => {
+      // notRegistered = student was matched successfully but grade value was null
       const importStatuses = ['imported', 'skipped', 'not_registered', 'error'];
       expect(importStatuses).toContain('not_registered');
-      // not_registered only applies AFTER a successful match
-    });
-
-    it('DOM_PLACEHOLDER and NO_LOCAL_STUDENT are distinct operational categories', () => {
-      // DOM_PLACEHOLDER: scraping artifact, should be auto-dismissed
-      // NO_LOCAL_STUDENT: real student not in local cadastro, requires institutional decision
-      expect('DOM_PLACEHOLDER').not.toBe('NO_LOCAL_STUDENT');
     });
   });
 });

@@ -2,7 +2,7 @@ import mongoose, { Schema } from 'mongoose';
 
 const MATCH_STATUSES = ['AUTO_MATCHED', 'MANUAL_PENDING', 'UNMATCHED', 'SKIPPED', 'RESOLVED', 'DISMISSED'] as const;
 const IMPORT_STATUSES = ['imported', 'skipped', 'not_registered', 'error'] as const;
-const UNMATCHED_REASONS = ['DOM_PLACEHOLDER', 'NO_LOCAL_STUDENT'] as const;
+const UNMATCHED_REASONS = ['DOM_PLACEHOLDER', 'NAME_MISMATCH', 'NO_LOCAL_STUDENT'] as const;
 
 const siageRunItemSchema = new Schema(
   {

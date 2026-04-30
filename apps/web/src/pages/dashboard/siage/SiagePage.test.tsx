@@ -44,9 +44,9 @@ describe('SiagePage', () => {
     expect(await screen.findByText(/Nenhuma execução registrada/)).toBeDefined();
   });
 
-  it('shows Nova Sincronização button', async () => {
+  it('shows Importar PDF button', async () => {
     render(<MemoryRouter><SiagePage /></MemoryRouter>);
-    expect(await screen.findByText('Nova Sincronização')).toBeDefined();
+    expect(await screen.findByText(/Importar PDF/)).toBeDefined();
   });
 
   it('renders Execuções and Aliases tabs', async () => {

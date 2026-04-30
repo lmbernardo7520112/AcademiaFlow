@@ -45,6 +45,9 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install System Dependencies (poppler-utils for PDF parsing)
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+
       # Non-blocking audit: visibility-only in Phase A1.
       # Baseline 0 documented 13 vulnerabilities (3 critical, 2 high).
       # Escalation to blocking gate deferred until remediation phase.

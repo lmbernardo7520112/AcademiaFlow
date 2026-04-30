@@ -9,7 +9,12 @@ import { createTestUser } from '../../test-helpers.js';
  *
  * Note: The global test setup (setup.ts) clears ALL collections afterEach.
  * Therefore, each `it()` block MUST create its own test data.
+ *
+ * SIAGE_CREDENTIAL_MODE is set to 'enabled' for these tests since they validate
+ * the credential-based run creation flow. In production, this is 'disabled' by default.
  */
+process.env.SIAGE_CREDENTIAL_MODE = 'enabled';
+
 describe('SIAGE Module Integration', () => {
   let app: FastifyInstance;
 

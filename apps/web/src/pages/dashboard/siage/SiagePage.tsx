@@ -22,113 +22,244 @@ function StatusBadge({ status }: { status: SiageRunStatus }) {
   );
 }
 
-// ─── Create Run Form ─────────────────────────────────────────────────────────
+// ─── PDF Import Form (Alternativa A) ─────────────────────────────────────────
 
 interface PilotPolicyData {
   isRestricted: boolean;
   allowedBimesters: number[];
 }
 
-function CreateRunForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: () => void }) {
+interface PdfPreview {
+  header: {
+    schoolName: string;
+    turmaEtapa: string;
+    componenteCurricular: string;
+    professor: string;
+    turno: string;
+    sala: string;
+    issuedAt: string;
+    issuedBy: string;
+  };
+  students: Array<{
+    studentName: string;
+    bimester1: number | null;
+    situation: string;
+    frequency: string | null;
+  }>;
+  records: Array<{
+    alunoName: string;
+    disciplinaName: string;
+    turmaName: string;
+    bimester: number;
+    value: number | null;
+  }>;
+  skipped: Array<{ studentName: string; reason: string }>;
+  pageCount: number;
+}
+
+function PdfImportForm({ onCreated, onCancel }: { onCreated: () => void; onCancel: () => void }) {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
   const [bimester, setBimester] = useState(1);
-  const [turmaFilter, setTurmaFilter] = useState('');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState('');
+  const [preview, setPreview] = useState<PdfPreview | null>(null);
   const [policy, setPolicy] = useState<PilotPolicyData | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
         const res = await siageApi.getPilotPolicy();
         setPolicy(res.data.data);
-      } catch { /* policy unavailable — allow all as fallback */ }
+      } catch { /* policy unavailable — allow all */ }
     })();
   }, []);
 
   const isBimesterAllowed = (b: number) =>
     !policy || !policy.isRestricted || policy.allowedBimesters.includes(b);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username || !password) { setError('Credenciais SIAGE são obrigatórias.'); return; }
-    setSubmitting(true);
+  const handleFileSelect = (f: File) => {
+    if (f.type !== 'application/pdf') {
+      setError('Apenas arquivos PDF são aceitos.');
+      return;
+    }
+    setFile(f);
+    setError('');
+    setPreview(null);
+  };
+
+  const handleUpload = async () => {
+    if (!file) return;
+    setUploading(true);
     setError('');
     try {
-      await siageApi.createRun({
-        year, bimester,
-        turmaFilter: turmaFilter || undefined,
-        credentials: { username, password },
-      });
-      setPassword('');
-      setUsername('');
-      onCreated();
+      const res = await siageApi.uploadPdf(file, year, bimester);
+      setPreview(res.data.data);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Erro ao criar sincronização.';
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Erro ao processar PDF.';
       setError(msg);
     } finally {
-      setSubmitting(false);
+      setUploading(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    if (!preview) return;
+    setConfirming(true);
+    setError('');
+    try {
+      await siageApi.confirmPdfImport({ year, bimester, records: preview.records });
+      onCreated();
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Erro ao confirmar importação.';
+      setError(msg);
+    } finally {
+      setConfirming(false);
     }
   };
 
   return (
     <div className="glass-panel fade-in" style={{ padding: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h3 style={{ margin: 0 }}>Nova Sincronização SIAGE</h3>
+        <h3 style={{ margin: 0 }}>📄 Importar PDF Oficial do SIAGE</h3>
         <button onClick={onCancel} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer' }}><X size={20} /></button>
       </div>
+
+      {/* ── Compliance Banner ── */}
+      <div style={{ background: '#f59e0b15', border: '1px solid #f59e0b44', borderRadius: 8, padding: '0.8rem 1rem', marginBottom: '1rem', fontSize: '0.82rem', color: '#fbbf24' }}>
+        <strong>⚠️ Uso restrito da integração por credenciais</strong><br />
+        <span style={{ color: '#d4d4d8' }}>
+          A autenticação com credenciais do SIAGE está temporariamente suspensa enquanto se verifica a autorização formal da Secretaria.{' '}
+          <strong style={{ color: '#fbbf24' }}>Alternativa recomendada:</strong> exporte o boletim oficial em PDF no SIAGE e importe o arquivo aqui.
+        </span>
+      </div>
+
       {policy?.isRestricted && (
         <div style={{ background: '#3b82f622', border: '1px solid #3b82f644', borderRadius: 8, padding: '0.6rem 0.8rem', marginBottom: '1rem', fontSize: '0.82rem', color: '#93c5fd' }}>
           🔒 <strong>Política do piloto ativa:</strong> apenas o{policy.allowedBimesters.length === 1 ? ` ${policy.allowedBimesters[0]}º` : `s bimestres ${policy.allowedBimesters.join(', ')}`} bimestre{policy.allowedBimesters.length > 1 ? 's estão' : ' está'} habilitado{policy.allowedBimesters.length > 1 ? 's' : ''} nesta fase.
         </div>
       )}
-      <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-          <div>
-            <label className="form-label">Ano Letivo</label>
-            <select className="form-input" value={year} onChange={e => setYear(Number(e.target.value))}>
-              {[currentYear - 1, currentYear, currentYear + 1].map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
+
+      {/* ── Year + Bimester selectors ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+        <div>
+          <label className="form-label">Ano Letivo</label>
+          <select className="form-input" value={year} onChange={e => setYear(Number(e.target.value))}>
+            {[currentYear - 1, currentYear, currentYear + 1].map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="form-label">Bimestre a considerar</label>
+          <select className="form-input" value={bimester} onChange={e => setBimester(Number(e.target.value))}>
+            {[1, 2, 3, 4].map(b => (
+              <option key={b} value={b} disabled={!isBimesterAllowed(b)}>
+                {b}º Bimestre{!isBimesterAllowed(b) ? ' (bloqueado pelo piloto)' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* ── PDF Upload Area ── */}
+      {!preview && (
+        <>
+          <div
+            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={e => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files[0]) handleFileSelect(e.dataTransfer.files[0]); }}
+            onClick={() => document.getElementById('siage-pdf-upload')?.click()}
+            style={{
+              border: `2px dashed ${dragOver ? '#3b82f6' : '#555'}`,
+              borderRadius: 12,
+              padding: '2rem',
+              textAlign: 'center',
+              cursor: 'pointer',
+              background: dragOver ? '#3b82f610' : 'transparent',
+              transition: 'all 0.2s',
+              marginBottom: '1rem',
+            }}
+          >
+            <input
+              id="siage-pdf-upload"
+              type="file"
+              accept=".pdf,application/pdf"
+              style={{ display: 'none' }}
+              onChange={e => { if (e.target.files?.[0]) handleFileSelect(e.target.files[0]); }}
+            />
+            <p style={{ margin: 0, color: '#aaa', fontSize: '0.9rem' }}>
+              {file ? `📄 ${file.name}` : '📁 Arraste o PDF do boletim aqui ou clique para selecionar'}
+            </p>
           </div>
-          <div>
-            <label className="form-label">Bimestre</label>
-            <select className="form-input" value={bimester} onChange={e => setBimester(Number(e.target.value))}>
-              {[1, 2, 3, 4].map(b => (
-                <option key={b} value={b} disabled={!isBimesterAllowed(b)}>
-                  {b}º Bimestre{!isBimesterAllowed(b) ? ' (bloqueado pelo piloto)' : ''}
-                </option>
-              ))}
-            </select>
+          <p style={{ fontSize: '0.78rem', color: '#666', margin: '0 0 1rem' }}>
+            💡 Exporte o boletim "Geral da turma por componente" no SIAGE e envie o PDF aqui.
+          </p>
+          <button
+            className="btn-primary"
+            disabled={!file || uploading || !isBimesterAllowed(bimester)}
+            onClick={handleUpload}
+            style={{ width: '100%' }}
+          >
+            {uploading ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite', marginRight: 6 }} />Processando PDF...</> : 'Analisar PDF'}
+          </button>
+        </>
+      )}
+
+      {/* ── Preview ── */}
+      {preview && (
+        <div style={{ marginTop: '1rem' }}>
+          <div style={{ background: '#10b98118', border: '1px solid #10b98144', borderRadius: 8, padding: '0.8rem 1rem', marginBottom: '1rem', fontSize: '0.82rem' }}>
+            <strong style={{ color: '#34d399' }}>✅ PDF processado com sucesso</strong>
+            <div style={{ color: '#d4d4d8', marginTop: 4 }}>
+              <strong>{preview.header.schoolName}</strong> — {preview.header.turmaEtapa}<br />
+              {preview.header.componenteCurricular} · Prof. {preview.header.professor}<br />
+              {preview.records.length} notas para importar · {preview.skipped.length} alunos pulados · {preview.pageCount} páginas
+            </div>
           </div>
-          <div>
-            <label className="form-label">Turma (opcional)</label>
-            <input className="form-input" placeholder="Ex: 1ª Série A" value={turmaFilter} onChange={e => setTurmaFilter(e.target.value)} />
+          <div style={{ maxHeight: 300, overflowY: 'auto', marginBottom: '1rem' }}>
+            <table className="data-table">
+              <thead><tr><th>Aluno</th><th>Nota ({bimester}º Bim)</th><th>Situação</th></tr></thead>
+              <tbody>
+                {preview.records.map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.alunoName}</td>
+                    <td>{r.value?.toFixed(1) ?? '—'}</td>
+                    <td style={{ color: '#10b981', fontSize: '0.82rem' }}>Importar</td>
+                  </tr>
+                ))}
+                {preview.skipped.map((s, i) => (
+                  <tr key={`skip-${i}`} style={{ opacity: 0.5 }}>
+                    <td>{s.studentName}</td>
+                    <td>—</td>
+                    <td style={{ fontSize: '0.78rem', color: '#888' }}>{s.reason === 'REMANEJADO' ? 'Remanejado' : 'Sem nota'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="btn-secondary" onClick={() => { setPreview(null); setFile(null); }} style={{ flex: 1 }}>
+              ← Escolher outro PDF
+            </button>
+            <button
+              className="btn-primary"
+              onClick={handleConfirm}
+              disabled={confirming || preview.records.length === 0}
+              style={{ flex: 2 }}
+            >
+              {confirming ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite', marginRight: 6 }} />Importando...</> : `Confirmar Importação (${preview.records.length} notas)`}
+            </button>
           </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-          <div>
-            <label className="form-label">Usuário SIAGE</label>
-            <input className="form-input" placeholder="CPF ou login" value={username} onChange={e => setUsername(e.target.value)} autoComplete="off" />
-          </div>
-          <div>
-            <label className="form-label">Senha SIAGE</label>
-            <input className="form-input" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" />
-          </div>
-        </div>
-        <p style={{ fontSize: '0.8rem', color: '#666', margin: '0 0 1rem' }}>
-          ⚠️ As credenciais são usadas apenas para esta sincronização e não são armazenadas.
-        </p>
-        {error && <div style={{ color: '#ef4444', marginBottom: '0.75rem', fontSize: '0.85rem' }}><AlertCircle size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />{error}</div>}
-        <button type="submit" className="btn-primary" disabled={submitting || !isBimesterAllowed(bimester)} style={{ width: '100%' }}>
-          {submitting ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite', marginRight: 6 }} />Criando...</> : `Iniciar Sincronização (${bimester}º Bimestre)`}
-        </button>
-      </form>
+      )}
+
+      {error && <div style={{ color: '#ef4444', marginTop: '0.75rem', fontSize: '0.85rem' }}><AlertCircle size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />{error}</div>}
     </div>
   );
 }
+
 
 // ─── Resolve Modal ───────────────────────────────────────────────────────────
 
@@ -730,14 +861,14 @@ export default function SiagePage() {
           {/* Actions */}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <button className="btn-primary" onClick={() => setShowForm(!showForm)}>
-              {showForm ? <><X size={16} style={{ marginRight: 4 }} />Cancelar</> : <><Plus size={16} style={{ marginRight: 4 }} />Nova Sincronização</>}
+              {showForm ? <><X size={16} style={{ marginRight: 4 }} />Cancelar</> : <><Plus size={16} style={{ marginRight: 4 }} />📄 Importar PDF</>}
             </button>
             <button className="btn-secondary" onClick={fetchRuns} disabled={loading}>
               <RefreshCw size={16} style={{ marginRight: 4, ...(loading ? { animation: 'spin 1s linear infinite' } : {}) }} />Atualizar
             </button>
           </div>
 
-          {showForm && <div style={{ marginBottom: '1rem' }}><CreateRunForm onCreated={() => { setShowForm(false); fetchRuns(); }} onCancel={() => setShowForm(false)} /></div>}
+          {showForm && <div style={{ marginBottom: '1rem' }}><PdfImportForm onCreated={() => { setShowForm(false); fetchRuns(); }} onCancel={() => setShowForm(false)} /></div>}
 
           {error && <div style={{ color: '#ef4444', marginBottom: '1rem' }}><AlertCircle size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} />{error}</div>}
 
@@ -749,7 +880,7 @@ export default function SiagePage() {
                 {loading ? (
                   <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}><Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} /></td></tr>
                 ) : runs.length === 0 ? (
-                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Nenhuma execução registrada. Clique em "Nova Sincronização" para começar.</td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#888' }}>Nenhuma execução registrada. Clique em "Importar PDF" para começar.</td></tr>
                 ) : runs.map(run => (
                   <tr key={run._id}>
                     <td>{run.year}</td>

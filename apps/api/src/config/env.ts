@@ -22,6 +22,12 @@ const envSchema = z.object({
    * This is an operational policy, NOT a product limitation.
    */
   SIAGE_PILOT_BIMESTERS: z.string().default('1'),
+  /**
+   * Controls whether credential-based SIAGE sync (Playwright scraping) is allowed.
+   * Default: 'disabled' — credential fields hidden, POST /runs with credentials returns 403.
+   * Set to 'enabled' ONLY after formal authorization from the Secretaria de Educação.
+   */
+  SIAGE_CREDENTIAL_MODE: z.enum(['enabled', 'disabled']).default('disabled'),
 });
 
 const _env = envSchema.safeParse(process.env);

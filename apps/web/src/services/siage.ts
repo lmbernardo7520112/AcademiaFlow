@@ -148,6 +148,23 @@ export const siageApi = {
   dismissPlaceholders: (runId: string) => api.post(`/siage/runs/${runId}/dismiss-placeholders`),
   dismissItem: (itemId: string) => api.post(`/siage/items/${itemId}/dismiss`),
   getUnmatchedBreakdown: (runId: string) => api.get(`/siage/runs/${runId}/unmatched-breakdown`),
+
+  // PDF Official Import (Alternativa A)
+  uploadPdf: (file: File, year: number, bimester: number) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('year', String(year));
+    formData.append('bimester', String(bimester));
+    return api.post('/siage/runs/upload-pdf', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  confirmPdfImport: (data: {
+    year: number;
+    bimester: number;
+    records: Array<{ alunoName: string; disciplinaName: string; turmaName: string; bimester: number; value: number | null }>;
+  }) => api.post('/siage/runs/confirm-pdf', data),
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

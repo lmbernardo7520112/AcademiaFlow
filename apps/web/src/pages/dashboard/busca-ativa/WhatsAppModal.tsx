@@ -22,11 +22,13 @@ export default function WhatsAppModal({ caso, contactId, onClose }: WhatsAppModa
   const effectivePhone = contact?.correctedPhone || contact?.phones[0];
   const phoneE164 = effectivePhone?.phoneE164;
 
+  const schoolWhatsApp = import.meta.env.VITE_SCHOOL_WHATSAPP_NUMBER || '83 9821-1221';
+
   const defaultMessage = `Prezado(a) ${contact?.name || 'Responsável'},
 
 Informamos que o(a) aluno(a) *${caso.alunoName}*, da turma *${caso.turmaName}*, não compareceu à aula no dia *${new Date(caso.date).toLocaleDateString('pt-BR')}*.
 
-Solicitamos gentilmente que entre em contato com a secretaria da escola para informar o motivo da falta.
+Solicitamos gentilmente que entre em contato com a secretaria da escola pelo WhatsApp *${schoolWhatsApp}* para informar o motivo da falta.
 
 Atenciosamente,
 Secretaria Escolar`;

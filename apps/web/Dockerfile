@@ -29,8 +29,10 @@ RUN pnpm --filter @academiaflow/shared build
 # 5. Inject production env via build args
 ARG VITE_API_URL=/api
 ARG VITE_APP_MODE=school_production
+ARG VITE_SCHOOL_WHATSAPP_NUMBER="VITE_SCHOOL_WHATSAPP_NUMBER_PLACEHOLDER"
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_APP_MODE=$VITE_APP_MODE
+ENV VITE_SCHOOL_WHATSAPP_NUMBER=$VITE_SCHOOL_WHATSAPP_NUMBER
 
 # 6. Build web
 RUN pnpm --filter @academiaflow/web build
@@ -43,4 +45,5 @@ COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+# At container start, replace the placeholder with the actual environment variable (or default)
+CMD ["/bin/sh", "-c", "sed -i \"s/VITE_SCHOOL_WHATSAPP_NUMBER_PLACEHOLDER/${VITE_SCHOOL_WHATSAPP_NUMBER:-83 9821-1221}/g\" /usr/share/nginx/html/assets/*.js && nginx -g 'daemon off;'"]

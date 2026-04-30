@@ -59,7 +59,7 @@ export interface SiageRun {
   updatedAt: string;
 }
 
-export type MatchStatus = 'AUTO_MATCHED' | 'MANUAL_PENDING' | 'UNMATCHED' | 'RESOLVED' | 'IMPORTED' | 'IMPORT_FAILED';
+export type MatchStatus = 'AUTO_MATCHED' | 'MANUAL_PENDING' | 'UNMATCHED' | 'RESOLVED' | 'SKIPPED' | 'DISMISSED' | 'IMPORTED' | 'IMPORT_FAILED';
 
 export interface SiageRunItem {
   _id: string;
@@ -73,10 +73,11 @@ export interface SiageRunItem {
     value: number | null;
   };
   matchResult: {
-    status: MatchStatus;
+    matchStatus: MatchStatus;
     alunoId?: string;
     disciplinaId?: string;
     turmaId?: string;
+    reason?: string | null;
   };
   resolution?: {
     resolvedBy: string;

@@ -134,6 +134,12 @@ function CreateRunForm({ onCreated, onCancel }: { onCreated: () => void; onCance
 
 const RESOLVABLE_STATUSES = ['MANUAL_PENDING', 'UNMATCHED'];
 
+/** Safe label formatter — never crashes on null/undefined */
+function formatMatchStatus(status: string | null | undefined): string {
+  if (!status) return 'SEM STATUS';
+  return status.replace(/_/g, ' ');
+}
+
 function ResolveModal({ item, runId, onClose, onResolved }: {
   item: SiageRunItem; runId: string; onClose: () => void; onResolved: () => void;
 }) {
@@ -371,9 +377,9 @@ function RunDetail({ run, onBack }: { run: SiageRun; onBack: () => void }) {
 
   // Computed stats from items
   const itemStats = useMemo(() => {
-    const matched = items.filter(i => i.matchResult.status === 'AUTO_MATCHED').length;
-    const unmatched = items.filter(i => i.matchResult.status === 'UNMATCHED').length;
-    const pending = items.filter(i => i.matchResult.status === 'MANUAL_PENDING').length;
+    const matched = items.filter(i => i.matchResult.matchStatus === 'AUTO_MATCHED').length;
+    const unmatched = items.filter(i => i.matchResult.matchStatus === 'UNMATCHED').length;
+    const pending = items.filter(i => i.matchResult.matchStatus === 'MANUAL_PENDING').length;
     const placeholders = items.filter(i => isDomPlaceholder(i.source.alunoName)).length;
     return { matched, unmatched, pending, placeholders, total: items.length };
   }, [items]);
@@ -490,7 +496,7 @@ function RunDetail({ run, onBack }: { run: SiageRun; onBack: () => void }) {
                   </td>
                   <td>{item.source.disciplinaName}</td>
                   <td>{item.source.value != null ? item.source.value.toFixed(1) : '—'}</td>
-                  <td><span style={{ color: matchColors[item.matchResult.status] || '#888', fontWeight: 500, fontSize: '0.85rem' }}>{item.matchResult.status.replace(/_/g, ' ')}</span></td>
+                  <td><span style={{ color: matchColors[item.matchResult.matchStatus] || '#888', fontWeight: 500, fontSize: '0.85rem' }}>{formatMatchStatus(item.matchResult.matchStatus)}</span></td>
                   <td style={{ fontSize: '0.78rem', color: '#888' }}>
                     {item.resolution?.resolvedAt ? (
                       <span title={`Por: ${item.resolution.resolvedBy} | Ação: ${item.resolution.action} | De: ${item.resolution.previousStatus}`}>
@@ -500,7 +506,7 @@ function RunDetail({ run, onBack }: { run: SiageRun; onBack: () => void }) {
                     ) : isPlaceholder ? <span style={{ color: '#6b7280' }}>placeholder</span> : '—'}
                   </td>
                   <td>
-                    {!isPlaceholder && RESOLVABLE_STATUSES.includes(item.matchResult.status) && (
+                    {!isPlaceholder && RESOLVABLE_STATUSES.includes(item.matchResult.matchStatus) && (
                       <button className="btn-primary" style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }} onClick={() => setResolvingItem(item)}>
                         Resolver
                       </button>

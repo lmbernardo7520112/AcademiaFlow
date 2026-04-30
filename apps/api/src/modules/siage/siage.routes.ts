@@ -13,6 +13,9 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { siageService, getPilotPolicy } from './siage.service.js';
 import { enqueueSiageSyncJob } from './siage-queue.js';
+import { parseSiageBoletimPdf } from './boletim-pdf-parser.js';
+import { normalizeBoletimToRecords } from './boletim-normalizer.js';
+import { assertPdfTextExtractorAvailable, PdfTextExtractorUnavailableError } from './pdf-text-extractor.js';
 
 // ─── Validation Schemas ──────────────────────────────────────────────────────
 
@@ -81,6 +84,16 @@ export const siageRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
       schema: { body: createRunBodySchema },
     },
     async (request, reply) => {
+      // ── Credential mode gate ──
+      // Read at runtime (not from static env parse) to support test overrides
+      const credentialMode = process.env.SIAGE_CREDENTIAL_MODE || 'disabled';
+      if (credentialMode === 'disabled') {
+        return reply.code(403).send({
+          success: false,
+          code: 'SIAGE_CREDENTIAL_MODE_DISABLED',
+          message: 'A sincronização por credenciais está temporariamente suspensa. Utilize a importação de PDF oficial.',
+        });
+      }
       try {
         const run = await siageService.createRun({
           tenantId: request.user.tenantId,
@@ -454,6 +467,127 @@ export const siageRoutes: FastifyPluginAsyncZod = async (fastify: FastifyInstanc
         reply.code(400).send({
           success: false,
           message: error instanceof Error ? error.message : 'Erro ao carregar breakdown',
+        });
+      }
+    },
+  );
+
+  // ── POST /runs/upload-pdf — Parse PDF and return preview ──
+  typedFastify.post(
+    '/runs/upload-pdf',
+    {
+      preHandler: [fastify.authorize(['admin', 'secretaria'])],
+    },
+    async (request, reply) => {
+      try {
+        // Preflight: ensure pdftotext is available
+        await assertPdfTextExtractorAvailable();
+
+        const data = await request.file();
+        if (!data) {
+          return reply.code(400).send({ success: false, message: 'Nenhum arquivo enviado.' });
+        }
+
+        if (data.mimetype !== 'application/pdf') {
+          return reply.code(400).send({ success: false, message: 'Apenas arquivos PDF são aceitos.' });
+        }
+
+        const fileBuffer = await data.toBuffer();
+
+        // Extract bimester from form fields
+        const bimesterField = data.fields['bimester'] as { value?: string } | undefined;
+        const bimester = bimesterField?.value ? Number(bimesterField.value) : 1;
+
+        if (bimester < 1 || bimester > 4) {
+          return reply.code(400).send({ success: false, message: 'Bimestre deve ser entre 1 e 4.' });
+        }
+
+        // Parse PDF
+        const parsed = await parseSiageBoletimPdf(fileBuffer);
+        const { records, skipped } = normalizeBoletimToRecords(parsed, bimester);
+
+        reply.send({
+          success: true,
+          data: {
+            header: parsed.header,
+            students: parsed.students.map(s => ({
+              studentName: s.studentName,
+              bimester1: s.bimester1,
+              situation: s.situation,
+              frequency: s.frequency,
+            })),
+            records,
+            skipped,
+            pageCount: parsed.pageCount,
+          },
+        });
+      } catch (error) {
+        if (error instanceof PdfTextExtractorUnavailableError) {
+          return reply.code(503).send({
+            success: false,
+            code: error.code,
+            message: error.message,
+          });
+        }
+        request.log.error(error, 'PDF upload/parse error');
+        reply.code(400).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Erro ao processar PDF.',
+        });
+      }
+    },
+  );
+
+  // ── POST /runs/confirm-pdf — Create run from parsed PDF records ──
+  typedFastify.post(
+    '/runs/confirm-pdf',
+    {
+      preHandler: [fastify.authorize(['admin', 'secretaria'])],
+      schema: {
+        body: z.object({
+          year: z.number().int().min(2020).max(2100),
+          bimester: z.number().int().min(1).max(4),
+          records: z.array(z.object({
+            alunoName: z.string().min(1),
+            disciplinaName: z.string().min(1),
+            turmaName: z.string().min(1),
+            bimester: z.number().int().min(1).max(4),
+            value: z.number().min(0).max(10).nullable(),
+          })),
+        }),
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { year, bimester, records } = request.body;
+
+        // Create the run
+        const run = await siageService.createRun({
+          tenantId: request.user.tenantId,
+          year,
+          bimester,
+          createdBy: request.user.id,
+        });
+
+        const runId = String(run._id);
+
+        // Ingest the records into the existing pipeline
+        const items = records.map(r => ({
+          alunoName: r.alunoName,
+          matriculaSiage: '',
+          disciplinaName: r.disciplinaName,
+          turmaName: r.turmaName,
+          bimester: r.bimester,
+          value: r.value,
+        }));
+
+        await siageService.ingestItems(runId, request.user.tenantId, items);
+
+        reply.code(201).send({ success: true, data: run });
+      } catch (error) {
+        reply.code(409).send({
+          success: false,
+          message: error instanceof Error ? error.message : 'Erro ao criar importação.',
         });
       }
     },
